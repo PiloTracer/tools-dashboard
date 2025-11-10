@@ -1,0 +1,27 @@
+﻿_format_version: "3.0"
+_transform: true
+
+services:
+  - name: back-api
+    url: http://back-api:8000
+    routes:
+      - name: back-api-route
+        paths:
+          - /api
+        strip_path: true
+        protocols:
+          - http
+          - https
+        methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+
+plugins:
+  - name: jwt
+  - name: rate-limiting
+    config:
+      policy: local
+      minute: 60
+      identifier: consumer

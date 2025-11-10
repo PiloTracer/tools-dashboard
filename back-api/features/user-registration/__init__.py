@@ -1,0 +1,1 @@
+﻿"""User registration feature package."""

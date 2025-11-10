@@ -1,0 +1,8 @@
+﻿role: api-developer
+scope: only current feature directory
+dependencies:
+  - back-auth:1.2.0
+  - back-postgres:1.0.3
+  - shared:2.4.1
+contract: 
+  - features/*/feature.yaml

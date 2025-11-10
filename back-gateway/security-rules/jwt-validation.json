@@ -1,0 +1,6 @@
+﻿{
+  "algorithms": ["RS256"],
+  "issuer": "https://auth.toolsdashboard.com/",
+  "audience": "tools-dashboard",
+  "clockSkew": 30
+}

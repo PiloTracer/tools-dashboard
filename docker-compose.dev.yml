@@ -1,0 +1,186 @@
+version: "3.8"
+
+services:
+  nginx-proxy:
+    image: nginx:alpine
+    ports:
+      - "8082:80"
+      - "8443:443"
+    volumes:
+      - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - front-admin
+      - front-public
+      - back-api
+      - back-auth
+      - back-websockets
+      - feature-registry
+
+  front-admin:
+    build:
+      context: ./front-admin
+      dockerfile: Dockerfile.dev
+    environment:
+      - NODE_ENV=development
+      - BACKEND_API_URL=http://back-api:8000
+      - AUTH_API_URL=http://back-auth:8001
+      - WEBSOCKET_URL=ws://back-websockets:8010
+    volumes:
+      - ./front-admin:/app
+      - front_admin_node_modules:/app/node_modules
+    ports:
+      - "4100:3000"
+    depends_on:
+      - back-api
+      - back-auth
+
+  front-public:
+    build:
+      context: ./front-public
+      dockerfile: Dockerfile.dev
+    environment:
+      - NODE_ENV=development
+      - BACKEND_API_URL=http://back-api:8000
+      - AUTH_API_URL=http://back-auth:8001
+      - WEBSOCKET_URL=ws://back-websockets:8010
+    volumes:
+      - ./front-public:/app
+      - front_public_node_modules:/app/node_modules
+    ports:
+      - "4101:3000"
+    depends_on:
+      - back-api
+      - back-auth
+
+  back-api:
+    build:
+      context: ./back-api
+      dockerfile: Dockerfile.dev
+    environment:
+      - UVICORN_RELOAD=1
+      - DATABASE_URL=postgresql://user:pass@postgresql:5432/main_db
+      - REDIS_URL=redis://redis:6379/0
+      - CASSANDRA_CONTACT_POINTS=back-cassandra
+      - FEATURE_REGISTRY_URL=http://feature-registry:8005
+      - AUTH_SERVICE_URL=http://back-auth:8001
+    volumes:
+      - ./back-api:/app
+    ports:
+      - "8100:8000"
+    depends_on:
+      - postgresql
+      - redis
+      - cassandra
+
+  back-auth:
+    build:
+      context: ./back-auth
+      dockerfile: Dockerfile.dev
+    environment:
+      - UVICORN_RELOAD=1
+      - DATABASE_URL=postgresql://user:pass@postgresql:5432/main_db
+      - REDIS_URL=redis://redis:6379/1
+      - TOKEN_TTL_MINUTES=15
+      - REFRESH_TTL_DAYS=7
+    volumes:
+      - ./back-auth:/app
+    ports:
+      - "8101:8001"
+    depends_on:
+      - postgresql
+      - redis
+
+  back-websockets:
+    build:
+      context: ./back-websockets
+      dockerfile: Dockerfile.dev
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./back-websockets:/app
+    ports:
+      - "8102:8010"
+    depends_on:
+      - redis
+
+  back-workers:
+    build:
+      context: ./back-workers
+      dockerfile: Dockerfile
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - API_BASE_URL=http://back-api:8000
+    volumes:
+      - ./back-workers:/app
+    depends_on:
+      - redis
+      - back-api
+
+  back-postgres-service:
+    build:
+      context: ./back-postgres
+      dockerfile: Dockerfile.dev
+    environment:
+      - DATABASE_URL=postgresql://user:pass@postgresql:5432/main_db
+    volumes:
+      - ./back-postgres:/app
+    depends_on:
+      - postgresql
+
+  back-cassandra:
+    build:
+      context: ./back-cassandra
+      dockerfile: Dockerfile.dev
+    environment:
+      - CASSANDRA_CONTACT_POINTS=cassandra
+    volumes:
+      - ./back-cassandra:/app
+    depends_on:
+      - cassandra
+
+  feature-registry:
+    build:
+      context: ./feature-registry
+      dockerfile: Dockerfile.dev
+    environment:
+      - DATABASE_URL=postgresql://user:pass@postgresql:5432/main_db
+    volumes:
+      - ./feature-registry:/app
+    ports:
+      - "8105:8005"
+    depends_on:
+      - postgresql
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+
+  postgresql:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=main_db
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+    ports:
+      - "55432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  cassandra:
+    image: cassandra:4
+    environment:
+      - CASSANDRA_CLUSTER_NAME=tools_cluster
+    ports:
+      - "39142:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+
+volumes:
+  front_admin_node_modules:
+  front_public_node_modules:
+  postgres_data:
+  redis_data:
+  cassandra_data:

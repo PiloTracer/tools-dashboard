@@ -1,0 +1,13 @@
+﻿name: user-registration
+version: 1.0.0
+endpoints:
+  - method: POST
+    path: /user-registration
+    auth: required
+    description: Submit registration details and trigger verification email.
+dependencies:
+  - back-auth@1.2.0
+  - shared@2.4.1
+schemas:
+  request: registration_request.json
+  response: registration_response.json

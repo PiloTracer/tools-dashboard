@@ -1,0 +1,10 @@
+﻿name: user-management
+version: 1.0.0
+routes:
+  - path: /features/user-management
+    file: routes/index.tsx
+  - path: /features/user-management/edit
+    file: routes/edit.tsx
+ui:
+  - ui/UserTable.tsx
+  - ui/UserForm.tsx

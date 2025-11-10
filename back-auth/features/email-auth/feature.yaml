@@ -1,0 +1,6 @@
+﻿name: email-auth
+version: 1.0.0
+description: Traditional email + password authentication.
+policies:
+  password_hash: bcrypt
+  breach_check: haveibeenpwned

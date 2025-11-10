@@ -1,0 +1,11 @@
+﻿name: user-registration
+version: 1.0.0
+endpoints:
+  - method: POST
+    path: /user-registration
+    description: Register a new user account.
+dependencies:
+  - back-auth@1.2.0
+schemas:
+  request: registration_request.json
+  response: registration_response.json

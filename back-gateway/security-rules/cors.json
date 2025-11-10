@@ -1,0 +1,7 @@
+﻿{
+  "allowOrigins": ["https://admin.toolsdashboard.com", "https://app.toolsdashboard.com"],
+  "allowMethods": ["GET", "POST", "PUT", "DELETE"],
+  "allowHeaders": ["Authorization", "Content-Type"],
+  "exposeHeaders": ["X-Request-ID"],
+  "maxAge": 86400
+}

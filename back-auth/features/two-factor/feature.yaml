@@ -1,0 +1,6 @@
+﻿name: two-factor
+version: 1.0.0
+description: Time-based one-time password support.
+requirements:
+  totp_window: 30
+  digits: 6

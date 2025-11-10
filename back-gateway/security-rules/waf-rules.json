@@ -1,0 +1,7 @@
+﻿{
+  "rules": [
+    "BLOCK_SQL_INJECTION",
+    "BLOCK_XSS",
+    "BLOCK_PATH_TRAVERSAL"
+  ]
+}

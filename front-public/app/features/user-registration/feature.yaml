@@ -1,0 +1,10 @@
+﻿name: user-registration
+version: 1.0.0
+routes:
+  - path: /features/user-registration
+    file: routes/index.tsx
+  - path: /features/user-registration/verify
+    file: routes/verify.tsx
+ui:
+  - ui/RegistrationForm.tsx
+  - ui/VerificationBanner.tsx

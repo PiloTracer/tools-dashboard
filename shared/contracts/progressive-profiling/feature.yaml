@@ -1,0 +1,8 @@
+﻿name: progressive-profiling
+version: 1.0.0
+endpoints:
+  - method: GET
+    path: /progressive-profiling/profile
+    description: Fetch progressive profiling status.
+schemas:
+  response: profile_status.json

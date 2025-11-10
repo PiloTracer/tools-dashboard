@@ -1,0 +1,10 @@
+﻿name: progressive-profiling
+version: 1.0.0
+routes:
+  - path: /features/progressive-profiling
+    file: routes/index.tsx
+  - path: /features/progressive-profiling/complete
+    file: routes/complete.tsx
+ui:
+  - ui/ProfileForm.tsx
+  - ui/ProgressStepper.tsx

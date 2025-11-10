@@ -1,0 +1,11 @@
+﻿name: progressive-profiling
+version: 1.0.0
+endpoints:
+  - method: GET
+    path: /progressive-profiling/profile
+    auth: required
+    description: Retrieve current profile completion stage.
+dependencies:
+  - shared@2.4.1
+schemas:
+  response: profile_status.json

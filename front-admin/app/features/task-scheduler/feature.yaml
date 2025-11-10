@@ -1,0 +1,10 @@
+﻿name: task-scheduler
+version: 1.0.0
+routes:
+  - path: /features/task-scheduler
+    file: routes/index.tsx
+  - path: /features/task-scheduler/create
+    file: routes/create.tsx
+ui:
+  - ui/Scheduler.tsx
+  - ui/TaskForm.tsx
