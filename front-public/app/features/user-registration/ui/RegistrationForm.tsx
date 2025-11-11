@@ -59,6 +59,7 @@ export const RegistrationForm: FC<Props> = ({
         type="password"
         autoComplete="new-password"
         minLength={passwordMinLength}
+        maxLength={72}
         required
         disabled={disabled}
         aria-invalid={Boolean(fieldErrors?.password) || undefined}
@@ -66,7 +67,7 @@ export const RegistrationForm: FC<Props> = ({
         className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
       />
       <div className="text-sm text-slate-500">
-        <p id="password-hint">Must be at least {passwordMinLength} characters.</p>
+        <p id="password-hint">Must be at least {passwordMinLength} characters and no more than 72.</p>
         {fieldErrors?.password ? (
           <p id="password-error" className="text-sm text-red-600">
             {fieldErrors.password}

@@ -93,7 +93,7 @@ async def init_engine() -> AsyncEngine:
         attempt = 0
         delay = 1
         last_error: Exception | None = None
-        while attempt < 5:
+        while attempt < 10:
             try:
                 engine = create_async_engine(settings.database_url, future=True)
                 async with engine.begin() as conn:

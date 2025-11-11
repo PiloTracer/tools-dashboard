@@ -375,7 +375,8 @@ function buildEmailFormSchema(passwordMinLength: number) {
       .transform((value) => value.toLowerCase()),
     password: z
       .string({ required_error: "Password is required" })
-      .min(min, `Password must be at least ${min} characters long`),
+      .min(min, `Password must be at least ${min} characters long`)
+      .max(72, "Password must be 72 characters or fewer"),
     csrfToken: z.string({ required_error: "Missing security token" }).min(1, "Missing security token"),
   });
 }
