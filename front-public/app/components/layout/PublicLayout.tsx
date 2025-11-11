@@ -28,8 +28,13 @@ const LINKS: NavigationLink[] = [
   { to: "/features/progressive-profiling", label: "Complete profile" },
 ];
 
+const FALLBACK_BASE_PATH = (() => {
+  const envBasePath = process.env.PUBLIC_APP_BASE_PATH;
+  return envBasePath ? normalizeBasePath(envBasePath) : "/app";
+})();
+
 export function PublicLayout({
-  basePath = "/",
+  basePath = FALLBACK_BASE_PATH,
   children,
   session = { status: "unknown" },
 }: PublicLayoutProps) {

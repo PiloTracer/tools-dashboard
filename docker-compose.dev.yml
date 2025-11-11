@@ -45,6 +45,7 @@ services:
       - AUTH_API_URL=http://back-auth:8001
       - WEBSOCKET_URL=ws://back-websockets:8010
       - BACK_AUTH_BASE_URL=${BACK_AUTH_BASE_URL}
+      - PUBLIC_APP_BASE_PATH=/app
     volumes:
       - ./front-public:/app
       - front_public_node_modules:/app/node_modules
