@@ -4,6 +4,8 @@
 **Purpose**: Handles all authentication methods (Google, email, 2FA) and issues JWT tokens  
 **Key Components**:
 - OAuth2/OpenID Connect providers
+- Email + password registration with CSRF protection
+- Email verification workflow with signed links
 - TOTP generation/validation (Google Authenticator)
 - Session management
 - Password security (bcrypt, breach detection)

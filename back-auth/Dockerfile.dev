@@ -1,8 +1,17 @@
-﻿FROM python:3.11-slim
+FROM python:3.11-slim
 
 WORKDIR /app
+
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential libpq-dev libssl-dev libffi-dev \
+    && pip install --no-cache-dir -r requirements.txt \
+    && apt-get purge -y build-essential libpq-dev libssl-dev libffi-dev \
+    && apt-get install -y --no-install-recommends libpq5 libssl3 libffi8 \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY . .
 
 CMD ["uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8001"]

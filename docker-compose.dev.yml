@@ -79,14 +79,37 @@ services:
       dockerfile: Dockerfile.dev
     environment:
       - UVICORN_RELOAD=1
-      - DATABASE_URL=postgresql://user:pass@postgresql:5432/main_db
+      - DATABASE_URL=postgresql+asyncpg://user:pass@postgresql:5432/main_db
       - REDIS_URL=redis://redis:6379/1
-      - TOKEN_TTL_MINUTES=15
-      - REFRESH_TTL_DAYS=7
-      # GOOGLE OAUTH:
+      - PUBLIC_APP_BASE_URL=${PUBLIC_APP_BASE_URL}
+      - VERIFICATION_PATH=${VERIFICATION_PATH:-/features/user-registration/verify}
+      - REGISTRATION_PASSWORD_MIN_LENGTH=${REGISTRATION_PASSWORD_MIN_LENGTH:-12}
+      - REGISTRATION_CSRF_COOKIE_SECURE=${REGISTRATION_CSRF_COOKIE_SECURE:-false}
+      - REGISTRATION_CSRF_COOKIE_SAMESITE=${REGISTRATION_CSRF_COOKIE_SAMESITE:-Lax}
+      - REGISTRATION_CSRF_COOKIE_MAX_AGE=${REGISTRATION_CSRF_COOKIE_MAX_AGE:-900}
+      - REGISTRATION_CSRF_COOKIE_DOMAIN=${REGISTRATION_CSRF_COOKIE_DOMAIN:-}
+      - SESSION_COOKIE_NAME=${SESSION_COOKIE_NAME:-td_session}
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-false}
+      - SESSION_COOKIE_SAMESITE=${SESSION_COOKIE_SAMESITE:-Lax}
+      - SESSION_COOKIE_MAX_AGE=${SESSION_COOKIE_MAX_AGE:-604800}
+      - SESSION_COOKIE_DOMAIN=${SESSION_COOKIE_DOMAIN:-}
+      - REGISTRATION_TOKEN_TTL_MINUTES=${REGISTRATION_TOKEN_TTL_MINUTES:-15}
+      - REFRESH_TOKEN_TTL_DAYS=${REFRESH_TOKEN_TTL_DAYS:-7}
+      - MAIL_HOST=${MAIL_HOST:-}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - MAIL_SENDER=${MAIL_SENDER:-}
+      - MAIL_USE_TLS=${MAIL_USE_TLS:-true}
+      - CASSANDRA_CONTACT_POINTS=${CASSANDRA_CONTACT_POINTS:-}
+      - CASSANDRA_PORT=${CASSANDRA_PORT:-9042}
+      - CASSANDRA_KEYSPACE=${CASSANDRA_KEYSPACE:-auth_events}
       - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
       - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
       - GOOGLE_OAUTH_REDIRECT_URI=${GOOGLE_OAUTH_REDIRECT_URI}
+      - GOOGLE_OAUTH_SCOPES=${GOOGLE_OAUTH_SCOPES:-}
+      - GOOGLE_OAUTH_ALLOWED_DOMAINS=${GOOGLE_OAUTH_ALLOWED_DOMAINS:-}
+      - GOOGLE_OAUTH_BUTTON_TEXT=${GOOGLE_OAUTH_BUTTON_TEXT:-}
     volumes:
       - ./back-auth:/app
     ports:
@@ -94,6 +117,7 @@ services:
     depends_on:
       - postgresql
       - redis
+      - mailhog
 
   back-websockets:
     build:
@@ -182,6 +206,12 @@ services:
       - "39142:9042"
     volumes:
       - cassandra_data:/var/lib/cassandra
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    ports:
+      - "8025:8025"
+    restart: unless-stopped
 
 volumes:
   front_admin_node_modules:
