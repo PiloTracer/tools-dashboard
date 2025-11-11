@@ -6,6 +6,9 @@ import asyncio
 from datetime import datetime, timezone
 from typing import AsyncIterator
 
+import asyncio
+import logging
+
 from sqlalchemy import (
     Boolean,
     Column,
@@ -29,6 +32,8 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from .config import get_settings
 
 metadata = MetaData()
+
+logger = logging.getLogger(__name__)
 
 users = Table(
     "users",
@@ -85,10 +90,26 @@ async def init_engine() -> AsyncEngine:
     global _engine, SessionFactory
     if _engine is None:
         settings = get_settings()
-        _engine = create_async_engine(settings.database_url, future=True)
-        async with _engine.begin() as conn:
-            await conn.run_sync(metadata.create_all)
-        SessionFactory = async_sessionmaker(_engine, expire_on_commit=False)
+        attempt = 0
+        delay = 1
+        last_error: Exception | None = None
+        while attempt < 5:
+            try:
+                engine = create_async_engine(settings.database_url, future=True)
+                async with engine.begin() as conn:
+                    await conn.run_sync(metadata.create_all)
+                _engine = engine
+                SessionFactory = async_sessionmaker(_engine, expire_on_commit=False)
+                break
+            except Exception as exc:
+                last_error = exc
+                logger.warning("Database initialization attempt %s failed: %s", attempt + 1, exc)
+                attempt += 1
+                await asyncio.sleep(delay)
+                delay = min(delay * 2, 10)
+        if _engine is None:
+            assert last_error is not None
+            raise last_error
     return _engine
 
 

@@ -123,13 +123,29 @@ export async function loader({ request }: LoaderFunctionArgs) {
       ? parsedConfig.data.email.passwordPolicy.minLength
       : DEFAULT_PASSWORD_MIN_LENGTH;
 
-  return json<LoaderData>({
+  const responsePayload: LoaderData = {
     csrfToken: parsedConfig.data.csrfToken,
     googleAuthUrl: parsedConfig.data.providers?.google?.authorizeUrl ?? null,
     googleButtonText: parsedConfig.data.providers?.google?.buttonText ?? "Continue with Google",
     passwordMinLength,
     serviceAvailable: true,
-  });
+  };
+
+  const rawHeaders = (configResponse.headers as unknown as { raw?: () => Record<string, string[]> }).raw?.();
+  let setCookies = rawHeaders?.["set-cookie"] ?? [];
+  if (!setCookies.length) {
+    const single = configResponse.headers.get("set-cookie");
+    if (single) {
+      setCookies = [single];
+    }
+  }
+
+  const jsonResponse = json<LoaderData>(responsePayload);
+  for (const cookie of setCookies) {
+    jsonResponse.headers.append("Set-Cookie", cookie);
+  }
+
+  return jsonResponse;
 }
 
 export async function action({ request }: ActionFunctionArgs) {

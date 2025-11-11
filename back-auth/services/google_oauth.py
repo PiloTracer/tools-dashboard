@@ -22,6 +22,7 @@ async def exchange_code_for_tokens(code: str, code_verifier: str | None = None) 
         client_secret=settings.google_oauth_client_secret,
         redirect_uri=settings.google_oauth_redirect_uri,
         scope=settings.google_scopes_list(),
+        token_endpoint_auth_method="client_secret_post",
     ) as client:
         token = await client.fetch_token(
             settings.google_oauth_token_endpoint,
@@ -33,10 +34,9 @@ async def exchange_code_for_tokens(code: str, code_verifier: str | None = None) 
 
 async def fetch_userinfo(access_token: str) -> Dict[str, Any]:
     settings = get_settings()
-    async with AsyncOAuth2Client() as client:
+    async with AsyncOAuth2Client(token={"access_token": access_token, "token_type": "Bearer"}) as client:
         resp = await client.get(
             settings.google_oauth_userinfo_endpoint,
-            headers={"Authorization": f"Bearer {access_token}"},
         )
         resp.raise_for_status()
         return resp.json()
