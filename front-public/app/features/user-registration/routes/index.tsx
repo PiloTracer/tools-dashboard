@@ -233,6 +233,11 @@ export default function RegistrationRoute() {
       if (searchParamMode === "login") {
         return;
       }
+      // Don't add login param if we're transitioning TO register
+      // (URL wants register but state hasn't caught up yet)
+      if (initialMode === "register") {
+        return;
+      }
       const next = new URLSearchParams(searchParams);
       next.set("mode", "login");
       setSearchParams(next, { preventScrollReset: true, replace: true });
@@ -242,10 +247,17 @@ export default function RegistrationRoute() {
     if (!searchParamMode) {
       return;
     }
+
+    // Don't remove the mode param if we're transitioning TO login
+    // (URL says login but state hasn't caught up yet)
+    if (initialMode === "login" && mode !== "login") {
+      return;
+    }
+
     const next = new URLSearchParams(searchParams);
     next.delete("mode");
     setSearchParams(next, { preventScrollReset: true, replace: true });
-  }, [mode, searchParamMode, searchParams, setSearchParams]);
+  }, [mode, searchParamMode, initialMode]);
 
   const copy = useMemo(() => {
     if (mode === "login") {
@@ -317,7 +329,6 @@ export default function RegistrationRoute() {
               type="button"
               role="tab"
               aria-selected={mode === "register"}
-              tabIndex={mode === "register" ? 0 : -1}
               className={["auth-toggle-button", mode === "register" ? "is-active" : ""].join(" ").trim()}
               onClick={() => setMode("register")}
               onKeyDown={(event) => handleToggleKey(event, "register")}
@@ -328,7 +339,6 @@ export default function RegistrationRoute() {
               type="button"
               role="tab"
               aria-selected={mode === "login"}
-              tabIndex={mode === "login" ? 0 : -1}
               className={["auth-toggle-button", mode === "login" ? "is-active" : ""].join(" ").trim()}
               onClick={() => setMode("login")}
               onKeyDown={(event) => handleToggleKey(event, "login")}

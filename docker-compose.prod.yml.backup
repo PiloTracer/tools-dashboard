@@ -14,6 +14,7 @@ services:
       - back-api
       - back-auth
       - back-websockets
+      - feature-registry
 
   front-admin:
     build:
@@ -52,12 +53,15 @@ services:
     environment:
       - DATABASE_URL=postgresql://user:pass@postgresql:5432/main_db
       - REDIS_URL=redis://redis:6379/0
+      - CASSANDRA_CONTACT_POINTS=back-cassandra
+      - FEATURE_REGISTRY_URL=http://feature-registry:8005
       - AUTH_SERVICE_URL=http://back-auth:8001
     ports:
       - "8100:8000"
     depends_on:
       - postgresql
       - redis
+      - cassandra
 
   back-auth:
     build:
@@ -96,6 +100,35 @@ services:
       - redis
       - back-api
 
+  back-postgres-service:
+    build:
+      context: ./back-postgres
+      dockerfile: Dockerfile.prod
+    environment:
+      - DATABASE_URL=postgresql://user:pass@postgresql:5432/main_db
+    depends_on:
+      - postgresql
+
+  back-cassandra:
+    build:
+      context: ./back-cassandra
+      dockerfile: Dockerfile.prod
+    environment:
+      - CASSANDRA_CONTACT_POINTS=cassandra
+    depends_on:
+      - cassandra
+
+  feature-registry:
+    build:
+      context: ./feature-registry
+      dockerfile: Dockerfile.prod
+    environment:
+      - DATABASE_URL=postgresql://user:pass@postgresql:5432/main_db
+    ports:
+      - "8105:8005"
+    depends_on:
+      - postgresql
+
   redis:
     image: redis:7-alpine
     ports:
@@ -114,6 +147,16 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  cassandra:
+    image: cassandra:4
+    environment:
+      - CASSANDRA_CLUSTER_NAME=tools_cluster
+    ports:
+      - "39142:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+
 volumes:
   postgres_data:
   redis_data:
+  cassandra_data:
