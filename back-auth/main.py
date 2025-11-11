@@ -4,7 +4,7 @@ from fastapi import FastAPI
 
 from core.cassandra import init_cassandra, shutdown_cassandra
 from core.database import close_engine, init_engine
-from features.user_registration import router as user_registration_router
+from features.user-registration import router as user-registration-router
 
 app = FastAPI(title="Tools Dashboard Auth", version="0.1.0")
 
@@ -26,4 +26,4 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-app.include_router(user_registration_router)
+app.include_router(user-registration-router)
