@@ -8,6 +8,7 @@ type Props = {
   fieldErrors?: Partial<Record<"email" | "password", string>>;
   formError?: string;
   isSubmitting?: boolean;
+  disabled?: boolean;
 };
 
 export const RegistrationForm: FC<Props> = ({
@@ -17,6 +18,7 @@ export const RegistrationForm: FC<Props> = ({
   fieldErrors,
   formError,
   isSubmitting = false,
+  disabled = false,
 }) => (
   <Form method="post" className="space-y-6">
     {formError ? (
@@ -35,6 +37,7 @@ export const RegistrationForm: FC<Props> = ({
         autoComplete="email"
         defaultValue={defaultEmail}
         required
+        disabled={disabled}
         aria-invalid={Boolean(fieldErrors?.email) || undefined}
         aria-describedby={fieldErrors?.email ? "email-error" : undefined}
         className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
@@ -57,6 +60,7 @@ export const RegistrationForm: FC<Props> = ({
         autoComplete="new-password"
         minLength={passwordMinLength}
         required
+        disabled={disabled}
         aria-invalid={Boolean(fieldErrors?.password) || undefined}
         aria-describedby={fieldErrors?.password ? "password-error" : "password-hint"}
         className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
@@ -76,7 +80,7 @@ export const RegistrationForm: FC<Props> = ({
 
     <button
       type="submit"
-      disabled={isSubmitting}
+      disabled={isSubmitting || disabled}
       className="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-base font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-blue-300"
     >
       {isSubmitting ? "Creating your account..." : "Create account"}

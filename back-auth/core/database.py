@@ -21,6 +21,7 @@ from sqlalchemy import (
     insert,
     select,
     update,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
@@ -36,8 +37,8 @@ users = Table(
     Column("email", String(320), nullable=False, unique=True),
     Column("password_hash", String(255), nullable=True),
     Column("is_email_verified", Boolean, nullable=False, server_default="false"),
-    Column("created_at", DateTime(timezone=True), nullable=False, server_default="CURRENT_TIMESTAMP"),
-    Column("updated_at", DateTime(timezone=True), nullable=False, server_default="CURRENT_TIMESTAMP"),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
 )
 
 user_identities = Table(
@@ -50,7 +51,7 @@ user_identities = Table(
     Column("access_token", Text, nullable=True),
     Column("refresh_token", Text, nullable=True),
     Column("raw_profile", JSONB, nullable=True),
-    Column("created_at", DateTime(timezone=True), nullable=False, server_default="CURRENT_TIMESTAMP"),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
     UniqueConstraint("provider", "provider_account_id", name="uq_provider_account"),
 )
 
@@ -61,7 +62,7 @@ email_verification_tokens = Table(
     Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
     Column("token", String(255), nullable=False, unique=True),
     Column("expires_at", DateTime(timezone=True), nullable=False),
-    Column("created_at", DateTime(timezone=True), nullable=False, server_default="CURRENT_TIMESTAMP"),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
 )
 
 sessions = Table(
@@ -70,7 +71,7 @@ sessions = Table(
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
     Column("session_token", String(255), nullable=False, unique=True),
-    Column("created_at", DateTime(timezone=True), nullable=False, server_default="CURRENT_TIMESTAMP"),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
     Column("expires_at", DateTime(timezone=True), nullable=False),
 )
 

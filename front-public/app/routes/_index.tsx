@@ -1,8 +1,11 @@
-﻿import type { MetaFunction } from "@remix-run/node";
+import type { MetaFunction } from "@remix-run/node";
 import { Link } from "@remix-run/react";
 
+import { usePublicBasePath } from "../components/layout/PublicLayout";
+import { joinBasePath } from "../utils/publicPaths";
+
 export const meta: MetaFunction = () => [
-  { title: "Tools Dashboard · Public Portal" },
+  { title: "Tools Dashboard - Public Portal" },
   {
     name: "description",
     content: "Welcome to the public onboarding experience for the Tools Dashboard ecosystem.",
@@ -31,6 +34,14 @@ const FEATURE_CARDS = [
 ];
 
 export default function HomePage() {
+  const basePath = usePublicBasePath();
+  const registerHref = joinBasePath(basePath, "/features/user-registration");
+  const resumeHref = joinBasePath(basePath, "/features/progressive-profiling");
+  const featureCards = FEATURE_CARDS.map((card) => ({
+    ...card,
+    href: joinBasePath(basePath, card.to),
+  }));
+
   return (
     <>
       <section className="hero-section">
@@ -43,10 +54,10 @@ export default function HomePage() {
               responsive guidance. Every screen is tuned for accessibility and mobile responsiveness.
             </p>
             <div className="hero-actions">
-              <Link to="/features/user-registration" className="btn-solid">
+              <Link to={registerHref} className="btn-solid">
                 Create an account
               </Link>
-              <Link to="/features/progressive-profiling" className="btn-ghost">
+              <Link to={resumeHref} className="btn-ghost">
                 Resume profile
               </Link>
             </div>
@@ -65,13 +76,13 @@ export default function HomePage() {
       </section>
 
       <section className="feature-grid">
-        {FEATURE_CARDS.map((card) => (
+        {featureCards.map((card) => (
           <article key={card.title} className="feature-tile">
             <h3>{card.title}</h3>
             <p>{card.description}</p>
-            <Link to={card.to} className="feature-link">
+            <Link to={card.href} className="feature-link">
               {card.cta}
-              <span>→</span>
+              <span aria-hidden="true">-&gt;</span>
             </Link>
           </article>
         ))}
@@ -79,3 +90,4 @@ export default function HomePage() {
     </>
   );
 }
+

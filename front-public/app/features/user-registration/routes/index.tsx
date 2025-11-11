@@ -3,8 +3,8 @@ import { json, redirect } from "@remix-run/node";
 import { useActionData, useLoaderData, useNavigation } from "@remix-run/react";
 import { z } from "zod";
 import { RegistrationForm } from "../ui/RegistrationForm";
-import { PublicLayout } from "../../../components/layout/PublicLayout";
 import { getBackAuthEnv } from "../../../utils/env.server";
+import { resolvePublicPath, resolveRedirectTarget } from "../../../utils/publicPath.server";
 
 const DEFAULT_PASSWORD_MIN_LENGTH = 12;
 
@@ -63,7 +63,20 @@ type LoaderData = {
   googleAuthUrl: string | null;
   googleButtonText: string;
   passwordMinLength: number;
+  serviceAvailable: boolean;
+  serviceMessage?: string;
 };
+
+function buildFallbackData(message: string): LoaderData {
+  return {
+    csrfToken: "",
+    googleAuthUrl: null,
+    googleButtonText: "Continue with Google",
+    passwordMinLength: DEFAULT_PASSWORD_MIN_LENGTH,
+    serviceAvailable: false,
+    serviceMessage: message,
+  };
+}
 
 type ActionData = {
   status: "validation-error" | "server-error";
@@ -89,12 +102,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
   } catch (error) {
     console.error("Failed to request registration config", error);
-    throw new Response("Authentication service unavailable", { status: 502 });
+    return json<LoaderData>(buildFallbackData("Authentication service is currently unavailable. Please try again later."));
   }
 
   if (!configResponse.ok) {
     console.error("Registration config request failed", configResponse.status, await safeReadJson(configResponse));
-    throw new Response("Failed to load registration configuration", { status: 502 });
+    return json<LoaderData>(buildFallbackData("We could not load registration settings. Please try again shortly."));
   }
 
   const rawConfig = await safeReadJson(configResponse);
@@ -102,7 +115,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   if (!parsedConfig.success) {
     console.error("Registration config validation error", parsedConfig.error);
-    throw new Response("Malformed registration configuration", { status: 502 });
+    return json<LoaderData>(buildFallbackData("Registration settings are unavailable. Please try again later."));
   }
 
   const passwordMinLength =
@@ -115,6 +128,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     googleAuthUrl: parsedConfig.data.providers?.google?.authorizeUrl ?? null,
     googleButtonText: parsedConfig.data.providers?.google?.buttonText ?? "Continue with Google",
     passwordMinLength,
+    serviceAvailable: true,
   });
 }
 
@@ -209,10 +223,11 @@ export async function action({ request }: ActionFunctionArgs) {
       );
     }
 
+    const fallbackRedirect = resolvePublicPath("/features/user-registration/verify?source=email");
     const targetRedirect =
-      parsedResponse.data.redirectTo ??
-      parsedResponse.data.next?.redirectTo ??
-      "/features/user-registration/verify?source=email";
+      resolveRedirectTarget(parsedResponse.data.redirectTo) ??
+      resolveRedirectTarget(parsedResponse.data.next?.redirectTo) ??
+      fallbackRedirect;
 
     const successRedirect = redirect(targetRedirect);
     const setCookie = apiResponse.headers.get("set-cookie");
@@ -256,7 +271,8 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function RegistrationRoute() {
-  const { csrfToken, googleAuthUrl, googleButtonText, passwordMinLength } = useLoaderData<typeof loader>();
+  const { csrfToken, googleAuthUrl, googleButtonText, passwordMinLength, serviceAvailable, serviceMessage } =
+    useLoaderData<typeof loader>();
   const actionData = useActionData<ActionData>();
   const navigation = useNavigation();
 
@@ -266,61 +282,69 @@ export default function RegistrationRoute() {
   const defaultEmail = actionData?.values?.email;
 
   return (
-    <PublicLayout>
-      <section className="grid gap-12 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
-        <div className="space-y-8">
-          <header className="space-y-3">
-            <span className="text-sm font-semibold uppercase tracking-wide text-blue-600">Create your account</span>
-            <h1 className="text-3xl font-semibold text-slate-900">Trusted access to Tools Dashboard</h1>
-            <p className="text-base text-slate-600">
-              Choose Google single sign-on or email plus password. We will guide you through verification to keep your
-              workspace secured.
-            </p>
-          </header>
+    <section className="grid gap-12 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
+      <div className="space-y-8">
+        <header className="space-y-3">
+          <span className="text-sm font-semibold uppercase tracking-wide text-blue-600">Create your account</span>
+          <h1 className="text-3xl font-semibold text-slate-900">Trusted access to Tools Dashboard</h1>
+          <p className="text-base text-slate-600">
+            Choose Google single sign-on or email plus password. We will guide you through verification to keep your
+            workspace secured.
+          </p>
+        </header>
 
-          {googleAuthUrl ? (
-            <a
-              href={googleAuthUrl}
-              className="inline-flex w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm transition hover:border-blue-500 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
-            >
-              <GoogleIcon />
-              {googleButtonText}
-            </a>
-          ) : (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-              Google sign-in is currently unavailable. Please continue with email.
-            </div>
-          )}
-
-          <div className="flex items-center gap-4">
-            <span className="h-px flex-1 bg-slate-200" />
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">or email</span>
-            <span className="h-px flex-1 bg-slate-200" />
+        {serviceAvailable ? null : (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            {serviceMessage ??
+              "Registration is temporarily unavailable while we restore connectivity. Please check back in a moment."}
           </div>
+        )}
 
-          <RegistrationForm
-            csrfToken={csrfToken}
-            passwordMinLength={passwordMinLength}
-            defaultEmail={defaultEmail}
-            fieldErrors={fieldErrors}
-            formError={formError}
-            isSubmitting={isSubmitting}
-          />
+        {serviceAvailable && googleAuthUrl ? (
+          <a
+            href={googleAuthUrl}
+            className="inline-flex w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm transition hover:border-blue-500 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          >
+            <GoogleIcon />
+            {googleButtonText}
+          </a>
+        ) : (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            {serviceAvailable
+              ? "Google sign-in is currently unavailable. Please continue with email."
+              : "Google sign-in is unavailable until the authentication service reconnects."}
+          </div>
+        )}
+
+        <div className="flex items-center gap-4">
+          <span className="h-px flex-1 bg-slate-200" />
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">or email</span>
+          <span className="h-px flex-1 bg-slate-200" />
         </div>
 
-        <aside className="space-y-4 rounded-2xl border border-slate-200 bg-white/80 p-8 text-sm text-slate-600 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">What happens next?</h2>
-          <ul className="list-disc space-y-3 pl-5">
-            <li>We send a verification email to confirm your address.</li>
-            <li>Finish progressive profiling to tailor your workspace access.</li>
-            <li>Use secure session cookies for seamless, device-aware sign-ins.</li>
-          </ul>
-          <p className="text-slate-500">
-            Need help? Email <a href="mailto:support@tools-dashboard.io" className="underline">support@tools-dashboard.io</a>.
-          </p>
-        </aside>
-      </section>
-    </PublicLayout>
+        <RegistrationForm
+          csrfToken={csrfToken}
+          passwordMinLength={passwordMinLength}
+          defaultEmail={defaultEmail}
+          fieldErrors={fieldErrors}
+          formError={formError}
+          isSubmitting={isSubmitting}
+          disabled={!serviceAvailable}
+        />
+      </div>
+
+      <aside className="space-y-4 rounded-2xl border border-slate-200 bg-white/80 p-8 text-sm text-slate-600 shadow-sm">
+        <h2 className="text-lg font-semibold text-slate-900">What happens next?</h2>
+        <ul className="list-disc space-y-3 pl-5">
+          <li>We send a verification email to confirm your address.</li>
+          <li>Finish progressive profiling to tailor your workspace access.</li>
+          <li>Use secure session cookies for seamless, device-aware sign-ins.</li>
+        </ul>
+        <p className="text-slate-500">
+          Need help? Email <a href="mailto:support@tools-dashboard.io" className="underline">support@tools-dashboard.io</a>.
+        </p>
+      </aside>
+    </section>
   );
 }
 

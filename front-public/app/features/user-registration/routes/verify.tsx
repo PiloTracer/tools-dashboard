@@ -2,9 +2,10 @@ import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
 import { z } from "zod";
-import { PublicLayout } from "../../../components/layout/PublicLayout";
+import { usePublicHref } from "../../../components/layout/PublicLayout";
 import { VerificationBanner } from "../ui/VerificationBanner";
 import { getBackAuthEnv } from "../../../utils/env.server";
+import { resolveRedirectTarget } from "../../../utils/publicPath.server";
 
 const verificationQuerySchema = z
   .object({
@@ -124,8 +125,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
       email = parsed.data.email ?? email;
 
-      if (parsed.data.redirectTo) {
-        const redirectResponse = redirect(parsed.data.redirectTo);
+      const resolvedRedirect = resolveRedirectTarget(parsed.data.redirectTo);
+      if (resolvedRedirect) {
+        const redirectResponse = redirect(resolvedRedirect);
         if (setCookieHeader) {
           redirectResponse.headers.append("Set-Cookie", setCookieHeader);
         }
@@ -209,8 +211,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
       email = parsed.data.email ?? email;
 
-      if (parsed.data.redirectTo) {
-        const redirectResponse = redirect(parsed.data.redirectTo);
+      const resolvedRedirect = resolveRedirectTarget(parsed.data.redirectTo);
+      if (resolvedRedirect) {
+        const redirectResponse = redirect(resolvedRedirect);
         if (setCookieHeader) {
           redirectResponse.headers.append("Set-Cookie", setCookieHeader);
         }
@@ -277,8 +280,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
     if (parsed.success) {
       email = parsed.data.email ?? email;
 
-      if (parsed.data.redirectTo && parsed.data.status === "verified") {
-        const redirectResponse = redirect(parsed.data.redirectTo);
+      const resolvedRedirect = resolveRedirectTarget(parsed.data.redirectTo);
+      if (resolvedRedirect && parsed.data.status === "verified") {
+        const redirectResponse = redirect(resolvedRedirect);
         if (setCookieHeader) {
           redirectResponse.headers.append("Set-Cookie", setCookieHeader);
         }
@@ -324,53 +328,52 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export default function VerifyRoute() {
   const data = useLoaderData<typeof loader>();
+  const continueHref = usePublicHref("/features/progressive-profiling");
 
   return (
-    <PublicLayout>
-      <section className="mx-auto flex max-w-2xl flex-col gap-6">
-        <header className="space-y-3 text-center">
-          <h1 className="text-3xl font-semibold text-slate-900">Verify your account</h1>
-          <p className="text-base text-slate-600">
-            {data.email ? (
-              <>
-                We sent a secure link to <strong className="font-semibold text-slate-900">{data.email}</strong>. Complete
-                the steps in that message to activate your access.
-              </>
-            ) : (
-              "We sent you a secure link. Complete the steps in that message to activate your access."
-            )}
-          </p>
-        </header>
+    <section className="mx-auto flex max-w-2xl flex-col gap-6">
+      <header className="space-y-3 text-center">
+        <h1 className="text-3xl font-semibold text-slate-900">Verify your account</h1>
+        <p className="text-base text-slate-600">
+          {data.email ? (
+            <>
+              We sent a secure link to <strong className="font-semibold text-slate-900">{data.email}</strong>. Complete
+              the steps in that message to activate your access.
+            </>
+          ) : (
+            "We sent you a secure link. Complete the steps in that message to activate your access."
+          )}
+        </p>
+      </header>
 
-        <VerificationBanner status={data.status} message={data.message} supportUrl={data.supportUrl} />
+      <VerificationBanner status={data.status} message={data.message} supportUrl={data.supportUrl} />
 
-        <div className="rounded-2xl border border-slate-200 bg-white/80 p-8 text-left text-sm text-slate-600 shadow-sm">
-          <h2 className="mb-3 text-lg font-semibold text-slate-900">Need a hand?</h2>
-          <ul className="list-disc space-y-2 pl-5">
-            <li>Check your spam folder if the message does not arrive within a minute.</li>
-            <li>Verification links expire after 15 minutes for your security.</li>
-            <li>
-              Still waiting?{" "}
-              <a href={SUPPORT_MAILTO} className="font-semibold text-blue-600 underline">
-                Contact support
-              </a>{" "}
-              for a fresh link.
-            </li>
-          </ul>
+      <div className="rounded-2xl border border-slate-200 bg-white/80 p-8 text-left text-sm text-slate-600 shadow-sm">
+        <h2 className="mb-3 text-lg font-semibold text-slate-900">Need a hand?</h2>
+        <ul className="list-disc space-y-2 pl-5">
+          <li>Check your spam folder if the message does not arrive within a minute.</li>
+          <li>Verification links expire after 15 minutes for your security.</li>
+          <li>
+            Still waiting?{" "}
+            <a href={SUPPORT_MAILTO} className="font-semibold text-blue-600 underline">
+              Contact support
+            </a>{" "}
+            for a fresh link.
+          </li>
+        </ul>
+      </div>
+
+      {data.status === "verified" ? (
+        <div className="flex justify-center">
+          <Link
+            to={continueHref}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-base font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          >
+            Continue onboarding
+          </Link>
         </div>
-
-        {data.status === "verified" ? (
-          <div className="flex justify-center">
-            <Link
-              to="/features/progressive-profiling"
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-base font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
-            >
-              Continue onboarding
-            </Link>
-          </div>
-        ) : null}
-      </section>
-    </PublicLayout>
+      ) : null}
+    </section>
   );
 }
 
