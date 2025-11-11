@@ -7,4 +7,5 @@ routes:
     file: routes/verify.tsx
 ui:
   - ui/RegistrationForm.tsx
+  - ui/LoginForm.tsx
   - ui/VerificationBanner.tsx

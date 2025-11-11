@@ -21,6 +21,7 @@ from sqlalchemy import (
     Table,
     Text,
     UniqueConstraint,
+    delete,
     insert,
     select,
     update,
@@ -133,6 +134,10 @@ async def create_session(session: AsyncSession, user_id: int, token: str, expire
     await session.execute(
         insert(sessions).values(user_id=user_id, session_token=token, expires_at=expires_at)
     )
+
+
+async def delete_session(session: AsyncSession, token: str) -> None:
+    await session.execute(delete(sessions).where(sessions.c.session_token == token))
 
 
 async def find_user_by_session(session: AsyncSession, token: str):

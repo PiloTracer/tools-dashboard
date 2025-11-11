@@ -1,0 +1,7 @@
+name: user-logout
+version: 1.0.0
+routes:
+  - path: /features/user-logout
+    file: routes/index.tsx
+ui:
+  - ui/LogoutMessage.tsx

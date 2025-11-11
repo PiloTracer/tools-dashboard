@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     mail_sender: str | None = None
     mail_use_tls: bool = True
 
-    public_app_base_url: str = "http://localhost:8082/app"
+    public_app_base_url: str = "http://epicdev.com/app"
     verification_path: str = "/features/user-registration/verify"
 
     # Google OAuth

@@ -33,7 +33,7 @@ function inferBasePathFromRequest(request?: Request | string | URL): string | nu
     } else if (request instanceof URL) {
       url = request;
     } else {
-      url = new URL(request, "http://localhost");
+      url = new URL(request, "http://epicdev.com");
     }
   } catch {
     return null;

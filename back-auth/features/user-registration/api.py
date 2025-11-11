@@ -15,10 +15,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.cassandra import record_event
 from core.config import get_settings
-from core.database import find_user_by_session, get_session
+from core.database import delete_session, find_user_by_session, get_session
 from repositories import user_repository
 from schemas import (
     GoogleCallbackRequest,
+    LoginRequest,
+    LoginResponse,
+    LogoutResponse,
     RegistrationRequest,
     RegistrationResponse,
     StatusResponse,
@@ -187,6 +190,78 @@ async def register_user(
     )
 
 
+@router.post("/login", summary="Sign in an existing user via email/password", response_model=LoginResponse)
+async def login_user(
+    request: Request,
+    payload: LoginRequest,
+    csrf_header: Optional[str] = Header(default=None, alias="X-CSRF-Token"),
+    session: AsyncSession = Depends(get_session),
+):
+    settings = get_settings()
+    _validate_csrf(request, csrf_header)
+
+    async with session.begin():
+        user_record = await user_repository.get_user_by_email(session, payload.email)
+
+        if not user_record or not user_record.get("password_hash"):
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={
+                    "status": "error",
+                    "message": "Invalid email or password.",
+                    "fieldErrors": {
+                        "email": "We could not find an account with that email.",
+                        "password": "Double-check your password and try again.",
+                    },
+                },
+            )
+
+        password_valid = await user_repository.verify_password(user_record["password_hash"], payload.password)
+        if not password_valid:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={
+                    "status": "error",
+                    "message": "Invalid email or password.",
+                    "fieldErrors": {"password": "The password you entered does not match our records."},
+                },
+            )
+
+        if not user_record["is_email_verified"]:
+            token = generate_token(24)
+            expires_at = datetime.now(timezone.utc) + timedelta(minutes=settings.registration_token_ttl_minutes)
+            await user_repository.create_verification_token(session, user_record["id"], token, expires_at)
+            verification_url = settings.build_verification_url(token)
+            try:
+                await email_service.send_verification_email(payload.email, verification_url)
+            except RuntimeError as exc:
+                logger.exception("Failed to send verification email during login for %s", payload.email)
+
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={
+                    "status": "pending_verification",
+                    "message": "Please verify your email before signing in. We just sent you a new link.",
+                    "next": {"redirectTo": "/features/user-registration/verify?source=email"},
+                },
+            )
+
+        session_token, _ = await create_user_session(session, user_record["id"])
+
+    record_event(user_record["id"], "email_login", {"email": user_record["email"]})
+
+    response = JSONResponse(
+        content={
+            "status": "authenticated",
+            "redirectTo": "/features/progressive-profiling",
+            "email": user_record["email"],
+            "message": "Signed in successfully.",
+        }
+    )
+    _set_session_cookie(response, session_token, max_age=settings.session_cookie_max_age)
+    return response
+
+
 @router.post("/verify-email", summary="Verify email token")
 async def verify_email(
     payload: VerificationRequest,
@@ -313,6 +388,41 @@ async def google_callback(
         path="/",
         domain=settings.registration_csrf_cookie_domain,
     )
+    return response
+
+
+@router.post("/logout", summary="Log out the current session", response_model=LogoutResponse)
+async def logout_user(request: Request, session: AsyncSession = Depends(get_session)):
+    settings = get_settings()
+    session_token = request.cookies.get(settings.session_cookie_name)
+
+    response = JSONResponse(
+        content={
+            "status": "logged_out",
+            "message": "You have been signed out.",
+            "redirectTo": "/",
+        }
+    )
+
+    response.delete_cookie(
+        key=settings.session_cookie_name,
+        path="/",
+        domain=settings.session_cookie_domain,
+        secure=settings.session_cookie_secure,
+        httponly=True,
+        samesite=settings.session_cookie_samesite,
+    )
+
+    if not session_token:
+        return response
+
+    async with session.begin():
+        user_row = await find_user_by_session(session, session_token)
+        await delete_session(session, session_token)
+
+    if user_row:
+        record_event(user_row["id"], "session_terminated", {"reason": "logout"})
+
     return response
 
 

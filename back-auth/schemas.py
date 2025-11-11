@@ -19,6 +19,24 @@ class RegistrationResponse(BaseModel):
     next: Optional[dict] = None
 
 
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=72)
+
+
+class LoginResponse(BaseModel):
+    status: str
+    email: Optional[str] = None
+    redirectTo: Optional[str] = None
+    message: Optional[str] = None
+
+
+class LogoutResponse(BaseModel):
+    status: str
+    message: Optional[str] = None
+    redirectTo: Optional[str] = None
+
+
 class VerificationRequest(BaseModel):
     token: str
 

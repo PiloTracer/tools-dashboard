@@ -1,7 +1,10 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
-import { useActionData, useLoaderData, useNavigation } from "@remix-run/react";
+import { useActionData, useLoaderData, useNavigation, useSearchParams } from "@remix-run/react";
+import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { z } from "zod";
+
+import { LoginForm } from "../ui/LoginForm";
 import { RegistrationForm } from "../ui/RegistrationForm";
 import { getBackAuthEnv } from "../../../utils/env.server";
 import { resolvePublicPath, resolveRedirectTarget } from "../../../utils/publicPath.server";
@@ -58,6 +61,39 @@ const apiRegistrationErrorSchema = z
   })
   .passthrough();
 
+const apiLoginResponseSchema = z
+  .object({
+    status: z.enum(["authenticated", "pending_verification"]),
+    redirectTo: z.string().optional(),
+    email: z.string().email().optional(),
+    message: z.string().optional(),
+    next: z
+      .object({
+        redirectTo: z.string().optional(),
+      })
+      .optional(),
+  })
+  .passthrough();
+
+const apiLoginErrorSchema = z
+  .object({
+    status: z.string().optional(),
+    message: z.string().optional(),
+    fieldErrors: z
+      .object({
+        email: z.string().optional(),
+        password: z.string().optional(),
+      })
+      .partial()
+      .optional(),
+    next: z
+      .object({
+        redirectTo: z.string().optional(),
+      })
+      .optional(),
+  })
+  .passthrough();
+
 type LoaderData = {
   csrfToken: string;
   googleAuthUrl: string | null;
@@ -65,20 +101,15 @@ type LoaderData = {
   passwordMinLength: number;
   serviceAvailable: boolean;
   serviceMessage?: string;
+  initialMode: AuthMode;
 };
 
-function buildFallbackData(message: string): LoaderData {
-  return {
-    csrfToken: "",
-    googleAuthUrl: null,
-    googleButtonText: "Continue with Google",
-    passwordMinLength: DEFAULT_PASSWORD_MIN_LENGTH,
-    serviceAvailable: false,
-    serviceMessage: message,
-  };
-}
-
 type ActionData = {
+  register?: FormState;
+  login?: FormState;
+};
+
+type FormState = {
   status: "validation-error" | "server-error";
   fieldErrors?: Partial<Record<"email" | "password", string>>;
   formError?: string;
@@ -87,8 +118,11 @@ type ActionData = {
   };
 };
 
+type AuthMode = "register" | "login";
+
 export async function loader({ request }: LoaderFunctionArgs) {
-  void request;
+  const url = new URL(request.url);
+  const initialMode = parseModeParam(url.searchParams.get("mode"));
   const { backAuthBaseUrl } = getBackAuthEnv();
   const configUrl = new URL("/user-registration/config", backAuthBaseUrl);
 
@@ -102,12 +136,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
   } catch (error) {
     console.error("Failed to request registration config", error);
-    return json<LoaderData>(buildFallbackData("Authentication service is currently unavailable. Please try again later."));
+    const fallback = buildFallbackData("Authentication service is currently unavailable. Please try again later.");
+    fallback.initialMode = initialMode;
+    return json<LoaderData>(fallback);
   }
 
   if (!configResponse.ok) {
     console.error("Registration config request failed", configResponse.status, await safeReadJson(configResponse));
-    return json<LoaderData>(buildFallbackData("We could not load registration settings. Please try again shortly."));
+    const fallback = buildFallbackData("We could not load registration settings. Please try again shortly.");
+    fallback.initialMode = initialMode;
+    return json<LoaderData>(fallback);
   }
 
   const rawConfig = await safeReadJson(configResponse);
@@ -115,7 +153,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   if (!parsedConfig.success) {
     console.error("Registration config validation error", parsedConfig.error);
-    return json<LoaderData>(buildFallbackData("Registration settings are unavailable. Please try again later."));
+    const fallback = buildFallbackData("Registration settings are unavailable. Please try again later.");
+    fallback.initialMode = initialMode;
+    return json<LoaderData>(fallback);
   }
 
   const passwordMinLength =
@@ -129,6 +169,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     googleButtonText: parsedConfig.data.providers?.google?.buttonText ?? "Continue with Google",
     passwordMinLength,
     serviceAvailable: true,
+    initialMode,
   };
 
   const rawHeaders = (configResponse.headers as unknown as { raw?: () => Record<string, string[]> }).raw?.();
@@ -150,7 +191,269 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
+  const intent = parseIntent(formData.get("intent"));
 
+  if (intent === "login") {
+    return handleLoginSubmission(request, formData);
+  }
+
+  return handleRegistrationSubmission(request, formData);
+}
+
+export default function RegistrationRoute() {
+  const {
+    csrfToken,
+    googleAuthUrl,
+    googleButtonText,
+    passwordMinLength,
+    serviceAvailable,
+    serviceMessage,
+    initialMode,
+  } = useLoaderData<typeof loader>();
+  const actionData = useActionData<ActionData>();
+  const navigation = useNavigation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchParamMode = searchParams.get("mode");
+  const [mode, setMode] = useState<AuthMode>(initialMode);
+
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
+
+  useEffect(() => {
+    if (actionData?.login) {
+      setMode("login");
+    } else if (actionData?.register) {
+      setMode("register");
+    }
+  }, [actionData]);
+
+  useEffect(() => {
+    if (mode === "login") {
+      if (searchParamMode === "login") {
+        return;
+      }
+      const next = new URLSearchParams(searchParams);
+      next.set("mode", "login");
+      setSearchParams(next, { preventScrollReset: true, replace: true });
+      return;
+    }
+
+    if (!searchParamMode) {
+      return;
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete("mode");
+    setSearchParams(next, { preventScrollReset: true, replace: true });
+  }, [mode, searchParamMode, searchParams, setSearchParams]);
+
+  const copy = useMemo(() => {
+    if (mode === "login") {
+      return {
+        kicker: "Sign in",
+        title: "Welcome back to Tools Dashboard",
+        description: "Pick Google or your email and password to resume your secure workspace.",
+        googleLabel: "Sign in with Google",
+        emailDivider: "or sign in with email",
+        hint: "Need an account?",
+        hintCta: "Create one",
+        hintMode: "register" as AuthMode,
+      };
+    }
+
+    return {
+      kicker: "Create account",
+      title: "Trusted access to Tools Dashboard",
+      description: "Use Google or email plus password. We will guide you through verification immediately after.",
+      googleLabel: googleButtonText,
+      emailDivider: "or continue with email",
+      hint: "Already registered?",
+      hintCta: "Sign in",
+      hintMode: "login" as AuthMode,
+    };
+  }, [mode, googleButtonText]);
+
+  const registerState = actionData?.register;
+  const loginState = actionData?.login;
+
+  const activeIntent = navigation.state === "submitting" ? navigation.formData?.get("intent") : null;
+  const isRegisterSubmitting = navigation.state === "submitting" && activeIntent === "register";
+  const isLoginSubmitting = navigation.state === "submitting" && activeIntent === "login";
+
+  const serviceAlert =
+    serviceAvailable || !serviceMessage
+      ? null
+      : serviceMessage ??
+        "Authentication services are temporarily offline while we restore connectivity. Please try again shortly.";
+
+  const handleToggleKey = (event: KeyboardEvent<HTMLButtonElement>, targetMode: AuthMode) => {
+    if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      setMode("register");
+      event.preventDefault();
+      return;
+    }
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      setMode("login");
+      event.preventDefault();
+      return;
+    }
+    if (event.key === "Enter" || event.key === " ") {
+      setMode(targetMode);
+    }
+  };
+
+  return (
+    <section className="auth-section">
+      <div className="auth-grid">
+        <div className="auth-card" data-mode={mode}>
+          <header className="auth-header">
+            <span className="auth-kicker">{copy.kicker}</span>
+            <h1 className="auth-title">{copy.title}</h1>
+            <p className="auth-subtitle">{copy.description}</p>
+          </header>
+
+          <div role="tablist" aria-label="Select authentication flow" className="auth-toggle">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "register"}
+              tabIndex={mode === "register" ? 0 : -1}
+              className={["auth-toggle-button", mode === "register" ? "is-active" : ""].join(" ").trim()}
+              onClick={() => setMode("register")}
+              onKeyDown={(event) => handleToggleKey(event, "register")}
+            >
+              Create account
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "login"}
+              tabIndex={mode === "login" ? 0 : -1}
+              className={["auth-toggle-button", mode === "login" ? "is-active" : ""].join(" ").trim()}
+              onClick={() => setMode("login")}
+              onKeyDown={(event) => handleToggleKey(event, "login")}
+            >
+              Sign in
+            </button>
+          </div>
+
+          {serviceAlert ? (
+            <div className="auth-alert" role="status">
+              {serviceAlert}
+            </div>
+          ) : null}
+
+          {serviceAvailable && googleAuthUrl ? (
+            <a
+              href={googleAuthUrl}
+              className="auth-google"
+              rel="nofollow"
+              aria-label={copy.googleLabel}
+              data-variant={mode}
+            >
+              <GoogleIcon />
+              <span>{copy.googleLabel}</span>
+            </a>
+          ) : (
+            <div className="auth-alert subtle" role="status">
+              {serviceAvailable
+                ? "Google sign-in is temporarily unavailable. Please continue with email."
+                : "Google sign-in is unavailable until authentication services reconnect."}
+            </div>
+          )}
+
+          <div className="auth-divider">
+            <span>{copy.emailDivider}</span>
+          </div>
+
+          {mode === "login" ? (
+            <LoginForm
+              csrfToken={csrfToken}
+              defaultEmail={loginState?.values?.email ?? registerState?.values?.email}
+              fieldErrors={loginState?.fieldErrors}
+              formError={loginState?.formError}
+              isSubmitting={isLoginSubmitting}
+              disabled={!serviceAvailable}
+            />
+          ) : (
+            <RegistrationForm
+              csrfToken={csrfToken}
+              passwordMinLength={passwordMinLength}
+              defaultEmail={registerState?.values?.email ?? loginState?.values?.email}
+              fieldErrors={registerState?.fieldErrors}
+              formError={registerState?.formError}
+              isSubmitting={isRegisterSubmitting}
+              disabled={!serviceAvailable}
+            />
+          )}
+
+          <p className="auth-hint">
+            {copy.hint}{" "}
+            <button type="button" className="auth-hint-button" onClick={() => setMode(copy.hintMode)}>
+              {copy.hintCta}
+            </button>
+          </p>
+        </div>
+
+        <aside className="auth-aside">
+          <h2>What to expect next</h2>
+          <ul>
+            <li>
+              Check your inbox for a verification email. We only activate accounts once the address is confirmed.
+            </li>
+            <li>
+              Jump straight into progressive profiling so we can tailor product access to your role and goals.
+            </li>
+            <li>Session cookies keep you signed in securely across devices with automatic rotation.</li>
+          </ul>
+          <div className="auth-support">
+            <strong>Need help?</strong>
+            <p>
+              Email{" "}
+              <a href="mailto:support@tools-dashboard.io" className="auth-support-link">
+                support@tools-dashboard.io
+              </a>{" "}
+              and a specialist will get you unstuck.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </section>
+  );
+}
+
+function buildFallbackData(message: string): LoaderData {
+  return {
+    csrfToken: "",
+    googleAuthUrl: null,
+    googleButtonText: "Continue with Google",
+    passwordMinLength: DEFAULT_PASSWORD_MIN_LENGTH,
+    serviceAvailable: false,
+    serviceMessage: message,
+    initialMode: "register",
+  };
+}
+
+function parseModeParam(value: string | null): AuthMode {
+  if (!value) {
+    return "register";
+  }
+  const normalized = value.toLowerCase();
+  if (["login", "signin", "sign-in", "sign_in"].includes(normalized)) {
+    return "login";
+  }
+  return "register";
+}
+
+function parseIntent(value: FormDataEntryValue | null): AuthMode {
+  if (typeof value !== "string") {
+    return "register";
+  }
+  const normalized = value.toLowerCase();
+  return normalized === "login" ? "login" : "register";
+}
+
+async function handleRegistrationSubmission(request: Request, formData: FormData): Promise<Response> {
   const rawPasswordMinLength = formData.get("passwordPolicyMinLength");
   const parsedPasswordMinLength =
     typeof rawPasswordMinLength === "string" && !Number.isNaN(Number.parseInt(rawPasswordMinLength, 10))
@@ -160,7 +463,6 @@ export async function action({ request }: ActionFunctionArgs) {
     parsedPasswordMinLength && parsedPasswordMinLength >= 8 ? parsedPasswordMinLength : DEFAULT_PASSWORD_MIN_LENGTH;
 
   const formSchema = buildEmailFormSchema(effectivePasswordMinLength);
-
   const submission = {
     email: formData.get("email"),
     password: formData.get("password"),
@@ -173,14 +475,16 @@ export async function action({ request }: ActionFunctionArgs) {
     const flattened = parsedSubmission.error.flatten();
     return json<ActionData>(
       {
-        status: "validation-error",
-        fieldErrors: {
-          email: flattened.fieldErrors.email?.[0],
-          password: flattened.fieldErrors.password?.[0],
-        },
-        formError: flattened.formErrors[0] ?? flattened.fieldErrors.csrfToken?.[0],
-        values: {
-          email: typeof submission.email === "string" ? submission.email : undefined,
+        register: {
+          status: "validation-error",
+          fieldErrors: {
+            email: flattened.fieldErrors.email?.[0],
+            password: flattened.fieldErrors.password?.[0],
+          },
+          formError: flattened.formErrors[0] ?? flattened.fieldErrors.csrfToken?.[0],
+          values: {
+            email: typeof submission.email === "string" ? submission.email : undefined,
+          },
         },
       },
       { status: 400 },
@@ -198,6 +502,7 @@ export async function action({ request }: ActionFunctionArgs) {
   };
 
   const cookieHeader = request.headers.get("cookie");
+
   if (cookieHeader) {
     headers.Cookie = cookieHeader;
   }
@@ -207,18 +512,17 @@ export async function action({ request }: ActionFunctionArgs) {
     apiResponse = await fetch(registerUrl, {
       method: "POST",
       headers,
-      body: JSON.stringify({
-        email,
-        password,
-      }),
+      body: JSON.stringify({ email, password }),
     });
   } catch (error) {
     console.error("Registration request failed", error);
     return json<ActionData>(
       {
-        status: "server-error",
-        formError: "We could not reach the authentication service. Please try again.",
-        values: { email },
+        register: {
+          status: "server-error",
+          formError: "We could not reach the authentication service. Please try again.",
+          values: { email },
+        },
       },
       { status: 502 },
     );
@@ -231,9 +535,11 @@ export async function action({ request }: ActionFunctionArgs) {
       console.error("Unexpected registration response payload", parsedResponse.error);
       return json<ActionData>(
         {
-          status: "server-error",
-          formError: "We received an unexpected response from the authentication service.",
-          values: { email },
+          register: {
+            status: "server-error",
+            formError: "We received an unexpected response from the authentication service.",
+            values: { email },
+          },
         },
         { status: 502 },
       );
@@ -259,16 +565,18 @@ export async function action({ request }: ActionFunctionArgs) {
   if (parsedError.success) {
     return json<ActionData>(
       {
-        status: apiResponse.status === 400 ? "validation-error" : "server-error",
-        fieldErrors: {
-          email: parsedError.data.fieldErrors?.email,
-          password: parsedError.data.fieldErrors?.password,
+        register: {
+          status: apiResponse.status === 400 ? "validation-error" : "server-error",
+          fieldErrors: {
+            email: parsedError.data.fieldErrors?.email,
+            password: parsedError.data.fieldErrors?.password,
+          },
+          formError:
+            apiResponse.status === 400
+              ? parsedError.data.message
+              : parsedError.data.message ?? "We could not complete your registration.",
+          values: { email },
         },
-        formError:
-          apiResponse.status === 400
-            ? parsedError.data.message
-            : parsedError.data.message ?? "We could not complete your registration.",
-        values: { email },
       },
       { status },
     );
@@ -278,89 +586,148 @@ export async function action({ request }: ActionFunctionArgs) {
 
   return json<ActionData>(
     {
-      status: "server-error",
-      formError: "We could not complete your registration. Please try again shortly.",
-      values: { email },
+      register: {
+        status: "server-error",
+        formError: "We could not complete your registration. Please try again shortly.",
+        values: { email },
+      },
     },
     { status },
   );
 }
 
-export default function RegistrationRoute() {
-  const { csrfToken, googleAuthUrl, googleButtonText, passwordMinLength, serviceAvailable, serviceMessage } =
-    useLoaderData<typeof loader>();
-  const actionData = useActionData<ActionData>();
-  const navigation = useNavigation();
+async function handleLoginSubmission(request: Request, formData: FormData): Promise<Response> {
+  const formSchema = buildLoginFormSchema();
+  const submission = {
+    email: formData.get("email"),
+    password: formData.get("password"),
+    csrfToken: formData.get("csrfToken"),
+  };
 
-  const isSubmitting = navigation.state === "submitting";
-  const fieldErrors = actionData?.fieldErrors ?? {};
-  const formError = actionData?.formError;
-  const defaultEmail = actionData?.values?.email;
+  const parsedSubmission = formSchema.safeParse(submission);
 
-  return (
-    <section className="grid gap-12 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
-      <div className="space-y-8">
-        <header className="space-y-3">
-          <span className="text-sm font-semibold uppercase tracking-wide text-blue-600">Create your account</span>
-          <h1 className="text-3xl font-semibold text-slate-900">Trusted access to Tools Dashboard</h1>
-          <p className="text-base text-slate-600">
-            Choose Google single sign-on or email plus password. We will guide you through verification to keep your
-            workspace secured.
-          </p>
-        </header>
+  if (!parsedSubmission.success) {
+    const flattened = parsedSubmission.error.flatten();
+    return json<ActionData>(
+      {
+        login: {
+          status: "validation-error",
+          fieldErrors: {
+            email: flattened.fieldErrors.email?.[0],
+            password: flattened.fieldErrors.password?.[0],
+          },
+          formError: flattened.formErrors[0] ?? flattened.fieldErrors.csrfToken?.[0],
+          values: {
+            email: typeof submission.email === "string" ? submission.email : undefined,
+          },
+        },
+      },
+      { status: 400 },
+    );
+  }
 
-        {serviceAvailable ? null : (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            {serviceMessage ??
-              "Registration is temporarily unavailable while we restore connectivity. Please check back in a moment."}
-          </div>
-        )}
+  const { email, password, csrfToken } = parsedSubmission.data;
+  const { backAuthBaseUrl } = getBackAuthEnv();
+  const loginUrl = new URL("/user-registration/login", backAuthBaseUrl);
 
-        {serviceAvailable && googleAuthUrl ? (
-          <a
-            href={googleAuthUrl}
-            className="inline-flex w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm transition hover:border-blue-500 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
-          >
-            <GoogleIcon />
-            {googleButtonText}
-          </a>
-        ) : (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            {serviceAvailable
-              ? "Google sign-in is currently unavailable. Please continue with email."
-              : "Google sign-in is unavailable until the authentication service reconnects."}
-          </div>
-        )}
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    "X-CSRF-Token": csrfToken,
+  };
 
-        <div className="flex items-center gap-4">
-          <span className="h-px flex-1 bg-slate-200" />
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">or email</span>
-          <span className="h-px flex-1 bg-slate-200" />
-        </div>
+  const cookieHeader = request.headers.get("cookie");
+  if (cookieHeader) {
+    headers.Cookie = cookieHeader;
+  }
 
-        <RegistrationForm
-          csrfToken={csrfToken}
-          passwordMinLength={passwordMinLength}
-          defaultEmail={defaultEmail}
-          fieldErrors={fieldErrors}
-          formError={formError}
-          isSubmitting={isSubmitting}
-          disabled={!serviceAvailable}
-        />
-      </div>
+  let apiResponse: Response;
+  try {
+    apiResponse = await fetch(loginUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ email, password }),
+    });
+  } catch (error) {
+    console.error("Login request failed", error);
+    return json<ActionData>(
+      {
+        login: {
+          status: "server-error",
+          formError: "We could not reach the authentication service. Please try again.",
+          values: { email },
+        },
+      },
+      { status: 502 },
+    );
+  }
 
-      <aside className="space-y-4 rounded-2xl border border-slate-200 bg-white/80 p-8 text-sm text-slate-600 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">What happens next?</h2>
-        <ul className="list-disc space-y-3 pl-5">
-          <li>We send a verification email to confirm your address.</li>
-          <li>Finish progressive profiling to tailor your workspace access.</li>
-          <li>Use secure session cookies for seamless, device-aware sign-ins.</li>
-        </ul>
-        <p className="text-slate-500">
-          Need help? Email <a href="mailto:support@tools-dashboard.io" className="underline">support@tools-dashboard.io</a>.
-        </p>
-      </aside>
-    </section>
+  if (apiResponse.ok) {
+    const parsedResponse = apiLoginResponseSchema.safeParse(await safeReadJson(apiResponse));
+
+    if (!parsedResponse.success) {
+      console.error("Unexpected login response payload", parsedResponse.error);
+      return json<ActionData>(
+        {
+          login: {
+            status: "server-error",
+            formError: "We received an unexpected response from the authentication service.",
+            values: { email },
+          },
+        },
+        { status: 502 },
+      );
+    }
+
+    const fallbackRedirect = resolvePublicPath("/features/progressive-profiling");
+    const targetRedirect =
+      resolveRedirectTarget(parsedResponse.data.redirectTo) ??
+      resolveRedirectTarget(parsedResponse.data.next?.redirectTo) ??
+      fallbackRedirect;
+
+    const successRedirect = redirect(targetRedirect);
+    const setCookie = apiResponse.headers.get("set-cookie");
+    if (setCookie) {
+      successRedirect.headers.append("Set-Cookie", setCookie);
+    }
+    return successRedirect;
+  }
+
+  const parsedError = apiLoginErrorSchema.safeParse(await safeReadJson(apiResponse));
+  const status = apiResponse.status === 400 ? 400 : apiResponse.status;
+
+  if (parsedError.success) {
+    return json<ActionData>(
+      {
+        login: {
+          status: apiResponse.status === 400 ? "validation-error" : "server-error",
+          fieldErrors: {
+            email: parsedError.data.fieldErrors?.email,
+            password: parsedError.data.fieldErrors?.password,
+          },
+          formError:
+            parsedError.data.message ??
+            (apiResponse.status === 403
+              ? "Please verify your email before signing in."
+              : "We could not complete your sign-in. Please try again."),
+          values: { email },
+        },
+      },
+      { status },
+    );
+  }
+
+  console.error("Login API error response could not be parsed", apiResponse.status);
+
+  return json<ActionData>(
+    {
+      login: {
+        status: "server-error",
+        formError: "We could not complete your sign-in. Please try again shortly.",
+        values: { email },
+      },
+    },
+    { status },
   );
 }
 
@@ -377,6 +744,19 @@ function buildEmailFormSchema(passwordMinLength: number) {
       .string({ required_error: "Password is required" })
       .min(min, `Password must be at least ${min} characters long`)
       .max(72, "Password must be 72 characters or fewer"),
+    csrfToken: z.string({ required_error: "Missing security token" }).min(1, "Missing security token"),
+  });
+}
+
+function buildLoginFormSchema() {
+  return z.object({
+    email: z
+      .string({ required_error: "Email is required" })
+      .trim()
+      .min(1, "Email is required")
+      .email("Enter a valid email address")
+      .transform((value) => value.toLowerCase()),
+    password: z.string({ required_error: "Password is required" }).min(1, "Password is required").max(72),
     csrfToken: z.string({ required_error: "Missing security token" }).min(1, "Missing security token"),
   });
 }
@@ -411,3 +791,4 @@ function GoogleIcon() {
     </svg>
   );
 }
+
