@@ -1,0 +1,108 @@
+{
+  "header": {
+    "brand": "Panel de Herramientas",
+    "subtitle": "Experiencia pública",
+    "nav": {
+      "register": "Registrarse",
+      "completeProfile": "Completar perfil"
+    },
+    "session": {
+      "signedIn": "Sesión iniciada",
+      "pendingVerification": "Verificación pendiente",
+      "statusUnknown": "Estado desconocido",
+      "guest": "Invitado"
+    },
+    "actions": {
+      "signIn": "Iniciar sesión",
+      "register": "Registrarse",
+      "logout": "Cerrar sesión"
+    }
+  },
+  "home": {
+    "hero": {
+      "tag": "Incorporación lista para lanzar",
+      "title": "Diseña un viaje del cliente que aprende y responde instantáneamente",
+      "description": "Permite a los visitantes registrarse, autenticarse y completar su perfil con pasos claros y orientación receptiva. Cada pantalla está optimizada para accesibilidad y respuesta móvil.",
+      "createAccount": "Crear una cuenta",
+      "resumeProfile": "Reanudar perfil"
+    },
+    "features": {
+      "adaptiveOnboarding": {
+        "title": "Incorporación adaptativa",
+        "description": "Ofrece pasos contextuales basados en segmento, geografía y etapa de progresión.",
+        "cta": "Explorar perfilado"
+      },
+      "trustedAuth": {
+        "title": "Autenticación confiable",
+        "description": "Ofrece rutas de inicio de sesión de Google y correo electrónico con requisitos de seguridad progresivos.",
+        "cta": "Revisar flujos de autenticación"
+      },
+      "telemetry": {
+        "title": "Telemetría e información",
+        "description": "Monitorea la salud de conversión e informa recomendaciones de suscripción en tiempo real.",
+        "cta": "Ver análisis del viaje"
+      }
+    },
+    "cards": {
+      "oneFlow": {
+        "title": "Un flujo, todos los dispositivos",
+        "description": "Deleita a los usuarios con una ruta consistente desde la pantalla de bienvenida hasta la activación en menos de tres pasos."
+      },
+      "securityFirst": {
+        "title": "Fundamentos de seguridad primero",
+        "description": "Protege las sesiones con tokens rotativos, secretos administrados y alertas asistidas por IA."
+      }
+    }
+  },
+  "auth": {
+    "register": {
+      "kicker": "Crear cuenta",
+      "title": "Acceso confiable al Panel de Herramientas",
+      "description": "Usa Google o correo electrónico más contraseña. Te guiaremos a través de la verificación inmediatamente después.",
+      "googleButton": "Continuar con Google",
+      "emailDivider": "o continuar con correo electrónico",
+      "hint": "¿Ya estás registrado?",
+      "hintCta": "Iniciar sesión"
+    },
+    "login": {
+      "kicker": "Iniciar sesión",
+      "title": "Bienvenido de vuelta al Panel de Herramientas",
+      "description": "Elige Google o tu correo electrónico y contraseña para reanudar tu espacio de trabajo seguro.",
+      "googleButton": "Iniciar sesión con Google",
+      "emailDivider": "o iniciar sesión con correo electrónico",
+      "hint": "¿Necesitas una cuenta?",
+      "hintCta": "Crear una"
+    },
+    "form": {
+      "email": "Dirección de correo electrónico",
+      "password": "Contraseña",
+      "submitRegister": "Crear cuenta",
+      "submitLogin": "Iniciar sesión",
+      "submitting": "Procesando..."
+    },
+    "aside": {
+      "title": "Qué esperar a continuación",
+      "step1": "Verifica tu bandeja de entrada para un correo electrónico de verificación. Solo activamos cuentas una vez que la dirección esté confirmada.",
+      "step2": "Dirígete directamente al perfilado progresivo para que podamos adaptar el acceso al producto a tu rol y objetivos.",
+      "step3": "Las cookies de sesión te mantienen conectado de forma segura en todos los dispositivos con rotación automática.",
+      "support": {
+        "title": "¿Necesitas ayuda?",
+        "description": "Envía un correo electrónico a <1>support@tools-dashboard.io</1> y un especialista te ayudará."
+      }
+    },
+    "alerts": {
+      "serviceUnavailable": "El servicio de autenticación no está disponible actualmente. Por favor, inténtalo de nuevo más tarde.",
+      "configLoadError": "No pudimos cargar la configuración de registro. Por favor, inténtalo de nuevo en breve.",
+      "googleUnavailable": "El inicio de sesión de Google está temporalmente no disponible. Por favor, continúa con correo electrónico.",
+      "googleUnavailableOffline": "El inicio de sesión de Google no está disponible hasta que se reconecten los servicios de autenticación."
+    }
+  },
+  "footer": {
+    "copyright": "© {{year}} Plataforma Panel de Herramientas."
+  },
+  "language": {
+    "selector": "Idioma",
+    "en": "English",
+    "es": "Español"
+  }
+}

@@ -15,6 +15,7 @@ services:
       - back-api
       - back-auth
       - back-websockets
+      - feature-registry
 
   front-admin:
     build:
@@ -62,14 +63,20 @@ services:
       - UVICORN_RELOAD=1
       - DATABASE_URL=postgresql://user:pass@postgresql:5432/main_db
       - REDIS_URL=redis://redis:6379/0
+      - CASSANDRA_CONTACT_POINTS=back-cassandra
+      - FEATURE_REGISTRY_URL=http://feature-registry:8005
       - AUTH_SERVICE_URL=http://back-auth:8001
     volumes:
       - ./back-api:/app
     ports:
       - "8100:8000"
     depends_on:
-      - postgresql
-      - redis
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      cassandra:
+        condition: service_healthy
 
   back-auth:
     build:
@@ -113,9 +120,12 @@ services:
     ports:
       - "8101:8001"
     depends_on:
-      - postgresql
-      - redis
-      - mailhog
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
 
   back-websockets:
     build:
@@ -143,12 +153,55 @@ services:
       - redis
       - back-api
 
+  back-postgres-service:
+    build:
+      context: ./back-postgres
+      dockerfile: Dockerfile.dev
+    environment:
+      - DATABASE_URL=postgresql://user:pass@postgresql:5432/main_db
+    volumes:
+      - ./back-postgres:/app
+    depends_on:
+      postgresql:
+        condition: service_healthy
+
+  back-cassandra:
+    build:
+      context: ./back-cassandra
+      dockerfile: Dockerfile.dev
+    environment:
+      - CASSANDRA_CONTACT_POINTS=cassandra
+    volumes:
+      - ./back-cassandra:/app
+    depends_on:
+      cassandra:
+        condition: service_healthy
+
+  feature-registry:
+    build:
+      context: ./feature-registry
+      dockerfile: Dockerfile.dev
+    environment:
+      - DATABASE_URL=postgresql://user:pass@postgresql:5432/main_db
+    volumes:
+      - ./feature-registry:/app
+    ports:
+      - "8105:8005"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+
   redis:
     image: redis:7-alpine
     ports:
       - "6380:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   postgresql:
     image: postgres:15
@@ -160,6 +213,25 @@ services:
       - "55432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d main_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  cassandra:
+    image: cassandra:4
+    environment:
+      - CASSANDRA_CLUSTER_NAME=tools_cluster
+    ports:
+      - "39142:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe cluster'"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
 
   mailhog:
     image: mailhog/mailhog:v1.0.1
@@ -172,3 +244,4 @@ volumes:
   front_public_node_modules:
   postgres_data:
   redis_data:
+  cassandra_data:

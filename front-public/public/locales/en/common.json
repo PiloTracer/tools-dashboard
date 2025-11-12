@@ -1,0 +1,108 @@
+{
+  "header": {
+    "brand": "Tools Dashboard",
+    "subtitle": "Public experience",
+    "nav": {
+      "register": "Register",
+      "completeProfile": "Complete profile"
+    },
+    "session": {
+      "signedIn": "Signed in",
+      "pendingVerification": "Pending verification",
+      "statusUnknown": "Status unknown",
+      "guest": "Guest"
+    },
+    "actions": {
+      "signIn": "Sign in",
+      "register": "Register",
+      "logout": "Logout"
+    }
+  },
+  "home": {
+    "hero": {
+      "tag": "Launch-ready onboarding",
+      "title": "Design a customer journey that learns and responds instantly",
+      "description": "Empower visitors to register, authenticate, and complete their profile with crystal-clear steps and responsive guidance. Every screen is tuned for accessibility and mobile responsiveness.",
+      "createAccount": "Create an account",
+      "resumeProfile": "Resume profile"
+    },
+    "features": {
+      "adaptiveOnboarding": {
+        "title": "Adaptive onboarding",
+        "description": "Serve contextual steps based on segment, geography, and progression stage.",
+        "cta": "Explore profiling"
+      },
+      "trustedAuth": {
+        "title": "Trusted authentication",
+        "description": "Offer Google and email login paths with progressive security requirements.",
+        "cta": "Review auth flows"
+      },
+      "telemetry": {
+        "title": "Telemetry & insight",
+        "description": "Monitor conversion health and inform subscription recommendations in real time.",
+        "cta": "See journey analytics"
+      }
+    },
+    "cards": {
+      "oneFlow": {
+        "title": "One flow, all devices",
+        "description": "Delight users with a consistent path from welcome screen to activation in under three steps."
+      },
+      "securityFirst": {
+        "title": "Security-first foundations",
+        "description": "Guard sessions with rotating tokens, managed secrets, and AI-assisted alerts."
+      }
+    }
+  },
+  "auth": {
+    "register": {
+      "kicker": "Create account",
+      "title": "Trusted access to Tools Dashboard",
+      "description": "Use Google or email plus password. We will guide you through verification immediately after.",
+      "googleButton": "Continue with Google",
+      "emailDivider": "or continue with email",
+      "hint": "Already registered?",
+      "hintCta": "Sign in"
+    },
+    "login": {
+      "kicker": "Sign in",
+      "title": "Welcome back to Tools Dashboard",
+      "description": "Pick Google or your email and password to resume your secure workspace.",
+      "googleButton": "Sign in with Google",
+      "emailDivider": "or sign in with email",
+      "hint": "Need an account?",
+      "hintCta": "Create one"
+    },
+    "form": {
+      "email": "Email address",
+      "password": "Password",
+      "submitRegister": "Create account",
+      "submitLogin": "Sign in",
+      "submitting": "Processing..."
+    },
+    "aside": {
+      "title": "What to expect next",
+      "step1": "Check your inbox for a verification email. We only activate accounts once the address is confirmed.",
+      "step2": "Jump straight into progressive profiling so we can tailor product access to your role and goals.",
+      "step3": "Session cookies keep you signed in securely across devices with automatic rotation.",
+      "support": {
+        "title": "Need help?",
+        "description": "Email <1>support@tools-dashboard.io</1> and a specialist will get you unstuck."
+      }
+    },
+    "alerts": {
+      "serviceUnavailable": "Authentication service is currently unavailable. Please try again later.",
+      "configLoadError": "We could not load registration settings. Please try again shortly.",
+      "googleUnavailable": "Google sign-in is temporarily unavailable. Please continue with email.",
+      "googleUnavailableOffline": "Google sign-in is unavailable until authentication services reconnect."
+    }
+  },
+  "footer": {
+    "copyright": "© {{year}} Tools Dashboard Platform."
+  },
+  "language": {
+    "selector": "Language",
+    "en": "English",
+    "es": "Español"
+  }
+}

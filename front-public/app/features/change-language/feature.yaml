@@ -1,0 +1,7 @@
+name: change-language
+version: 1.0.0
+description: Handles i18n language switching via cookie-based persistence
+routes:
+  - path: /change-language
+    file: routes/index.tsx
+    type: resource

@@ -1,16 +1,20 @@
 import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData } from "@remix-run/react";
+import { useChangeLanguage } from "remix-i18next/react";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 
 import stylesheet from "./app.css?url";
 import { PublicLayout } from "./components/layout/PublicLayout";
 import { getBackAuthEnv } from "./utils/env.server";
 import { getPublicAppBasePath } from "./utils/publicPath.server";
+import i18next from "./i18next.server";
 
 type RootLoaderData = {
   publicBasePath: string;
   session: SessionState;
+  locale: string;
 };
 
 type SessionState =
@@ -23,6 +27,11 @@ export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
 ];
 
+export const meta = () => [
+  { charset: "utf-8" },
+  { name: "viewport", content: "width=device-width,initial-scale=1,viewport-fit=cover" },
+];
+
 const sessionStatusSchema = z
   .object({
     status: z.enum(["pending", "verified"]),
@@ -32,18 +41,26 @@ const sessionStatusSchema = z
   .passthrough();
 
 export async function loader({ request }: LoaderFunctionArgs) {
+  const locale = await i18next.getLocale(request);
   const sessionState = await resolveSessionState(request);
+
   return json<RootLoaderData>({
     publicBasePath: getPublicAppBasePath(request),
     session: sessionState,
+    locale,
   });
 }
 
 export default function App() {
-  const { publicBasePath, session } = useLoaderData<typeof loader>();
+  const { publicBasePath, session, locale } = useLoaderData<typeof loader>();
+  const { i18n } = useTranslation();
+
+  // This hook will change the i18n instance language to the current locale
+  // detected by the loader
+  useChangeLanguage(locale);
 
   return (
-    <html lang="en">
+    <html lang={locale} dir={i18n.dir()}>
       <head>
         <Meta />
         <Links />

@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(cp:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(docker-compose:*)",
+      "Bash(test:*)",
+      "Bash(docker exec:*)",
+      "Bash(curl:*)",
+      "Bash(npm run build:*)",
+      "Bash(mv:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []
