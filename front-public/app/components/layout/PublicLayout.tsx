@@ -1,15 +1,15 @@
-import { Form, NavLink } from "@remix-run/react";
+import { NavLink } from "@remix-run/react";
 import { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { joinBasePath, normalizeBasePath } from "../../utils/publicPaths";
 import { LanguageSwitcher } from "../LanguageSwitcher";
+import { StatusIndicator, UserMenu } from "../../features/user-status";
 
 type PublicLayoutProps = {
   basePath?: string;
   children: ReactNode;
-  session?: SessionSnapshot;
 };
 
 type NavigationLink = {
@@ -17,18 +17,11 @@ type NavigationLink = {
   label: string;
 };
 
-type SessionSnapshot =
-  | { status: "anonymous"; message?: string }
-  | { status: "pending"; email?: string; message?: string }
-  | { status: "authenticated"; email: string; message?: string }
-  | { status: "unknown"; message?: string };
-
 const BasePathContext = createContext("/");
 
 export function PublicLayout({
   basePath = "/app",
   children,
-  session = { status: "unknown" },
 }: PublicLayoutProps) {
   const { t } = useTranslation();
   const normalizedBasePath = useMemo(() => normalizeBasePath(basePath), [basePath]);
@@ -46,9 +39,6 @@ export function PublicLayout({
     () => LINKS.map((link) => ({ ...link, to: joinBasePath(normalizedBasePath, link.to) })),
     [normalizedBasePath, LINKS],
   );
-
-  const loginHref = joinBasePath(normalizedBasePath, "/features/user-registration?mode=login");
-  const registerHref = joinBasePath(normalizedBasePath, "/features/user-registration");
 
   return (
     <BasePathContext.Provider value={normalizedBasePath}>
@@ -76,51 +66,8 @@ export function PublicLayout({
             </nav>
             <div className="header-controls">
               <LanguageSwitcher />
-              <div className="session-indicator" data-status={session.status}>
-                {session.status === "authenticated" ? (
-                  <>
-                    <span className="session-dot" aria-hidden="true" />
-                    <span className="session-label">{t("header.session.signedIn")}</span>
-                    <strong className="session-value">{session.email}</strong>
-                  </>
-                ) : session.status === "pending" && session.email ? (
-                  <>
-                    <span className="session-dot pending" aria-hidden="true" />
-                    <span className="session-label">{t("header.session.pendingVerification")}</span>
-                    <strong className="session-value">{session.email}</strong>
-                  </>
-                ) : session.status === "unknown" ? (
-                  <>
-                    <span className="session-dot unknown" aria-hidden="true" />
-                    <span className="session-label">{t("header.session.statusUnknown")}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="session-dot" aria-hidden="true" />
-                    <span className="session-label">{t("header.session.guest")}</span>
-                  </>
-                )}
-              </div>
-              {session.status === "authenticated" ? (
-                <Form
-                  method="post"
-                  action={joinBasePath(normalizedBasePath, "/features/user-logout")}
-                  className="logout-form"
-                >
-                  <button type="submit" className="btn-ghost-sm">
-                    {t("header.actions.logout")}
-                  </button>
-                </Form>
-              ) : (
-                <div className="auth-links">
-                  <NavLink to={loginHref} prefetch="intent" className="btn-ghost-sm">
-                    {t("header.actions.signIn")}
-                  </NavLink>
-                  <NavLink to={registerHref} prefetch="intent" className="btn-solid-sm">
-                    {t("header.actions.register")}
-                  </NavLink>
-                </div>
-              )}
+              <StatusIndicator />
+              <UserMenu basePath={normalizedBasePath} />
               <span className="build-badge" aria-label="Public build version">
                 v0.1.0
               </span>

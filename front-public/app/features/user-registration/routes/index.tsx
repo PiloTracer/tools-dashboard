@@ -562,9 +562,10 @@ async function handleRegistrationSubmission(request: Request, formData: FormData
       fallbackRedirect;
 
     const successRedirect = redirect(targetRedirect);
-    const setCookie = apiResponse.headers.get("set-cookie");
-    if (setCookie) {
-      successRedirect.headers.append("Set-Cookie", setCookie);
+    // Forward all Set-Cookie headers (backend may send multiple)
+    const setCookies = getAllSetCookieHeaders(apiResponse);
+    for (const cookie of setCookies) {
+      successRedirect.headers.append("Set-Cookie", cookie);
     }
     return successRedirect;
   }
@@ -696,9 +697,10 @@ async function handleLoginSubmission(request: Request, formData: FormData): Prom
       fallbackRedirect;
 
     const successRedirect = redirect(targetRedirect);
-    const setCookie = apiResponse.headers.get("set-cookie");
-    if (setCookie) {
-      successRedirect.headers.append("Set-Cookie", setCookie);
+    // Forward all Set-Cookie headers (backend may send multiple)
+    const loginSetCookies = getAllSetCookieHeaders(apiResponse);
+    for (const cookie of loginSetCookies) {
+      successRedirect.headers.append("Set-Cookie", cookie);
     }
     return successRedirect;
   }
@@ -777,6 +779,28 @@ async function safeReadJson(response: Response): Promise<unknown> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Extract all Set-Cookie headers from a response
+ * The Fetch API headers.get() only returns the first value,
+ * so we need to use getSetCookie() or parse raw headers
+ */
+function getAllSetCookieHeaders(response: Response): string[] {
+  // Modern browsers support getSetCookie()
+  if (typeof response.headers.getSetCookie === "function") {
+    return response.headers.getSetCookie();
+  }
+
+  // Fallback: try to get raw headers (Node.js)
+  const rawHeaders = (response.headers as any).raw?.();
+  if (rawHeaders && Array.isArray(rawHeaders["set-cookie"])) {
+    return rawHeaders["set-cookie"];
+  }
+
+  // Last resort: get single header
+  const singleHeader = response.headers.get("set-cookie");
+  return singleHeader ? [singleHeader] : [];
 }
 
 function GoogleIcon() {

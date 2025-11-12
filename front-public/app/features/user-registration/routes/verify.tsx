@@ -65,7 +65,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   let email = queryEmail;
   let supportUrl: string | undefined = SUPPORT_MAILTO;
-  let setCookieHeader: string | null = null;
 
   if (provider === "google") {
     if (!code || !state) {
@@ -105,7 +104,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
       );
     }
 
-    setCookieHeader = response.headers.get("set-cookie");
+    // Get ALL Set-Cookie headers (backend may send multiple)
+    const setCookieHeaders = getAllSetCookieHeaders(response);
 
     if (response.ok) {
       const parsed = verificationStatusSchema.safeParse(await safeReadJson(response));
@@ -128,8 +128,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
       const resolvedRedirect = resolveRedirectTarget(parsed.data.redirectTo);
       if (resolvedRedirect) {
         const redirectResponse = redirect(resolvedRedirect);
-        if (setCookieHeader) {
-          redirectResponse.headers.append("Set-Cookie", setCookieHeader);
+        // Forward all Set-Cookie headers
+        for (const cookie of setCookieHeaders) {
+          redirectResponse.headers.append("Set-Cookie", cookie);
         }
         return redirectResponse;
       }
@@ -145,8 +146,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
         email,
       });
 
-      if (setCookieHeader) {
-        successResponse.headers.append("Set-Cookie", setCookieHeader);
+      // Forward all Set-Cookie headers
+      for (const cookie of setCookieHeaders) {
+        successResponse.headers.append("Set-Cookie", cookie);
       }
       return successResponse;
     }
@@ -192,7 +194,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
       );
     }
 
-    setCookieHeader = response.headers.get("set-cookie");
+    // Get ALL Set-Cookie headers (backend may send multiple)
+    const emailSetCookieHeaders = getAllSetCookieHeaders(response);
 
     if (response.ok) {
       const parsed = verificationStatusSchema.safeParse(await safeReadJson(response));
@@ -214,8 +217,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
       const resolvedRedirect = resolveRedirectTarget(parsed.data.redirectTo);
       if (resolvedRedirect) {
         const redirectResponse = redirect(resolvedRedirect);
-        if (setCookieHeader) {
-          redirectResponse.headers.append("Set-Cookie", setCookieHeader);
+        // Forward all Set-Cookie headers
+        for (const cookie of emailSetCookieHeaders) {
+          redirectResponse.headers.append("Set-Cookie", cookie);
         }
         return redirectResponse;
       }
@@ -231,8 +235,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
         email,
       });
 
-      if (setCookieHeader) {
-        successResponse.headers.append("Set-Cookie", setCookieHeader);
+      // Forward all Set-Cookie headers
+      for (const cookie of emailSetCookieHeaders) {
+        successResponse.headers.append("Set-Cookie", cookie);
       }
       return successResponse;
     }
@@ -272,7 +277,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     );
   }
 
-  setCookieHeader = response.headers.get("set-cookie");
+  // Get ALL Set-Cookie headers (backend may send multiple)
+  const statusSetCookieHeaders = getAllSetCookieHeaders(response);
 
   if (response.ok) {
     const parsed = verificationStatusSchema.safeParse(await safeReadJson(response));
@@ -283,8 +289,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
       const resolvedRedirect = resolveRedirectTarget(parsed.data.redirectTo);
       if (resolvedRedirect && parsed.data.status === "verified") {
         const redirectResponse = redirect(resolvedRedirect);
-        if (setCookieHeader) {
-          redirectResponse.headers.append("Set-Cookie", setCookieHeader);
+        // Forward all Set-Cookie headers
+        for (const cookie of statusSetCookieHeaders) {
+          redirectResponse.headers.append("Set-Cookie", cookie);
         }
         return redirectResponse;
       }
@@ -300,8 +307,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
         email,
       });
 
-      if (setCookieHeader) {
-        successResponse.headers.append("Set-Cookie", setCookieHeader);
+      // Forward all Set-Cookie headers
+      for (const cookie of statusSetCookieHeaders) {
+        successResponse.headers.append("Set-Cookie", cookie);
       }
       return successResponse;
     }
@@ -320,8 +328,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
   };
 
   const statusResponse = json<LoaderData>(responsePayload);
-  if (setCookieHeader) {
-    statusResponse.headers.append("Set-Cookie", setCookieHeader);
+  // Forward all Set-Cookie headers
+  for (const cookie of statusSetCookieHeaders) {
+    statusResponse.headers.append("Set-Cookie", cookie);
   }
   return statusResponse;
 }
@@ -389,4 +398,26 @@ async function safeReadJson(response: Response): Promise<unknown> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Extract all Set-Cookie headers from a response
+ * The Fetch API headers.get() only returns the first value,
+ * so we need to use getSetCookie() or parse raw headers
+ */
+function getAllSetCookieHeaders(response: Response): string[] {
+  // Modern browsers support getSetCookie()
+  if (typeof response.headers.getSetCookie === "function") {
+    return response.headers.getSetCookie();
+  }
+
+  // Fallback: try to get raw headers (Node.js)
+  const rawHeaders = (response.headers as any).raw?.();
+  if (rawHeaders && Array.isArray(rawHeaders["set-cookie"])) {
+    return rawHeaders["set-cookie"];
+  }
+
+  // Last resort: get single header
+  const singleHeader = response.headers.get("set-cookie");
+  return singleHeader ? [singleHeader] : [];
 }

@@ -1,0 +1,17 @@
+name: user-status
+version: 1.0.0
+description: User authentication state and navigation management
+routes:
+  - path: /features/user-status
+    file: routes/index.tsx
+ui:
+  - ui/StatusIndicator.tsx
+  - ui/UserMenu.tsx
+  - ui/ProtectedRoute.tsx
+hooks:
+  - hooks/useUserStatus.ts
+  - hooks/useProtectedRoute.ts
+store:
+  - store/userStatusStore.ts
+  - store/types.ts
+  - store/constants.ts

@@ -1,0 +1,10 @@
+name: user-status
+version: 1.0.0
+description: User authentication status and navigation management
+dependencies:
+  - back-auth@1.2.0
+  - back-postgres@1.0.0
+modules:
+  - api.py
+  - domain.py
+  - infrastructure.py

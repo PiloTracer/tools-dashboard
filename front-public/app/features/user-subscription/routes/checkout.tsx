@@ -3,6 +3,7 @@ import { json, redirect } from "@remix-run/node";
 import { useLoaderData, useSearchParams, Link } from "@remix-run/react";
 import { CheckoutForm } from "../ui/CheckoutForm";
 import { FeatureList } from "../ui/FeatureList";
+import { ProtectedRoute } from "../../user-status";
 
 type Package = {
   id: string;
@@ -263,7 +264,8 @@ export default function CheckoutPage() {
   const price = billingCycle === "monthly" ? pkg.price_monthly : pkg.price_yearly;
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <ProtectedRoute>
+      <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <div className="max-w-6xl mx-auto px-4 py-12">
         <Link to=".." className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold mb-8 transition-colors">
           <span>←</span>
@@ -332,5 +334,6 @@ export default function CheckoutPage() {
         </div>
       </div>
     </main>
+    </ProtectedRoute>
   );
 }

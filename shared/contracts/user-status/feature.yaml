@@ -1,0 +1,62 @@
+name: user-status
+version: 1.0.0
+description: |
+  Comprehensive user authentication state and navigation management.
+  Handles session state, location tracking, and protected route navigation.
+endpoints:
+  - method: GET
+    path: /user-status
+    description: Get current user authentication status and metadata
+  - method: POST
+    path: /user-status/navigation
+    description: Update user navigation state (current/next location)
+  - method: DELETE
+    path: /user-status/navigation
+    description: Clear navigation state after redirect
+dependencies:
+  - back-auth@1.2.0
+  - back-postgres@1.0.0
+schemas:
+  status_response:
+    type: object
+    properties:
+      isAuthenticated:
+        type: boolean
+      user:
+        type: object
+        nullable: true
+        properties:
+          id:
+            type: string
+          email:
+            type: string
+          name:
+            type: string
+          subscriptionTier:
+            type: string
+            enum: [free, standard, premium, enterprise]
+          features:
+            type: array
+            items:
+              type: string
+      navigation:
+        type: object
+        properties:
+          currentLocation:
+            type: string
+          nextLocation:
+            type: string
+            nullable: true
+          previousLocation:
+            type: string
+            nullable: true
+      timestamp:
+        type: integer
+  navigation_request:
+    type: object
+    properties:
+      currentLocation:
+        type: string
+      nextLocation:
+        type: string
+        nullable: true

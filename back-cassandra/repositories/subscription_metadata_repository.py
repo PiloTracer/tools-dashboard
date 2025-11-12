@@ -31,13 +31,13 @@ class SubscriptionMetadataRepository:
             INSERT INTO subscription_package_metadata
                 (package_slug, metadata_key, metadata_value, metadata_type,
                  display_order, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             USING TTL 31536000
         """
         now = datetime.utcnow()
         self.session.execute(
             query,
-            (
+            [
                 package_slug,
                 metadata_key,
                 metadata_value,
@@ -45,7 +45,7 @@ class SubscriptionMetadataRepository:
                 display_order,
                 now,
                 now,
-            ),
+            ],
         )
 
     def find_by_package(self, package_slug: str) -> list[dict[str, Any]]:
@@ -54,9 +54,9 @@ class SubscriptionMetadataRepository:
             SELECT package_slug, metadata_key, metadata_value, metadata_type,
                    display_order, created_at, updated_at
             FROM subscription_package_metadata
-            WHERE package_slug = ?
+            WHERE package_slug = %s
         """
-        result_set = self.session.execute(query, (package_slug,))
+        result_set = self.session.execute(query, [package_slug])
         return [
             {
                 "package_slug": row.package_slug,
@@ -78,11 +78,11 @@ class SubscriptionMetadataRepository:
             SELECT package_slug, metadata_key, metadata_value, metadata_type,
                    display_order, created_at, updated_at
             FROM subscription_package_metadata
-            WHERE package_slug = ? AND metadata_type = ?
+            WHERE package_slug = %s AND metadata_type = %s
             ALLOW FILTERING
         """
         result_set = self.session.execute(
-            query, (package_slug, metadata_type)
+            query, [package_slug, metadata_type]
         )
         return [
             {
@@ -101,9 +101,9 @@ class SubscriptionMetadataRepository:
         """Delete specific metadata entry."""
         query = """
             DELETE FROM subscription_package_metadata
-            WHERE package_slug = ? AND metadata_key = ?
+            WHERE package_slug = %s AND metadata_key = %s
         """
-        self.session.execute(query, (package_slug, metadata_key))
+        self.session.execute(query, [package_slug, metadata_key])
 
 
 class SubscriptionFeaturesRepository:
@@ -133,13 +133,13 @@ class SubscriptionFeaturesRepository:
             INSERT INTO subscription_features
                 (package_slug, feature_id, feature_name, feature_description,
                  is_included, display_order, icon, category, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             USING TTL 31536000
         """
         now = datetime.utcnow()
         self.session.execute(
             query,
-            (
+            [
                 package_slug,
                 feature_id,
                 feature_name,
@@ -150,7 +150,7 @@ class SubscriptionFeaturesRepository:
                 category,
                 now,
                 now,
-            ),
+            ],
         )
 
     def find_by_package(self, package_slug: str) -> list[dict[str, Any]]:
@@ -159,9 +159,9 @@ class SubscriptionFeaturesRepository:
             SELECT package_slug, feature_id, feature_name, feature_description,
                    is_included, display_order, icon, category, created_at, updated_at
             FROM subscription_features
-            WHERE package_slug = ?
+            WHERE package_slug = %s
         """
-        result_set = self.session.execute(query, (package_slug,))
+        result_set = self.session.execute(query, [package_slug])
         return [
             {
                 "package_slug": row.package_slug,
@@ -184,10 +184,10 @@ class SubscriptionFeaturesRepository:
             SELECT package_slug, feature_id, feature_name, feature_description,
                    is_included, display_order, icon, category, created_at, updated_at
             FROM subscription_features
-            WHERE package_slug = ? AND is_included = true
+            WHERE package_slug = %s AND is_included = true
             ALLOW FILTERING
         """
-        result_set = self.session.execute(query, (package_slug,))
+        result_set = self.session.execute(query, [package_slug])
         return [
             {
                 "package_slug": row.package_slug,
@@ -212,10 +212,10 @@ class SubscriptionFeaturesRepository:
             SELECT package_slug, feature_id, feature_name, feature_description,
                    is_included, display_order, icon, category, created_at, updated_at
             FROM subscription_features
-            WHERE package_slug = ? AND category = ?
+            WHERE package_slug = %s AND category = %s
             ALLOW FILTERING
         """
-        result_set = self.session.execute(query, (package_slug, category))
+        result_set = self.session.execute(query, [package_slug, category])
         return [
             {
                 "package_slug": row.package_slug,
@@ -236,6 +236,6 @@ class SubscriptionFeaturesRepository:
         """Delete a specific feature."""
         query = """
             DELETE FROM subscription_features
-            WHERE package_slug = ? AND feature_id = ?
+            WHERE package_slug = %s AND feature_id = %s
         """
-        self.session.execute(query, (package_slug, feature_id))
+        self.session.execute(query, [package_slug, feature_id])

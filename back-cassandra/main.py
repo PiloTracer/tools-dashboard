@@ -9,6 +9,7 @@ from pathlib import Path
 
 from cassandra.cluster import Cluster
 from cassandra.auth import PlainTextAuthProvider
+from cassandra.policies import RoundRobinPolicy
 
 logger = logging.getLogger(__name__)
 
@@ -68,9 +69,10 @@ def create_cassandra_session():
                 port=port,
                 auth_provider=auth_provider,
                 protocol_version=4,  # Explicitly set protocol version to avoid downgrades
+                load_balancing_policy=RoundRobinPolicy(),  # Add load balancing policy
             )
 
-            # Create session
+            # Create session without keyspace first
             cassandra_session = cassandra_cluster.connect()
             logger.info("Cassandra session created successfully")
             return cassandra_session
@@ -117,6 +119,12 @@ def run_cql_migrations(session) -> None:
         except Exception as e:
             logger.error(f"Error running migration {cql_file.name}: {e}")
             raise
+
+    # Set the keyspace for subsequent operations
+    config = get_cassandra_config()
+    keyspace = config["keyspace"]
+    session.set_keyspace(keyspace)
+    logger.info(f"Set default keyspace to: {keyspace}")
 
     logger.info("All CQL migrations completed successfully")
 
