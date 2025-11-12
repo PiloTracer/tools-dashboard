@@ -4,7 +4,8 @@
     "subtitle": "Experiencia pública",
     "nav": {
       "register": "Registrarse",
-      "completeProfile": "Perfil"
+      "completeProfile": "Perfil",
+      "pricing": "Precios"
     },
     "session": {
       "signedIn": "Sesión iniciada",

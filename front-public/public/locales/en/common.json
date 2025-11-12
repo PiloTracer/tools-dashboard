@@ -4,7 +4,8 @@
     "subtitle": "Public experience",
     "nav": {
       "register": "Register",
-      "completeProfile": "Complete profile"
+      "completeProfile": "Profile",
+      "pricing": "Pricing"
     },
     "session": {
       "signedIn": "Signed in",
