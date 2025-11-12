@@ -5,10 +5,10 @@ import importlib
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Import feature routers
-from features.user_subscription.api import router as user_subscription_router
+# Import feature routers with hyphenated names using importlib
+user_subscription_module = importlib.import_module("features.user-subscription.api")
+user_subscription_router = user_subscription_module.router
 
-# Import feature with hyphenated name using importlib
 user_status_module = importlib.import_module("features.user-status.api")
 user_status_router = user_status_module.router
 

@@ -21,13 +21,13 @@ Read: CONTEXT.md + <feature-path>/feature.yaml + <service>/CONTEXT.md
 
 ```
 Working on feature: user-subscription
-Location: back-api/features/user_subscription/
+Location: back-api/features/user-subscription/
 
 Context files to read:
 1. /CONTEXT.md (architecture overview)
 2. /back-api/CONTEXT.md (service constraints)
-3. /back-api/features/user_subscription/feature.yaml (current contract)
-4. /back-api/features/user_subscription/domain.py (business logic)
+3. /back-api/features/user-subscription/feature.yaml (current contract)
+4. /back-api/features/user-subscription/domain.py (business logic)
 
 Goal: Add subscription pause functionality with grace period
 
@@ -89,7 +89,6 @@ websocket_events:
       new_status: enum[active, paused, cancelled]
       changed_at: ISO8601 timestamp
       metadata: object (optional)
-```
 
 Deliverable: Updated feature.yaml only. No implementation yet.
 ```
@@ -102,15 +101,15 @@ Deliverable: Updated feature.yaml only. No implementation yet.
 
 ```
 Working on feature: user-subscription (backend implementation)
-Location: back-api/features/user_subscription/
+Location: back-api/features/user-subscription/
 
 Context files to read:
 1. /CONTEXT.md (service topology diagram)
 2. /back-api/CONTEXT.md (service constraints)
 3. /shared/contracts/user-subscription/feature.yaml (UPDATED in Phase 1)
-4. /back-api/features/user_subscription/feature.yaml (current implementation)
-5. /back-api/features/user_subscription/domain.py (business logic)
-6. /back-api/features/user_subscription/infrastructure.py (service integration)
+4. /back-api/features/user-subscription/feature.yaml (current implementation)
+5. /back-api/features/user-subscription/domain.py (business logic)
+6. /back-api/features/user-subscription/infrastructure.py (service integration)
 
 Goal: Emit real-time events when subscription status changes
 
@@ -135,13 +134,13 @@ message = {
 ```
 
 Acceptance criteria:
+
 - Every status change publishes to Redis
 - Message format matches shared contract exactly
 - Failed publishes are logged but don't block transaction
 - Include correlation_id for debugging
 
 Please read all 6 context files and implement infrastructure.py + domain.py changes.
-```
 
 **Estimated tokens:** ~5000 tokens
 
@@ -213,13 +212,13 @@ AND default_time_to_live = 7776000;  -- 90 days
 ```
 
 Acceptance criteria:
+
 - Writes are idempotent
 - Consistency level: LOCAL_QUORUM
 - Prepared statements for all queries
 - Repository method: record_subscription_event(user_id, event_data)
 
 Deliverable: Updated subscription_metadata_repository.py
-```
 
 **Estimated tokens:** ~3500 tokens
 
@@ -366,6 +365,7 @@ Deliverable: Updated routes/index.tsx + ui/SubscriptionCard.tsx + WebSocket hook
 **Time savings:** Each conversation is focused, parallel-friendly, and maintains minimal context
 
 **Execution order:**
+
 ```
 Phase 1 (contract) → MUST complete first
   ↓
@@ -377,6 +377,7 @@ Phase 5 (frontend) → Requires Phase 4 complete
 ```
 
 **Key principles demonstrated:**
+
 1. ✅ **Contract-first**: Shared contract defines the interface
 2. ✅ **Parallel-friendly**: Data layer changes run independently
 3. ✅ **Minimal context**: Each phase loads only 4-6 files
@@ -404,27 +405,27 @@ Phase 5 (frontend) → Requires Phase 4 complete
                  │              │
         ┌────────┼──────────────┼────────┐
         ▼        ▼              ▼        ▼
-  ┌──────────┐ ┌────────┐ ┌─────────┐ ┌────────┐
+  ┌──────────┐ ┌─────────┐ ┌─────────┐ ┌────────┐
   │postgres  │ │cassandra│ │  redis  │ │workers │
-  └──────────┘ └────────┘ └─────────┘ └────────┘
+  └──────────┘ └─────────┘ └─────────┘ └────────┘
 ```
 
 ### Service Directory
 
-| Service | Technology | Purpose | Port |
-|---------|-----------|---------|------|
-| **back-gateway** | Kong | API gateway, rate limiting, routing | 8082 (HTTP), 8443 (HTTPS) |
-| **back-api** | FastAPI | Business logic orchestration | 4100 |
-| **back-auth** | FastAPI + Authlib | Authentication (OAuth2, email, 2FA) | 4101 |
-| **back-postgres** | PostgreSQL | User accounts, financial data | 55432 |
-| **back-cassandra** | Cassandra | Extended profiles, config | 9142 |
-| **back-redis** | Redis | Cache, pub/sub, rate limiting | 6380 |
-| **back-websockets** | FastAPI + WebSockets | Real-time communication | 4102 |
-| **back-workers** | Celery | Background tasks (backup, cleanup, export) | - |
-| **feature-registry** | FastAPI | Feature catalog and versioning | - |
-| **front-public** | Remix | User-facing dashboard | 8082/app/ |
-| **front-admin** | Remix | Admin dashboard | 8082/admin/ |
-| **shared** | Python/TypeScript | Cross-service contracts, models, security | - |
+| Service              | Technology           | Purpose                                    | Port                      |
+| -------------------- | -------------------- | ------------------------------------------ | ------------------------- |
+| **back-gateway**     | Kong                 | API gateway, rate limiting, routing        | 8082 (HTTP), 8443 (HTTPS) |
+| **back-api**         | FastAPI              | Business logic orchestration               | 4100                      |
+| **back-auth**        | FastAPI + Authlib    | Authentication (OAuth2, email, 2FA)        | 4101                      |
+| **back-postgres**    | PostgreSQL           | User accounts, financial data              | 55432                     |
+| **back-cassandra**   | Cassandra            | Extended profiles, config                  | 9142                      |
+| **back-redis**       | Redis                | Cache, pub/sub, rate limiting              | 6380                      |
+| **back-websockets**  | FastAPI + WebSockets | Real-time communication                    | 4102                      |
+| **back-workers**     | Celery               | Background tasks (backup, cleanup, export) | -                         |
+| **feature-registry** | FastAPI              | Feature catalog and versioning             | -                         |
+| **front-public**     | Remix                | User-facing dashboard                      | 8082/app/                 |
+| **front-admin**      | Remix                | Admin dashboard                            | 8082/admin/               |
+| **shared**           | Python/TypeScript    | Cross-service contracts, models, security  | -                         |
 
 ---
 
@@ -437,6 +438,7 @@ Phase 5 (frontend) → Requires Phase 4 complete
 ### Feature Structure
 
 #### Backend Features (FastAPI)
+
 ```
 back-api/features/<feature-name>/
 ├── feature.yaml          # Contract definition
@@ -446,6 +448,7 @@ back-api/features/<feature-name>/
 ```
 
 #### Frontend Features (Remix)
+
 ```
 front-public/app/features/<feature-name>/
 ├── feature.yaml         # Contract definition
@@ -456,6 +459,7 @@ front-public/app/features/<feature-name>/
 ```
 
 #### Shared Contracts
+
 ```
 shared/contracts/<feature-name>/
 ├── feature.yaml         # Master contract
@@ -466,6 +470,7 @@ shared/contracts/<feature-name>/
 ### Feature.yaml Structure
 
 **Backend Example:**
+
 ```yaml
 name: feature-name
 version: 1.0.0
@@ -482,6 +487,7 @@ schemas:
 ```
 
 **Frontend Example:**
+
 ```yaml
 name: feature-name
 version: 1.0.0
@@ -545,6 +551,7 @@ Goal: [describe the integration change]
 ### 3. Feature Isolation Rules
 
 **DO:**
+
 - ✅ Modify only files within the feature directory
 - ✅ Define required API contracts for other services
 - ✅ Update feature.yaml when adding endpoints/routes
@@ -552,6 +559,7 @@ Goal: [describe the integration change]
 - ✅ Document dependencies explicitly
 
 **DON'T:**
+
 - ❌ Touch files outside feature directory without explicit instruction
 - ❌ Implement database logic in back-api (use back-postgres/back-cassandra)
 - ❌ Duplicate business logic between frontend and backend
@@ -588,15 +596,17 @@ Feature B (back-api/features/b/):
 ### Single-Feature Development (Most Common)
 
 **Setup:**
+
 1. Open conversation with feature name and location
 2. Load minimal context (3-4 files max)
 3. Make changes within feature boundary
 4. Document API requirements for dependent services
 
 **Example Prompt:**
+
 ```
 Feature: user-subscription
-Location: back-api/features/user_subscription/
+Location: back-api/features/user-subscription/
 
 Changes needed:
 - Add new endpoint for subscription cancellation
@@ -605,19 +615,21 @@ Changes needed:
 Please read:
 1. CONTEXT.md
 2. back-api/CONTEXT.md
-3. back-api/features/user_subscription/feature.yaml
-4. back-api/features/user_subscription/domain.py
+3. back-api/features/user-subscription/feature.yaml
+4. back-api/features/user-subscription/domain.py
 ```
 
 ### Multi-Feature Coordination
 
 **Setup:**
+
 1. Identify all affected features
 2. Start with shared contract changes
 3. Create separate "implementation notes" for each feature
 4. Update each feature sequentially
 
 **Example Prompt:**
+
 ```
 Cross-feature change: Add subscription tier to user profile
 
@@ -638,13 +650,14 @@ Approach:
 
 1. **Use Integration Notes:**
    Create `INTEGRATION_NOTES.md` in each feature documenting dependencies:
+   
    ```markdown
    # Feature Dependencies
-
+   
    ## Consumes
    - back-auth/features/email-auth: POST /auth/verify
    - back-api/features/user-profile: GET /profile/:id
-
+   
    ## Provides
    - GET /user-registration/status
    - POST /user-registration/submit
@@ -652,6 +665,7 @@ Approach:
 
 2. **Leverage feature.yaml:**
    Explicitly list dependencies with versions:
+   
    ```yaml
    dependencies:
      - back-auth@1.2.0
@@ -660,15 +674,17 @@ Approach:
 
 3. **Coordinate Through Shared Contracts:**
    When multiple features need alignment:
+   
    - Update `shared/contracts/<feature>/feature.yaml` first
    - Reference this contract in all dependent features
    - Each feature conversation reads the same shared contract
 
 4. **Sequential Development:**
    Work on features in dependency order:
+   
    ```
    Conversation 1: Update shared/contracts/user-subscription/
-   Conversation 2: Update back-api/features/user_subscription/ (references shared contract)
+   Conversation 2: Update back-api/features/user-subscription/ (references shared contract)
    Conversation 3: Update front-public/app/features/user-subscription/ (references shared contract)
    ```
 
@@ -677,6 +693,7 @@ Approach:
 ## Development Workflow
 
 ### Local Development
+
 ```bash
 # Start stack
 docker compose -f docker-compose.dev.yml up --build
@@ -689,12 +706,14 @@ docker compose -f docker-compose.dev.yml up --build
 ### Making Changes
 
 **Step 1: Gather Context**
+
 ```bash
 # Optional: Use context generator (if available)
 bash ./.ai/generate-context.sh <feature-name> <backend|frontend>
 ```
 
 **Step 2: AI Conversation**
+
 ```
 Feature: <name>
 Location: <path>
@@ -703,11 +722,13 @@ Change: <describe modification>
 ```
 
 **Step 3: Implementation**
+
 - AI modifies files within feature boundary
 - AI documents any cross-service requirements
 - AI updates feature.yaml if needed
 
 **Step 4: Testing**
+
 ```bash
 # Rebuild affected service
 docker compose -f docker-compose.dev.yml up --build <service-name>
@@ -721,6 +742,7 @@ docker compose -f docker-compose.dev.yml logs -f <service-name>
 ## Key Architectural Constraints
 
 ### Security
+
 - All tokens expire: 15min (access), 7 days (refresh)
 - Refresh tokens are single-use with rotation
 - Passwords use bcrypt + HaveIBeenPwned check
@@ -728,17 +750,20 @@ docker compose -f docker-compose.dev.yml logs -f <service-name>
 - Authentication handled exclusively by back-auth
 
 ### Data Separation
+
 - **PostgreSQL**: User accounts, financial data, structured relational data
 - **Cassandra**: Extended profiles, configuration, high-volume time-series
 - **Redis**: Cache, pub/sub, rate limiting, sessions
 
 ### Service Responsibilities
+
 - **back-api**: Orchestration only (no database logic, no auth logic)
 - **back-auth**: All authentication methods (Google OAuth, email, 2FA)
 - **back-postgres/back-cassandra**: Repository pattern, all database operations
 - **front-public/front-admin**: UI only, all data via loaders from back-api
 
 ### Frontend Standards
+
 - All components: Accessible (WCAG 2.1), responsive, type-safe, documented
 - No business logic duplication from backend
 - All data through Remix loaders/actions
@@ -758,6 +783,7 @@ The **feature-registry** service maintains a catalog of all features across the 
 - Maintains audit trail
 
 **Usage:** When creating a new feature, it must be registered in the feature-registry with:
+
 - Name, version, required permissions
 - API contracts and schemas
 - Dependencies on other features
@@ -769,6 +795,7 @@ The **feature-registry** service maintains a catalog of all features across the 
 If your conversation context is getting too large:
 
 ### Symptoms
+
 - Slow responses
 - "Context window exceeded" errors
 - AI making assumptions about code it hasn't seen
@@ -776,12 +803,14 @@ If your conversation context is getting too large:
 ### Solutions
 
 1. **Narrow Scope:**
+   
    ```
    Instead of: "Update authentication"
    Use: "Add password reset to back-auth/features/email-auth/domain.py"
    ```
 
 2. **Split Conversations:**
+   
    ```
    Conversation 1: Backend API changes
    Conversation 2: Frontend UI changes
@@ -789,6 +818,7 @@ If your conversation context is getting too large:
    ```
 
 3. **Feature-First Approach:**
+   
    ```
    Start: Read feature.yaml only
    Then: Read specific implementation files
@@ -797,6 +827,7 @@ If your conversation context is getting too large:
 
 4. **Use File Paths:**
    Reference exact files instead of exploring:
+   
    ```
    Read: back-api/features/user-registration/domain.py:45-67
    Instead of: "Search for user registration logic"
@@ -807,28 +838,34 @@ If your conversation context is getting too large:
 ## Quick Reference
 
 ### Essential Files for Any Conversation
+
 1. `CONTEXT.md` (this file)
 2. `<service>/CONTEXT.md` (service constraints)
 3. `<feature>/feature.yaml` (feature contract)
 
 ### Feature Locations
+
 - Backend: `back-api/features/` or `back-auth/features/`
 - Frontend: `front-public/app/features/` or `front-admin/app/features/`
 - Contracts: `shared/contracts/`
 
 ### Current Features
+
 **Backend (back-api):**
+
 - user-registration
 - progressive-profiling
 - user-subscription
 - user-status
 
 **Backend (back-auth):**
+
 - google-auth
 - email-auth
 - two-factor
 
 **Frontend (front-public):**
+
 - user-registration
 - progressive-profiling
 - user-logout
@@ -837,10 +874,12 @@ If your conversation context is getting too large:
 - user-status
 
 **Frontend (front-admin):**
+
 - user-management
 - task-scheduler
 
 ### Common Commands
+
 ```bash
 # Start dev stack
 docker compose -f docker-compose.dev.yml up --build
@@ -872,6 +911,7 @@ docker compose -f docker-compose.dev.yml down --volumes --remove-orphans
 ### Context Budget Guidelines
 
 **Minimal** (Best for single-file changes):
+
 - CONTEXT.md
 - service/CONTEXT.md
 - feature/feature.yaml
@@ -879,17 +919,20 @@ docker compose -f docker-compose.dev.yml down --volumes --remove-orphans
 - ~2000 tokens
 
 **Standard** (Most feature work):
+
 - Above + all files in feature directory
 - Relevant shared contracts
 - ~5000 tokens
 
 **Comprehensive** (Cross-feature changes):
+
 - Above + dependent feature.yaml files
 - Integration points in other services
 - ~10000 tokens
 
 **When to split conversations:**
 If you need >10000 tokens, split into:
+
 1. Backend conversation (API changes)
 2. Frontend conversation (UI changes)
 3. Infrastructure conversation (database, config)
@@ -916,6 +959,7 @@ Approach: [Brief outline of what needs to change]
 ```
 
 This ensures:
+
 - ✅ Minimal context loading
 - ✅ Clear scope boundaries
 - ✅ Focused, efficient development
