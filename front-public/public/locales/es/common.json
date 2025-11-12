@@ -1,10 +1,10 @@
 {
   "header": {
-    "brand": "Panel de Herramientas",
+    "brand": "Herramientas",
     "subtitle": "Experiencia pública",
     "nav": {
       "register": "Registrarse",
-      "completeProfile": "Completar perfil"
+      "completeProfile": "Perfil"
     },
     "session": {
       "signedIn": "Sesión iniciada",
@@ -13,9 +13,9 @@
       "guest": "Invitado"
     },
     "actions": {
-      "signIn": "Iniciar sesión",
-      "register": "Registrarse",
-      "logout": "Cerrar sesión"
+      "signIn": "Ingresar",
+      "register": "Registro",
+      "logout": "Salir"
     }
   },
   "home": {
