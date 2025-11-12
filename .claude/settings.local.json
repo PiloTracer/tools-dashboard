@@ -9,7 +9,12 @@
       "Bash(curl:*)",
       "Bash(npm run build:*)",
       "Bash(mv:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Bash(python3:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker restart:*)",
+      "Bash(docker logs:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,35 @@
+name: user-subscription
+version: 1.0.0
+description: User subscription management API with package plans and payment integration
+endpoints:
+  - method: GET
+    path: /user-subscription/packages
+    auth: optional
+    description: Retrieve all available subscription packages with pricing and features.
+  - method: GET
+    path: /user-subscription/packages/{slug}
+    auth: optional
+    description: Retrieve a specific subscription package by slug with detailed metadata.
+  - method: GET
+    path: /user-subscription/user/{user_id}
+    auth: required
+    description: Retrieve the current subscription for a specific user.
+  - method: POST
+    path: /user-subscription/subscribe
+    auth: required
+    description: Subscribe a user to a package (initiates payment flow).
+  - method: POST
+    path: /user-subscription/cancel
+    auth: required
+    description: Cancel a user's current subscription.
+  - method: POST
+    path: /user-subscription/upgrade
+    auth: required
+    description: Upgrade or downgrade a user's subscription package.
+dependencies:
+  - back-postgres@1.0.0
+  - back-cassandra@1.0.0
+  - shared@2.4.1
+schemas:
+  request: subscription_request.json
+  response: subscription_response.json

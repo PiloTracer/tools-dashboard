@@ -1,6 +1,6 @@
-﻿CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY,
-    email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- Users table is managed by back-auth service (core/database.py)
+-- Do not create it here to avoid conflicts
+-- back-auth creates: users table with id INTEGER (autoincrement)
+
+-- This file is kept for migration numbering consistency
+-- No schema changes needed here

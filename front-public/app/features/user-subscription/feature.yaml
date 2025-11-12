@@ -1,0 +1,18 @@
+name: user-subscription
+version: 1.0.0
+description: User subscription management interface with pricing and checkout
+routes:
+  - path: /features/user-subscription
+    file: routes/index.tsx
+    description: Main subscription packages listing page
+  - path: /features/user-subscription/:slug
+    file: routes/checkout.tsx
+    description: Checkout page for a specific subscription package
+ui:
+  - ui/PackageCard.tsx
+  - ui/PricingToggle.tsx
+  - ui/CheckoutForm.tsx
+  - ui/FeatureList.tsx
+dependencies:
+  - react@18.x
+  - react-router@6.x

@@ -37,6 +37,7 @@ export function PublicLayout({
     () => [
       { to: "/features/user-registration", label: t("header.nav.register") },
       { to: "/features/progressive-profiling", label: t("header.nav.completeProfile") },
+      { to: "/features/user-subscription", label: t("header.nav.pricing") },
     ],
     [t]
   );
