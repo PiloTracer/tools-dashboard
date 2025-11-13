@@ -1,6 +1,24 @@
-﻿import type { MetaFunction } from "@remix-run/node";
+﻿import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import { Link } from "@remix-run/react";
 import type { CSSProperties } from "react";
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  // Check if user is authenticated
+  const cookie = request.headers.get("Cookie");
+  const hasSession = cookie?.includes("admin_session");
+
+  // If not authenticated, redirect to signin
+  // Use full path including /admin/ prefix for proper routing through nginx
+  if (!hasSession) {
+    return redirect("/admin/features/admin-signin");
+  }
+
+  // TODO: Verify session token and check admin role
+  // For now, just allow access if session cookie exists
+
+  return json({});
+}
 
 export const meta: MetaFunction = () => [
   { title: "Tools Dashboard · Admin Console" },

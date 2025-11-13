@@ -3,7 +3,8 @@ import { redirect } from "@remix-run/node";
 import { Form, useNavigation } from "@remix-run/react";
 
 export async function action(_args: ActionFunctionArgs) {
-  return redirect("/features/user-management");
+  // Use full path including /admin/ prefix for proper routing through nginx
+  return redirect("/admin/features/user-management");
 }
 
 export default function EditUser() {

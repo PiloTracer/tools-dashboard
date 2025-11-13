@@ -4,6 +4,7 @@ import { vitePlugin as remix } from "@remix-run/dev";
 export default defineConfig({
   plugins: [
     remix({
+      publicPath: "/app/build/",
       future: {
         v3_fetcherPersist: true,
         v3_relativeSplatPath: true,

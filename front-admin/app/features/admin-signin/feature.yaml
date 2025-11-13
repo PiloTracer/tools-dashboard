@@ -1,0 +1,8 @@
+name: admin-signin
+version: 1.0.0
+description: Email/password authentication for admin dashboard (no social login)
+routes:
+  - path: /features/admin-signin
+    file: routes/index.tsx
+ui:
+  - ui/AdminSigninForm.tsx

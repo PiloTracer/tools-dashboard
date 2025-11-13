@@ -42,7 +42,9 @@ users = Table(
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("email", String(320), nullable=False, unique=True),
     Column("password_hash", String(255), nullable=True),
-    Column("is_email_verified", Boolean, nullable=False, server_default="false"),
+    Column("is_email_verified", Boolean, nullable=False, server_default=text("false")),
+    Column("role", String(50), nullable=False, server_default=text("'customer'")),
+    Column("permissions", JSONB, nullable=False, server_default=text("'[]'::jsonb")),
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
 )
@@ -82,6 +84,7 @@ sessions = Table(
 )
 
 Index("ix_email_verification_tokens_token", email_verification_tokens.c.token)
+Index("ix_users_role", users.c.role)
 
 _engine: AsyncEngine | None = None
 SessionFactory: async_sessionmaker[AsyncSession] | None = None

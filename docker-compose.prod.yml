@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   nginx-proxy:
     image: nginx:alpine
@@ -53,7 +51,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://user:pass@postgresql:5432/main_db
       - REDIS_URL=redis://redis:6379/0
-      - CASSANDRA_CONTACT_POINTS=back-cassandra
+      - CASSANDRA_CONTACT_POINTS=cassandra
       - FEATURE_REGISTRY_URL=http://feature-registry:8005
       - AUTH_SERVICE_URL=http://back-auth:8001
     ports:

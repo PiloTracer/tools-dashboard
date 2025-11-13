@@ -6,7 +6,6 @@ export default defineConfig({
   plugins: [
     remix({
       publicPath: "/admin/build/",
-      assetsBuildDirectory: "public/build/admin",
       routes,
       future: {
         v3_fetcherPersist: true,

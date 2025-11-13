@@ -47,7 +47,7 @@ class Settings(BaseSettings):
 
     cassandra_contact_points: str | None = None
     cassandra_port: int = 9042
-    cassandra_keyspace: str = "auth_events"
+    cassandra_keyspace: str = "tools_dashboard"
 
     session_cookie_name: str = "td_session"
     session_cookie_secure: bool = True

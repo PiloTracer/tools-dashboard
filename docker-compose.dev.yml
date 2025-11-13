@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   nginx-proxy:
     image: nginx:alpine
@@ -63,7 +61,7 @@ services:
       - UVICORN_RELOAD=1
       - DATABASE_URL=postgresql://user:pass@postgresql:5432/main_db
       - REDIS_URL=redis://redis:6379/0
-      - CASSANDRA_CONTACT_POINTS=back-cassandra
+      - CASSANDRA_CONTACT_POINTS=cassandra
       - FEATURE_REGISTRY_URL=http://feature-registry:8005
       - AUTH_SERVICE_URL=http://back-auth:8001
     volumes:
@@ -106,23 +104,35 @@ services:
       - MAIL_PASSWORD=${MAIL_PASSWORD:-}
       - MAIL_SENDER=${MAIL_SENDER:-}
       - MAIL_USE_TLS=${MAIL_USE_TLS:-true}
-      - CASSANDRA_CONTACT_POINTS=${CASSANDRA_CONTACT_POINTS:-}
+      - CASSANDRA_CONTACT_POINTS=${CASSANDRA_CONTACT_POINTS:-cassandra}
       - CASSANDRA_PORT=${CASSANDRA_PORT:-9042}
-      - CASSANDRA_KEYSPACE=${CASSANDRA_KEYSPACE:-auth_events}
+      - CASSANDRA_KEYSPACE=${CASSANDRA_KEYSPACE:-tools_dashboard}
       - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
       - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
       - GOOGLE_OAUTH_REDIRECT_URI=${GOOGLE_OAUTH_REDIRECT_URI}
       - GOOGLE_OAUTH_SCOPES=${GOOGLE_OAUTH_SCOPES:-openid email profile}
       - GOOGLE_OAUTH_ALLOWED_DOMAINS=${GOOGLE_OAUTH_ALLOWED_DOMAINS:-}
       - GOOGLE_OAUTH_BUTTON_TEXT=${GOOGLE_OAUTH_BUTTON_TEXT:-}
+      - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL:-admin@example.com}
+      - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-Admin123!ChangeMe}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-in-production-please}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
     volumes:
       - ./back-auth:/app
     ports:
       - "8101:8001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
     depends_on:
       postgresql:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      cassandra:
         condition: service_healthy
       mailhog:
         condition: service_started
@@ -163,6 +173,8 @@ services:
       - ./back-postgres:/app
     depends_on:
       postgresql:
+        condition: service_healthy
+      back-auth:
         condition: service_healthy
 
   back-cassandra:

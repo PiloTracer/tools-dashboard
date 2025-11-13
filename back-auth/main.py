@@ -9,7 +9,8 @@ from pathlib import Path
 from fastapi import FastAPI
 
 from core.cassandra import init_cassandra, shutdown_cassandra
-from core.database import close_engine, init_engine
+from core.database import close_engine, get_session, init_engine
+from core.seed_admin import create_default_admin
 
 
 def _load_user_registration_router():
@@ -27,7 +28,23 @@ def _load_user_registration_router():
     return module.router
 
 
+def _load_email_auth_router():
+    """Load the email-auth feature package despite the hyphenated directory name."""
+    feature_dir = Path(__file__).resolve().parent / "features" / "email-auth" / "__init__.py"
+    module_name = "features.email_auth"
+
+    spec = importlib.util.spec_from_file_location(module_name, feature_dir)
+    if spec is None or spec.loader is None:
+        raise ImportError("Unable to load email-auth feature module")
+
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module.router
+
+
 user_registration_router = _load_user_registration_router()
+email_auth_router = _load_email_auth_router()
 
 app = FastAPI(title="Tools Dashboard Auth", version="0.1.0")
 
@@ -36,6 +53,11 @@ app = FastAPI(title="Tools Dashboard Auth", version="0.1.0")
 async def startup() -> None:
     await init_engine()
     init_cassandra()
+
+    # Create default admin user if it doesn't exist
+    async for session in get_session():
+        await create_default_admin(session)
+        break
 
 
 @app.on_event("shutdown")
@@ -50,3 +72,4 @@ async def health() -> dict[str, str]:
 
 
 app.include_router(user_registration_router)
+app.include_router(email_auth_router)

@@ -3,7 +3,8 @@ import { redirect } from "@remix-run/node";
 import { Form } from "@remix-run/react";
 
 export async function action(_args: ActionFunctionArgs) {
-  return redirect("/features/task-scheduler");
+  // Use full path including /admin/ prefix for proper routing through nginx
+  return redirect("/admin/features/task-scheduler");
 }
 
 export default function CreateTask() {

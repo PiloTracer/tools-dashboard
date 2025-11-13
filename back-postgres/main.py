@@ -87,9 +87,13 @@ async def create_db_pool() -> asyncpg.Pool:
                 raise
 
 
-async def wait_for_users_table(pool: asyncpg.Pool, max_wait: int = 60) -> None:
+async def wait_for_users_table(pool: asyncpg.Pool, max_wait: int = 120) -> None:
     """Wait for the users table to be created by back-auth service."""
     logger.info("Waiting for users table to be created by back-auth service...")
+
+    # Give back-auth service extra time to start up and run migrations
+    logger.info("Sleeping 10 seconds to allow back-auth to initialize...")
+    await asyncio.sleep(10)
 
     for attempt in range(1, max_wait + 1):
         try:

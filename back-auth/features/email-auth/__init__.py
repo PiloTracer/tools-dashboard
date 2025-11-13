@@ -1,1 +1,5 @@
-﻿"""Email + password authentication feature."""
+"""Email authentication feature package."""
+
+from .api import router
+
+__all__ = ["router"]

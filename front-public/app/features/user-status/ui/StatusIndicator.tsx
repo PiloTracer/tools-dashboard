@@ -21,28 +21,40 @@ export const StatusIndicator: FC = () => {
 
   const status = getSessionStatus();
 
+  // Get className based on status to avoid hydration mismatch
+  const getDotClassName = (): string => {
+    switch (status) {
+      case "pending":
+        return "session-dot pending";
+      case "unknown":
+        return "session-dot unknown";
+      default:
+        return "session-dot";
+    }
+  };
+
   return (
     <div className="session-indicator" data-status={status}>
       {status === "authenticated" && user ? (
         <>
-          <span className="session-dot" aria-hidden="true" />
+          <span className={getDotClassName()} aria-hidden="true" />
           <span className="session-label">{t("header.session.signedIn")}</span>
           <strong className="session-value">{user.email}</strong>
         </>
       ) : status === "pending" && user?.email ? (
         <>
-          <span className="session-dot pending" aria-hidden="true" />
+          <span className={getDotClassName()} aria-hidden="true" />
           <span className="session-label">{t("header.session.pendingVerification")}</span>
           <strong className="session-value">{user.email}</strong>
         </>
       ) : status === "unknown" ? (
         <>
-          <span className="session-dot unknown" aria-hidden="true" />
+          <span className={getDotClassName()} aria-hidden="true" />
           <span className="session-label">{t("header.session.statusUnknown")}</span>
         </>
       ) : (
         <>
-          <span className="session-dot" aria-hidden="true" />
+          <span className={getDotClassName()} aria-hidden="true" />
           <span className="session-label">{t("header.session.guest")}</span>
         </>
       )}

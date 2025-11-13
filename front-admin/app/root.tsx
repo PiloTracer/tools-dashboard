@@ -12,6 +12,7 @@ export default function App() {
   return (
     <html lang="en">
       <head>
+        <base href="/admin/" />
         <Meta />
         <Links />
       </head>

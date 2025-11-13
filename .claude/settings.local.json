@@ -14,7 +14,12 @@
       "Bash(python3:*)",
       "Bash(docker ps:*)",
       "Bash(docker restart:*)",
-      "Bash(docker logs:*)"
+      "Bash(docker logs:*)",
+      "Bash(/mnt/d/Projects/EPIC/tools-dashboard/back-auth/features/email-auth/__init__.py)",
+      "Bash(docker compose:*)",
+      "Bash(docker cp:*)",
+      "Bash(chmod:*)",
+      "Bash(/tmp/test_admin_login.sh)"
     ],
     "deny": [],
     "ask": []
