@@ -296,6 +296,28 @@ The `.claude/agents/` directory contains specialized sub-agent configurations:
 
 ---
 
+## Failed Fixes
+
+### Adding "type": "module" to package.json
+
+Usually in response to this exception or warning:
+
+```
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /app/package.json.
+```
+
+Adding the "module" as type, resulted in a new exception:
+
+```
+This file is being treated as an ES module because it has a '.js' file extension and '/app/package.json' contains "type": "module".    
+ To treat it as a CommonJS script, rename it to use the '.cjs' file extension. [plugin css-file]
+```
+
+Suggested: to ignore the warning that initiated the change.
+
+---
+
 **Last Updated**: 2025-11-12
 **Claude Code Version**: Latest
 **Project Version**: 0.1.0-dev

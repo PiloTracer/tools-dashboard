@@ -3,6 +3,9 @@ import { vitePlugin as remix } from "@remix-run/dev";
 import routes from "./react-router.config";
 
 export default defineConfig({
+  build: {
+    sourcemap: true,
+  },
   plugins: [
     remix({
       publicPath: "/admin/build/",

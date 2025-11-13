@@ -7,9 +7,10 @@ import logging
 import os
 from pathlib import Path
 
-from cassandra.cluster import Cluster
+from cassandra.cluster import Cluster, ExecutionProfile, EXEC_PROFILE_DEFAULT
 from cassandra.auth import PlainTextAuthProvider
-from cassandra.policies import RoundRobinPolicy
+from cassandra.policies import RoundRobinPolicy, DowngradingConsistencyRetryPolicy
+from cassandra import ConsistencyLevel
 
 logger = logging.getLogger(__name__)
 
@@ -63,13 +64,23 @@ def create_cassandra_session():
             else:
                 logger.info("No authentication (using Cassandra defaults)")
 
-            # Create cluster connection
+            # Create execution profile (recommended for Cassandra driver 4.0+)
+            profile = ExecutionProfile(
+                load_balancing_policy=RoundRobinPolicy(),
+                retry_policy=DowngradingConsistencyRetryPolicy(),
+                consistency_level=ConsistencyLevel.LOCAL_QUORUM,
+                serial_consistency_level=ConsistencyLevel.LOCAL_SERIAL,
+                request_timeout=15,
+                row_factory=lambda column_names, rows: rows,
+            )
+
+            # Create cluster connection with execution profile
             cassandra_cluster = Cluster(
                 contact_points=hosts,
                 port=port,
                 auth_provider=auth_provider,
                 protocol_version=4,  # Explicitly set protocol version to avoid downgrades
-                load_balancing_policy=RoundRobinPolicy(),  # Add load balancing policy
+                execution_profiles={EXEC_PROFILE_DEFAULT: profile},
             )
 
             # Create session without keyspace first
