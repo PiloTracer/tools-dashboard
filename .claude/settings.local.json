@@ -19,7 +19,11 @@
       "Bash(docker compose:*)",
       "Bash(docker cp:*)",
       "Bash(chmod:*)",
-      "Bash(/tmp/test_admin_login.sh)"
+      "Bash(/tmp/test_admin_login.sh)",
+      "Bash(/tmp/test_username_display.sh)",
+      "Bash(/tmp/check_sidebar.sh)",
+      "Bash(/tmp/check_cookie_set.sh)",
+      "Bash(/tmp/test_full_page_load.sh)"
     ],
     "deny": [],
     "ask": []

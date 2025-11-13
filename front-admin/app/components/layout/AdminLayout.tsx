@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 type AdminLayoutProps = {
   children: ReactNode;
+  userEmail?: string;
 };
 
 const NAV_ITEMS = [
@@ -152,7 +153,10 @@ const styles = {
   } as const,
 };
 
-export function AdminLayout({ children }: AdminLayoutProps) {
+export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
+  // Extract username from email (part before @)
+  const username = userEmail ? userEmail.split("@")[0] : null;
+
   return (
     <div style={styles.shell}>
       <aside style={styles.sidebar}>
@@ -180,6 +184,36 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           ))}
         </nav>
         <div style={styles.footer}>
+          {username && (
+            <>
+              <div style={{
+                marginBottom: "12px",
+                paddingBottom: "12px",
+                borderBottom: "1px solid rgba(148,163,184,0.2)"
+              }}>
+                <div style={{
+                  fontSize: "11px",
+                  color: "rgba(248,250,252,0.5)",
+                  marginBottom: "4px"
+                }}>
+                  Signed in as
+                </div>
+                <div style={{
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "#6366f1",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px"
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                  </svg>
+                  {username}
+                </div>
+              </div>
+            </>
+          )}
           Environment: <strong style={{ color: "#fff" }}>Local development</strong>
           <br /> Connected to stack
         </div>
