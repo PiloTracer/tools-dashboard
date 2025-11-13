@@ -5,7 +5,7 @@ Quick reference for starting productive Claude Code sessions based on your task.
 ## General Orientation
 
 ```
-Please read CLAUDE_CONTEXT.md and confirm you understand the project structure
+Read CLAUDE_CONTEXT.md
 ```
 
 Use when:
@@ -16,6 +16,17 @@ Use when:
 - Documentation
 
 ---
+
+## General
+
+### Generic starter
+```
+Please read:
+1. CLAUDE_CONTEXT.md
+2. .claude/CONVENTIONS.md
+
+Then fix the errors and document in .claude/fixes/
+```
 
 ## Service-Specific Work
 

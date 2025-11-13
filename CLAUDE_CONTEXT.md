@@ -252,6 +252,17 @@ The `.claude/agents/` directory contains specialized sub-agent configurations:
 
 **See**: `.claude/agents/README.md` for complete agent documentation
 
+### Documentation Organization
+The `.claude/` directory uses organized subdirectories for all Claude-generated documentation:
+- **fixes/**: Error fix reports and bug documentation
+- **implementations/**: Feature implementation logs
+- **decisions/**: Architecture Decision Records (ADRs)
+- **plans/**: Implementation plans and refactoring strategies
+
+**See**: `.claude/CONVENTIONS.md` for complete file organization guidelines
+
+**IMPORTANT for Claude Code**: Always place documentation in appropriate `.claude/` subdirectories, never in project root
+
 ### When to Read Which Context
 
 | Task | Read These Context Files |
