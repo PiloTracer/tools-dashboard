@@ -216,13 +216,61 @@ docker-compose -f docker-compose.dev.yml exec redis redis-cli
 
 ---
 
+## Context File Structure
+
+This project uses a hierarchical context system to help Claude understand the architecture at different levels:
+
+### Root Level
+- **CLAUDE_CONTEXT.md** (this file): High-level architecture, tech stack, commands, and project overview
+- **DEVELOPER_SETUP.md**: First-time setup instructions
+- **STACK_OPERATIONS.md**: Common operations and troubleshooting
+
+### Service Level
+Each service directory contains a `CONTEXT.md` file with:
+- Service-specific technology details
+- AI Context Guidelines (what to do/not do in this service)
+- Critical constraints (timeouts, connection pools, security)
+- Service boundaries and responsibilities
+
+**Example**: `back-api/CONTEXT.md` emphasizes "NEVER implement database logic here"
+
+### Feature Level
+Each feature directory contains a `feature.yaml` file with:
+- Feature contract definition
+- API endpoints and schemas
+- Dependencies and version requirements
+- Cross-service integration points
+
+**Example**: `back-api/features/user-registration/feature.yaml`
+
+### Agent Level
+The `.claude/agents/` directory contains specialized sub-agent configurations:
+- **Agent YAML files**: Define specialized agents for specific domains
+- **Feature context files**: Provide detailed context for complex features
+- **Ready-to-use prompts**: Pre-written prompts for common tasks
+- **Usage guides**: Instructions for working with agents
+
+**See**: `.claude/agents/README.md` for complete agent documentation
+
+### When to Read Which Context
+
+| Task | Read These Context Files |
+|------|-------------------------|
+| Project overview | `CLAUDE_CONTEXT.md` |
+| Working on specific service | `CLAUDE_CONTEXT.md` + `<service>/CONTEXT.md` |
+| Implementing feature | All of above + `<service>/features/<feature>/feature.yaml` |
+| Cross-service feature | All of above + `.claude/agents/CROSS_SERVICE_FEATURES.md` |
+| Using sub-agents | `.claude/agents/README.md` |
+
+---
+
 ## Documentation Index
 
 - **Architecture**: See individual `CONTEXT.md` files in each service directory
 - **API Docs**: Feature YAML files (`features/*/feature.yaml`)
 - **Setup**: `DEVELOPER_SETUP.md`, `STACK_OPERATIONS.md`
 - **Fixes Applied**: `FIXES_APPLIED_*.md`, `CONSOLE_ERRORS_FIXED_*.md`
-- **Agent Prompts**: `.claude/agents/` for sub-agent workflows
+- **Agent System**: `.claude/agents/README.md` for sub-agent workflows and templates
 
 ---
 
