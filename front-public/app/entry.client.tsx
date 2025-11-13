@@ -23,12 +23,8 @@ async function hydrate() {
       },
       detection: {
         order: ["cookie", "htmlTag", "navigator"], // Prioritize cookie for persistence
-        caches: ["cookie"],
-        cookieOptions: {
-          path: "/",
-          sameSite: "lax",
-          maxAge: 31536000, // 1 year
-        },
+        caches: [], // Disable client-side cookie writing - server handles persistence
+        lookupCookie: "i18next", // But still read from this cookie
       },
     });
 

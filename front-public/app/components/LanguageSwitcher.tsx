@@ -1,21 +1,28 @@
-import { Form } from "@remix-run/react";
+import { useSubmit } from "@remix-run/react";
 import { useTranslation } from "react-i18next";
 
 export function LanguageSwitcher() {
   const { i18n, t } = useTranslation();
+  const submit = useSubmit();
 
-  const handleLanguageChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newLanguage = e.target.value;
 
-    // Immediately change language on client side for instant feedback
-    await i18n.changeLanguage(newLanguage);
+    console.log("=== LANGUAGE SWITCH START ===");
+    console.log("Current language:", i18n.language);
+    console.log("New language:", newLanguage);
 
-    // Then submit form to persist on server
-    e.currentTarget.form?.requestSubmit();
+    // Submit to server immediately
+    console.log("Submitting to server...");
+    submit(
+      { lng: newLanguage },
+      { method: "post", action: "/app/change-language", replace: true }
+    );
+    console.log("Submit called");
   };
 
   return (
-    <Form method="post" action="/app/change-language" className="language-switcher">
+    <div className="language-switcher">
       <label htmlFor="language-select" className="sr-only">
         {t("language.selector")}
       </label>
@@ -29,6 +36,6 @@ export function LanguageSwitcher() {
         <option value="en">{t("language.en")}</option>
         <option value="es">{t("language.es")}</option>
       </select>
-    </Form>
+    </div>
   );
 }
