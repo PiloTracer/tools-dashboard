@@ -55,10 +55,15 @@ export default function App() {
         <Meta />
         <Links />
       </head>
-      <body>
-        <AdminLayout userEmail={userEmail || undefined}>
+      <body style={{ margin: 0, padding: 0 }}>
+        {/* Only wrap in AdminLayout if user is authenticated */}
+        {userEmail ? (
+          <AdminLayout userEmail={userEmail}>
+            <Outlet />
+          </AdminLayout>
+        ) : (
           <Outlet />
-        </AdminLayout>
+        )}
         <ScrollRestoration />
         <Scripts />
       </body>

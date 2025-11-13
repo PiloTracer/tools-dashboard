@@ -154,7 +154,7 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 /**
- * Component: Admin signin page
+ * Component: Admin signin page (standalone, no layout)
  */
 export default function AdminSigninIndex() {
   const loaderData = useLoaderData<typeof loader>();
@@ -164,15 +164,11 @@ export default function AdminSigninIndex() {
   const isSubmitting = navigation.state === "submitting";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
-        <AdminSigninForm
-          csrfToken={loaderData.csrfToken}
-          fieldErrors={actionData?.fieldErrors}
-          formError={actionData?.formError}
-          isSubmitting={isSubmitting}
-        />
-      </div>
-    </div>
+    <AdminSigninForm
+      csrfToken={loaderData.csrfToken}
+      fieldErrors={actionData?.fieldErrors}
+      formError={actionData?.formError}
+      isSubmitting={isSubmitting}
+    />
   );
 }

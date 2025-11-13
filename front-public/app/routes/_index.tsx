@@ -4,13 +4,23 @@ import { Link } from "@remix-run/react";
 import { usePublicBasePath } from "../components/layout/PublicLayout";
 import { joinBasePath } from "../utils/publicPaths";
 
-export const meta: MetaFunction = () => [
-  { title: "Tools Dashboard - Public Portal" },
-  {
-    name: "description",
-    content: "Welcome to the public onboarding experience for the Tools Dashboard ecosystem.",
-  },
-];
+export const meta: MetaFunction = ({ matches }) => {
+  // Get parent meta tags
+  const parentMeta = matches
+    .flatMap((match) => match.meta ?? [])
+    .filter((meta): meta is { charset: string } | { name: string; content: string } => {
+      return 'charset' in meta || ('name' in meta && meta.name === 'viewport');
+    });
+
+  return [
+    ...parentMeta,
+    { title: "Tools Dashboard - Public Portal" },
+    {
+      name: "description",
+      content: "Welcome to the public onboarding experience for the Tools Dashboard ecosystem.",
+    },
+  ];
+};
 
 const FEATURE_CARDS = [
   {

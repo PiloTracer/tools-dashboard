@@ -92,5 +92,5 @@ export async function action({ request }: ActionFunctionArgs) {
   return json({ success: true }, { status: 200 });
 }
 
-// Resource route - no default export needed
-// This ensures the route only returns JSON from loader/action
+// Resource route - must export null as default to be API-only
+export default null;
