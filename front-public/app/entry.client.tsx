@@ -22,8 +22,13 @@ async function hydrate() {
         loadPath: "/app/locales/{{lng}}/{{ns}}.json",
       },
       detection: {
-        order: ["htmlTag", "cookie", "navigator"],
+        order: ["cookie", "htmlTag", "navigator"], // Prioritize cookie for persistence
         caches: ["cookie"],
+        cookieOptions: {
+          path: "/",
+          sameSite: "lax",
+          maxAge: 31536000, // 1 year
+        },
       },
     });
 

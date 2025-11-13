@@ -7,6 +7,8 @@ import * as i18n from "./i18n";
 const i18nCookie = createCookie("i18next", {
   sameSite: "lax",
   path: "/",
+  maxAge: 31536000, // 1 year - persist language preference across sessions
+  httpOnly: false,  // Allow client-side access for i18next language detector
 });
 
 export default new RemixI18Next({

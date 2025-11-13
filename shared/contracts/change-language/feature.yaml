@@ -1,0 +1,42 @@
+name: change-language
+version: 1.0.1
+description: |
+  Internationalization (i18n) language switching feature with cookie-based persistence.
+  Handles user language preference changes across browser sessions.
+type: frontend-feature
+routes:
+  - method: POST
+    path: /app/change-language
+    description: Change user language preference and set persistent cookie
+  - method: GET
+    path: /app/change-language
+    description: Redirect to referrer (resource route, no UI)
+supported_languages:
+  - en  # English (default)
+  - es  # Spanish
+cookie:
+  name: i18next
+  path: /
+  sameSite: lax
+  maxAge: 31536000  # 1 year in seconds
+  httpOnly: false   # Allow client-side access for i18next
+dependencies:
+  - remix-i18next@3.0.0
+  - react-i18next@13.0.0
+  - i18next@23.0.0
+  - i18next-browser-languagedetector@7.0.0
+  - i18next-http-backend@2.0.0
+schemas:
+  language_change_request:
+    type: object
+    properties:
+      lng:
+        type: string
+        enum: [en, es]
+        description: ISO 639-1 language code
+    required:
+      - lng
+  cookie_value:
+    type: string
+    enum: [en, es]
+    description: Serialized language preference stored in cookie

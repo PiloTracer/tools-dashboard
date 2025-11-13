@@ -40,9 +40,11 @@ Handles language change requests:
 **Cookie Name:** `i18next`
 **Path:** `/`
 **SameSite:** `lax`
+**MaxAge:** `31536000` (1 year)
+**HttpOnly:** `false` (allows client-side access for i18next language detector)
 **Format:** Serialized locale string (e.g., `"en"`, `"es"`)
 
-This cookie is read by the i18next server-side configuration to determine the user's language preference on subsequent requests.
+This cookie is read by the i18next server-side configuration to determine the user's language preference on subsequent requests. The cookie persists for 1 year, ensuring language preference is maintained across browser sessions.
 
 ## Integration
 
@@ -94,7 +96,30 @@ curl -X POST http://epicdev.com/app/change-language \
 
 Both should return a 302 redirect with a `Set-Cookie` header containing the i18next cookie.
 
+## Recent Fixes (v1.0.1)
+
+### Issue 1: Multiple selections needed on first language change
+**Root Cause:** Language detection order prioritized HTML tag over cookie, causing conflicts
+**Fix:** Updated `entry.client.tsx` to prioritize cookie detection first: `["cookie", "htmlTag", "navigator"]`
+
+### Issue 2: Language preference not persisting across browser sessions
+**Root Cause:** Cookie was session-based (no maxAge) and httpOnly prevented client-side access
+**Fix:**
+- Added `maxAge: 31536000` (1 year) to cookie configuration in both `i18next.server.ts` and route handler
+- Added `httpOnly: false` to allow i18next browser language detector to read the cookie
+- Added `cookieOptions` to client-side detection configuration
+
+### Issue 3: Language change required page reload to take effect
+**Root Cause:** No immediate client-side language change before server persistence
+**Fix:** Enhanced `LanguageSwitcher.tsx` to call `i18n.changeLanguage()` immediately on selection before form submission
+
 ## Version History
+
+**1.0.1** - Bug fixes for persistence and UX
+- Fixed cookie persistence across browser sessions (1 year maxAge)
+- Fixed client-side cookie access (httpOnly: false)
+- Fixed detection priority order (cookie first)
+- Immediate client-side language change for better UX
 
 **1.0.0** - Initial implementation
 - Cookie-based language persistence

@@ -10,6 +10,8 @@ import { resolvePublicPath } from "../../../utils/publicPath.server";
 const i18nCookie = createCookie("i18next", {
   sameSite: "lax",
   path: "/",
+  maxAge: 31536000, // 1 year - persist language preference across sessions
+  httpOnly: false,  // Allow client-side access for i18next language detector
 });
 
 /**
