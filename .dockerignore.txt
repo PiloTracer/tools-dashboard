@@ -176,3 +176,4 @@ nbproject/
 
 # Other
 SUBAGENTS/
+.dev-notes/
