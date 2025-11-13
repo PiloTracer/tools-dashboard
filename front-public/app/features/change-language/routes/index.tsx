@@ -1,18 +1,8 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { createCookie, redirect } from "@remix-run/node";
+import { redirect } from "@remix-run/node";
 
 import { resolvePublicPath } from "../../../utils/publicPath.server";
-
-/**
- * i18next cookie configuration
- * Matches the configuration in i18next.server.ts for consistency
- */
-const i18nCookie = createCookie("i18next", {
-  sameSite: "lax",
-  path: "/",
-  maxAge: 31536000, // 1 year - persist language preference across sessions
-  httpOnly: false,  // Allow client-side access for i18next language detector
-});
+import { i18nCookie } from "../../../i18next.server";
 
 /**
  * Loader function for change-language route

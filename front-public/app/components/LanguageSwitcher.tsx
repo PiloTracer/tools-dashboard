@@ -5,20 +5,27 @@ export function LanguageSwitcher() {
   const { i18n, t } = useTranslation();
   const submit = useSubmit();
 
+  // Normalize language to base code (en-US -> en)
+  const currentLang = i18n.language.split('-')[0];
+
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newLanguage = e.target.value;
 
     console.log("=== LANGUAGE SWITCH START ===");
-    console.log("Current language:", i18n.language);
+    console.log("Current language:", i18n.language, "Normalized:", currentLang);
     console.log("New language:", newLanguage);
 
-    // Submit to server immediately
-    console.log("Submitting to server...");
-    submit(
-      { lng: newLanguage },
-      { method: "post", action: "/app/change-language", replace: true }
-    );
-    console.log("Submit called");
+    // Only submit if actually changing
+    if (newLanguage !== currentLang) {
+      console.log("Submitting to server...");
+      submit(
+        { lng: newLanguage },
+        { method: "post", action: "/app/change-language", replace: true }
+      );
+      console.log("Submit called");
+    } else {
+      console.log("Same language, skipping submit");
+    }
   };
 
   return (
@@ -29,7 +36,7 @@ export function LanguageSwitcher() {
       <select
         id="language-select"
         name="lng"
-        value={i18n.language}
+        value={currentLang}
         onChange={handleLanguageChange}
         className="language-select"
       >

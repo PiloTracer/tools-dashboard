@@ -4,14 +4,14 @@ import { RemixI18Next } from "remix-i18next/server";
 import Backend from "i18next-fs-backend";
 import * as i18n from "./i18n";
 
-const i18nCookie = createCookie("i18next", {
+export const i18nCookie = createCookie("i18next", {
   sameSite: "lax",
   path: "/",
   maxAge: 31536000, // 1 year - persist language preference across sessions
   httpOnly: false,  // Allow client-side access for i18next language detector
 });
 
-export default new RemixI18Next({
+const i18nextServer = new RemixI18Next({
   detection: {
     supportedLanguages: i18n.default.supportedLngs,
     fallbackLanguage: i18n.default.fallbackLng,
@@ -28,3 +28,5 @@ export default new RemixI18Next({
     },
   },
 });
+
+export default i18nextServer;
