@@ -183,9 +183,16 @@ export default function UserManagementEdit() {
   const navigation = useNavigation();
   const [isTogglingStatus, setIsTogglingStatus] = React.useState(false);
   const [currentStatus, setCurrentStatus] = React.useState((user as any).status || "active");
+  const [newPassword, setNewPassword] = React.useState("");
+  const [confirmPassword, setConfirmPassword] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
 
   const isSubmitting = navigation.state === "submitting";
   const isActive = currentStatus === "active";
+
+  // Check if editing own account (user.id === 1 is admin@example.com from mock auth)
+  const isEditingOwnAccount = user.id === 1;
 
   const handleStatusToggle = async () => {
     const newStatus = isActive ? "inactive" : "active";
@@ -254,60 +261,227 @@ export default function UserManagementEdit() {
         </p>
       </div>
 
-      {/* User Status Toggle */}
+      {/* User Status Toggle - Hidden when editing own account */}
+      {!isEditingOwnAccount && (
+        <div style={{
+          marginBottom: "24px",
+          backgroundColor: "#ffffff",
+          boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1)",
+          borderRadius: "8px",
+          borderLeft: `4px solid ${isActive ? "#10b981" : "#ef4444"}`
+        }}>
+          <div style={{ padding: "20px 24px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <h3 style={{
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  lineHeight: "24px",
+                  color: "#111827"
+                }}>
+                  User Status
+                </h3>
+                <div style={{ marginTop: "8px", maxWidth: "36rem" }}>
+                  <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                    This user is currently{" "}
+                    <span style={{
+                      fontWeight: 600,
+                      color: isActive ? "#10b981" : "#ef4444"
+                    }}>
+                      {isActive ? "ACTIVE" : "DISABLED"}
+                    </span>
+                    . {isActive ? "The user can log in and access the system." : "The user cannot log in or access the system."}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleStatusToggle}
+                disabled={isTogglingStatus}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  borderRadius: "6px",
+                  padding: "10px 14px",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "#ffffff",
+                  boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+                  border: "none",
+                  backgroundColor: isTogglingStatus ? "#9ca3af" : (isActive ? "#ef4444" : "#10b981"),
+                  cursor: isTogglingStatus ? "not-allowed" : "pointer",
+                }}
+              >
+                {isTogglingStatus ? "Processing..." : (isActive ? "Disable User" : "Enable User")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Password Section */}
       <div style={{
         marginBottom: "24px",
         backgroundColor: "#ffffff",
         boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1)",
         borderRadius: "8px",
-        borderLeft: `4px solid ${isActive ? "#10b981" : "#ef4444"}`
+        padding: "20px 24px"
       }}>
-        <div style={{ padding: "20px 24px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div>
-              <h3 style={{
-                fontSize: "16px",
-                fontWeight: 600,
-                lineHeight: "24px",
-                color: "#111827"
-              }}>
-                User Status
-              </h3>
-              <div style={{ marginTop: "8px", maxWidth: "36rem" }}>
-                <p style={{ fontSize: "14px", color: "#6b7280" }}>
-                  This user is currently{" "}
-                  <span style={{
-                    fontWeight: 600,
-                    color: isActive ? "#10b981" : "#ef4444"
-                  }}>
-                    {isActive ? "ACTIVE" : "DISABLED"}
-                  </span>
-                  . {isActive ? "The user can log in and access the system." : "The user cannot log in or access the system."}
-                </p>
-              </div>
+        <h3 style={{
+          fontSize: "16px",
+          fontWeight: 600,
+          color: "#111827",
+          marginBottom: "16px"
+        }}>
+          Change Password
+        </h3>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px" }}>
+          <div>
+            <label htmlFor="new_password" style={{
+              display: "block",
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "#374151",
+              marginBottom: "6px"
+            }}>
+              New Password
+            </label>
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                id="new_password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "8px 40px 8px 12px",
+                  fontSize: "14px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "6px",
+                  outline: "none"
+                }}
+                placeholder="Enter new password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: "absolute",
+                  right: "8px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "4px",
+                  color: "#6b7280"
+                }}
+              >
+                {showPassword ? "👁️" : "👁️‍🗨️"}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={handleStatusToggle}
-              disabled={isTogglingStatus}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                borderRadius: "6px",
-                padding: "10px 14px",
-                fontSize: "14px",
-                fontWeight: 600,
-                color: "#ffffff",
-                boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
-                border: "none",
-                backgroundColor: isTogglingStatus ? "#9ca3af" : (isActive ? "#ef4444" : "#10b981"),
-                cursor: isTogglingStatus ? "not-allowed" : "pointer",
-              }}
-            >
-              {isTogglingStatus ? "Processing..." : (isActive ? "Disable User" : "Enable User")}
-            </button>
+          </div>
+          <div>
+            <label htmlFor="confirm_password" style={{
+              display: "block",
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "#374151",
+              marginBottom: "6px"
+            }}>
+              Confirm Password
+            </label>
+            <div style={{ position: "relative" }}>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                id="confirm_password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "8px 40px 8px 12px",
+                  fontSize: "14px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "6px",
+                  outline: "none"
+                }}
+                placeholder="Confirm new password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={{
+                  position: "absolute",
+                  right: "8px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "4px",
+                  color: "#6b7280"
+                }}
+              >
+                {showConfirmPassword ? "👁️" : "👁️‍🗨️"}
+              </button>
+            </div>
           </div>
         </div>
+        {newPassword && confirmPassword && newPassword !== confirmPassword && (
+          <p style={{ marginTop: "8px", fontSize: "13px", color: "#ef4444" }}>
+            Passwords do not match
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={async () => {
+            if (!newPassword) {
+              alert("Please enter a new password");
+              return;
+            }
+            if (newPassword !== confirmPassword) {
+              alert("Passwords do not match");
+              return;
+            }
+            if (newPassword.length < 8) {
+              alert("Password must be at least 8 characters");
+              return;
+            }
+
+            try {
+              const response = await fetch(`/admin/api/users/${user.id}/password`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ password: newPassword }),
+              });
+
+              if (response.ok) {
+                setNewPassword("");
+                setConfirmPassword("");
+                alert("Password changed successfully");
+              } else {
+                const error = await response.json();
+                alert(`Failed to change password: ${error.detail || "Unknown error"}`);
+              }
+            } catch (error) {
+              alert("Network error. Please try again.");
+            }
+          }}
+          disabled={!newPassword || !confirmPassword || newPassword !== confirmPassword}
+          style={{
+            marginTop: "16px",
+            padding: "8px 16px",
+            fontSize: "14px",
+            fontWeight: 500,
+            color: "#ffffff",
+            backgroundColor: (!newPassword || !confirmPassword || newPassword !== confirmPassword) ? "#9ca3af" : "#2563eb",
+            border: "none",
+            borderRadius: "6px",
+            cursor: (!newPassword || !confirmPassword || newPassword !== confirmPassword) ? "not-allowed" : "pointer"
+          }}
+        >
+          Change Password
+        </button>
       </div>
 
       {/* Error Message */}
