@@ -9,9 +9,11 @@ This module provides admin endpoints for:
 - Bulk operations
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
 from pydantic import BaseModel, EmailStr, Field
 from typing import Any
+from datetime import datetime
+from io import BytesIO
 
 from .domain import (
     UserManagementService,
@@ -526,3 +528,126 @@ async def bulk_operation(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
+
+
+@router.post(
+    "/{user_id}/picture",
+    summary="Upload profile picture",
+    description="Upload and process user profile picture (PNG/JPG, max 5MB)",
+    status_code=status.HTTP_200_OK,
+)
+async def upload_profile_picture(
+    user_id: int,
+    file: UploadFile = File(...),
+    admin: dict = Depends(get_current_admin),
+    service: UserManagementService = Depends(get_service),
+    request: Request = None,
+):
+    """Upload profile picture for user.
+
+    Process:
+    1. Validate file type (PNG or JPG only)
+    2. Validate file size (max 5MB)
+    3. Convert to JPG
+    4. Create optimized original (max 512x512, under 100KB)
+    5. Create thumbnail (120x120)
+    6. Upload both to SeaweedFS
+    7. Update user's picture_url in Cassandra
+
+    Returns:
+        dict with picture_url and thumbnail_url
+    """
+    from services.seaweedfs_service import get_seaweedfs_service
+    from utils.image_processing import ImageProcessor
+
+    # Validate file type
+    if not file.content_type or not ImageProcessor.validate_image_format(file.content_type):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only PNG and JPG images are supported"
+        )
+
+    # Read file
+    try:
+        file_data = await file.read()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to read uploaded file: {e}"
+        )
+
+    # Validate file size (5MB max for upload)
+    MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
+    if len(file_data) > MAX_UPLOAD_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File size exceeds 5MB limit"
+        )
+
+    # Process image
+    try:
+        original_bytes, thumbnail_bytes = ImageProcessor.process_profile_picture(file_data)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+    # Generate unique filenames
+    timestamp = int(datetime.utcnow().timestamp())
+    original_key = f"{user_id}_{timestamp}.jpg"
+    thumbnail_key = f"{user_id}_{timestamp}_thumb.jpg"
+
+    # Upload to SeaweedFS
+    seaweedfs = get_seaweedfs_service()
+    bucket = "user-profile-pictures"
+
+    try:
+        # Upload original
+        original_url = seaweedfs.upload_file(
+            BytesIO(original_bytes),
+            bucket,
+            original_key,
+            content_type="image/jpeg"
+        )
+
+        # Upload thumbnail
+        thumbnail_url = seaweedfs.upload_file(
+            BytesIO(thumbnail_bytes),
+            bucket,
+            thumbnail_key,
+            content_type="image/jpeg"
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload to storage: {e}"
+        )
+
+    # Update user's picture_url in database
+    try:
+        update_data = UserUpdateRequest(picture_url=thumbnail_url)
+        await service.update_user(
+            user_id=user_id,
+            request=update_data,
+            admin_user=admin,
+            ip_address=get_client_ip(request),
+        )
+    except ValueError as e:
+        # Cleanup uploaded files if database update fails
+        try:
+            seaweedfs.delete_file(bucket, original_key)
+            seaweedfs.delete_file(bucket, thumbnail_key)
+        except:
+            pass
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+
+    return {
+        "picture_url": original_url,
+        "thumbnail_url": thumbnail_url,
+        "message": "Profile picture uploaded successfully"
+    }

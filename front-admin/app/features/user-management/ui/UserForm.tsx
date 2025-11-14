@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Form } from "@remix-run/react";
 
 export type UserFormData = {
+  id?: number;
   email: string;
   first_name?: string;
   last_name?: string;
@@ -84,7 +85,74 @@ const fieldGroupStyle = {
 
 export const UserForm: FC<Props> = ({ user, errors, isSubmitting, mode = "edit" }) => {
   const [imageError, setImageError] = useState(false);
-  const hasValidPicture = user?.picture_url && !imageError;
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const hasValidPicture = (previewUrl || user?.picture_url) && !imageError;
+
+  // Handle file selection
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.match(/^image\/(png|jpeg|jpg)$/)) {
+      alert("Only PNG and JPG images are supported");
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size must be less than 5MB");
+      return;
+    }
+
+    setSelectedFile(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviewUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handle upload
+  const handleUpload = async () => {
+    if (!selectedFile || !user) return;
+
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const response = await fetch(`/admin/api/users/${user.id}/picture`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || "Upload failed");
+      }
+
+      const result = await response.json();
+
+      // Update preview with thumbnail URL
+      setPreviewUrl(result.thumbnail_url);
+      setSelectedFile(null);
+
+      alert("Profile picture uploaded successfully!");
+
+    } catch (error: any) {
+      alert(`Upload failed: ${error.message}`);
+      setPreviewUrl(null);
+      setSelectedFile(null);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // Inline SVG for default avatar (eliminates path/routing issues)
   const DefaultAvatarSvg = () => (
@@ -116,7 +184,7 @@ export const UserForm: FC<Props> = ({ user, errors, isSubmitting, mode = "edit" 
           }}>
             {hasValidPicture ? (
               <img
-                src={user.picture_url}
+                src={previewUrl || user.picture_url}
                 alt="Profile"
                 style={{
                   width: "100%",
@@ -138,22 +206,44 @@ export const UserForm: FC<Props> = ({ user, errors, isSubmitting, mode = "edit" 
               color: "#6b7280",
               marginBottom: "8px"
             }}>
-              Profile picture URL
+              Upload Profile Picture
             </p>
             <input
-              type="text"
-              name="picture_url"
-              id="picture_url"
-              defaultValue={user?.picture_url}
-              placeholder="https://example.com/picture.jpg"
-              style={inputStyle}
+              type="file"
+              accept="image/png,image/jpeg,image/jpg"
+              onChange={handleFileSelect}
+              style={{
+                ...inputStyle,
+                padding: "8px"
+              }}
             />
+            {selectedFile && (
+              <div style={{ marginTop: "12px" }}>
+                <button
+                  type="button"
+                  onClick={handleUpload}
+                  disabled={isUploading}
+                  style={{
+                    backgroundColor: isUploading ? "#9ca3af" : "#3b82f6",
+                    color: "#ffffff",
+                    padding: "8px 16px",
+                    borderRadius: "4px",
+                    border: "none",
+                    cursor: isUploading ? "not-allowed" : "pointer",
+                    fontSize: "14px",
+                    fontWeight: "500"
+                  }}
+                >
+                  {isUploading ? "Uploading..." : "Upload Picture"}
+                </button>
+              </div>
+            )}
             <p style={{
               fontSize: "12px",
               color: "#9ca3af",
-              marginTop: "4px"
+              marginTop: "8px"
             }}>
-              Picture upload to SeaweedFS storage will be available in the next iteration
+              Supported: PNG or JPG • Max 5MB • Auto-converted to JPG • Creates thumbnail (120x120)
             </p>
           </div>
         </div>
