@@ -28,19 +28,9 @@ export const UserTable: FC<Props> = ({ users, onSort, sortBy, sortOrder }) => {
     }
   };
 
-  const getSortIcon = (field: string) => {
-    if (sortBy !== field) return "↕";
-    return sortOrder === "asc" ? "↑" : "↓";
-  };
-
-  const getRoleBadgeColor = (role: string) => {
-    const colors: Record<string, string> = {
-      admin: "bg-red-100 text-red-800",
-      moderator: "bg-purple-100 text-purple-800",
-      support: "bg-blue-100 text-blue-800",
-      customer: "bg-gray-100 text-gray-800",
-    };
-    return colors[role] || "bg-gray-100 text-gray-800";
+  const getSortIndicator = (field: string) => {
+    if (sortBy !== field) return "";
+    return sortOrder === "asc" ? " ↑" : " ↓";
   };
 
   const formatDate = (dateString: string) => {
@@ -52,100 +42,103 @@ export const UserTable: FC<Props> = ({ users, onSort, sortBy, sortOrder }) => {
   };
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
+    <div className="overflow-x-auto bg-white">
+      <table className="min-w-full">
+        <thead>
+          <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
             <th
               scope="col"
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              className="px-6 py-4 text-left text-sm font-semibold text-gray-900 cursor-pointer"
               onClick={() => handleSort("email")}
+              style={{ letterSpacing: "0.01em" }}
             >
-              Email {getSortIcon("email")}
+              Email{getSortIndicator("email")}
             </th>
             <th
               scope="col"
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              className="px-6 py-4 text-left text-sm font-semibold text-gray-900"
+              style={{ letterSpacing: "0.01em" }}
             >
               Name
             </th>
             <th
               scope="col"
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              className="px-6 py-4 text-left text-sm font-semibold text-gray-900 cursor-pointer"
               onClick={() => handleSort("role")}
+              style={{ letterSpacing: "0.01em" }}
             >
-              Role {getSortIcon("role")}
+              Role{getSortIndicator("role")}
             </th>
             <th
               scope="col"
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              className="px-6 py-4 text-left text-sm font-semibold text-gray-900"
+              style={{ letterSpacing: "0.01em" }}
             >
-              Verified
+              Status
             </th>
             <th
               scope="col"
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              className="px-6 py-4 text-left text-sm font-semibold text-gray-900 cursor-pointer"
               onClick={() => handleSort("created_at")}
+              style={{ letterSpacing: "0.01em" }}
             >
-              Joined {getSortIcon("created_at")}
+              Joined{getSortIndicator("created_at")}
             </th>
             <th
               scope="col"
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              className="px-6 py-4 text-left text-sm font-semibold text-gray-900"
+              style={{ letterSpacing: "0.01em" }}
             >
               Last Login
             </th>
-            <th scope="col" className="relative px-6 py-3">
+            <th scope="col" className="relative px-6 py-4">
               <span className="sr-only">Actions</span>
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody>
           {users.length === 0 ? (
             <tr>
-              <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
+              <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-500">
                 No users found
               </td>
             </tr>
           ) : (
             users.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{user.email}</div>
+              <tr key={user.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                <td className="px-6 py-3 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{user.email}</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
+                <td className="px-6 py-3 whitespace-nowrap">
+                  <div className="text-sm text-gray-700">
                     {user.first_name || user.last_name
                       ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
-                      : "-"}
+                      : "—"}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeColor(
-                      user.role
-                    )}`}
-                  >
+                <td className="px-6 py-3 whitespace-nowrap">
+                  <div className="text-sm text-gray-900" style={{ textTransform: "capitalize" }}>
                     {user.role}
-                  </span>
+                  </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-3 whitespace-nowrap">
                   {user.is_email_verified ? (
-                    <span className="text-green-600">✓</span>
+                    <span className="text-sm font-medium" style={{ color: "#059669" }}>Verified</span>
                   ) : (
-                    <span className="text-gray-400">✗</span>
+                    <span className="text-sm" style={{ color: "#9ca3af" }}>Unverified</span>
                   )}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">
                   {formatDate(user.created_at)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {user.last_login ? formatDate(user.last_login) : "-"}
+                <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">
+                  {user.last_login ? formatDate(user.last_login) : "—"}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td className="px-6 py-3 whitespace-nowrap text-right text-sm">
                   <Link
                     to={`/admin/features/user-management/${user.id}`}
-                    className="text-indigo-600 hover:text-indigo-900"
+                    className="font-medium"
+                    style={{ color: "#2563eb", textDecoration: "none" }}
                   >
                     View
                   </Link>

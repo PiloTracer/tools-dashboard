@@ -158,99 +158,198 @@ export default function UserManagementEdit() {
   const isSubmitting = navigation.state === "submitting";
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8">
+    <div style={{ padding: "32px 0" }}>
       {/* Header */}
-      <div className="mb-6">
+      <div style={{ marginBottom: "32px" }}>
         <Link
           to="/admin/features/user-management"
-          className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+          style={{
+            fontSize: "14px",
+            fontWeight: 500,
+            color: "#2563eb",
+            textDecoration: "none",
+            display: "inline-block",
+            marginBottom: "12px"
+          }}
         >
           ← Back to User List
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold text-gray-900">Edit User</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <h1 style={{
+          fontSize: "24px",
+          fontWeight: 600,
+          color: "#111827",
+          marginBottom: "8px",
+          letterSpacing: "-0.01em"
+        }}>
+          Edit User
+        </h1>
+        <p style={{
+          fontSize: "14px",
+          color: "#6b7280"
+        }}>
           Update user information for {user.email}
         </p>
       </div>
 
-      {/* Success/Error Messages */}
+      {/* Error Message */}
       {actionData?.errors?.form && (
-        <div className="mb-6 rounded-md bg-red-50 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg
-                className="h-5 w-5 text-red-400"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">
-                Error updating user
-              </h3>
-              <div className="mt-2 text-sm text-red-700">
-                {actionData.errors.form}
-              </div>
-            </div>
-          </div>
+        <div style={{
+          backgroundColor: "#fef2f2",
+          border: "1px solid #fecaca",
+          borderRadius: "6px",
+          padding: "16px",
+          marginBottom: "24px"
+        }}>
+          <h3 style={{
+            fontSize: "14px",
+            fontWeight: 600,
+            color: "#991b1b",
+            marginBottom: "4px"
+          }}>
+            Error updating user
+          </h3>
+          <p style={{
+            fontSize: "14px",
+            color: "#dc2626",
+            margin: 0
+          }}>
+            {actionData.errors.form}
+          </p>
         </div>
       )}
 
-      {/* User Info Card */}
-      <div className="mb-6 bg-white shadow sm:rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-            User Information
-          </h3>
-          <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-            <div>
-              <dt className="text-sm font-medium text-gray-500">User ID</dt>
-              <dd className="mt-1 text-sm text-gray-900">{user.id}</dd>
-            </div>
-            <div>
-              <dt className="text-sm font-medium text-gray-500">Role</dt>
-              <dd className="mt-1">
-                <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                  {user.role}
-                </span>
-              </dd>
-            </div>
-            <div>
-              <dt className="text-sm font-medium text-gray-500">Email Verified</dt>
-              <dd className="mt-1 text-sm text-gray-900">
-                {user.is_email_verified ? "✓ Yes" : "✗ No"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-sm font-medium text-gray-500">
-                Profile Completion
-              </dt>
-              <dd className="mt-1 text-sm text-gray-900">
-                {user.profile_completion_percentage}%
-              </dd>
-            </div>
-            <div>
-              <dt className="text-sm font-medium text-gray-500">Joined</dt>
-              <dd className="mt-1 text-sm text-gray-900">
-                {new Date(user.created_at).toLocaleDateString()}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-sm font-medium text-gray-500">Last Login</dt>
-              <dd className="mt-1 text-sm text-gray-900">
-                {user.last_login
-                  ? new Date(user.last_login).toLocaleDateString()
-                  : "Never"}
-              </dd>
-            </div>
-          </dl>
-        </div>
+      {/* User Information Card */}
+      <div style={{
+        backgroundColor: "#ffffff",
+        border: "1px solid #e5e7eb",
+        borderRadius: "6px",
+        padding: "24px",
+        marginBottom: "24px"
+      }}>
+        <h3 style={{
+          fontSize: "16px",
+          fontWeight: 600,
+          color: "#111827",
+          marginBottom: "16px",
+          paddingBottom: "12px",
+          borderBottom: "1px solid #f3f4f6"
+        }}>
+          User Information
+        </h3>
+        <dl style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, 1fr)",
+          gap: "16px"
+        }}>
+          <div>
+            <dt style={{
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "#6b7280",
+              marginBottom: "4px"
+            }}>
+              User ID
+            </dt>
+            <dd style={{
+              fontSize: "14px",
+              color: "#111827",
+              margin: 0
+            }}>
+              {user.id}
+            </dd>
+          </div>
+          <div>
+            <dt style={{
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "#6b7280",
+              marginBottom: "4px"
+            }}>
+              Role
+            </dt>
+            <dd style={{
+              fontSize: "14px",
+              color: "#111827",
+              margin: 0,
+              textTransform: "capitalize"
+            }}>
+              {user.role}
+            </dd>
+          </div>
+          <div>
+            <dt style={{
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "#6b7280",
+              marginBottom: "4px"
+            }}>
+              Email Status
+            </dt>
+            <dd style={{
+              fontSize: "14px",
+              margin: 0
+            }}>
+              {user.is_email_verified ? (
+                <span style={{ color: "#059669", fontWeight: 500 }}>Verified</span>
+              ) : (
+                <span style={{ color: "#9ca3af" }}>Unverified</span>
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt style={{
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "#6b7280",
+              marginBottom: "4px"
+            }}>
+              Profile Completion
+            </dt>
+            <dd style={{
+              fontSize: "14px",
+              color: "#111827",
+              margin: 0
+            }}>
+              {user.profile_completion_percentage}%
+            </dd>
+          </div>
+          <div>
+            <dt style={{
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "#6b7280",
+              marginBottom: "4px"
+            }}>
+              Joined
+            </dt>
+            <dd style={{
+              fontSize: "14px",
+              color: "#111827",
+              margin: 0
+            }}>
+              {new Date(user.created_at).toLocaleDateString()}
+            </dd>
+          </div>
+          <div>
+            <dt style={{
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "#6b7280",
+              marginBottom: "4px"
+            }}>
+              Last Login
+            </dt>
+            <dd style={{
+              fontSize: "14px",
+              color: "#111827",
+              margin: 0
+            }}>
+              {user.last_login
+                ? new Date(user.last_login).toLocaleDateString()
+                : "—"}
+            </dd>
+          </div>
+        </dl>
       </div>
 
       {/* Edit Form */}

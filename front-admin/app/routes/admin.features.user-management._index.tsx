@@ -120,38 +120,79 @@ export default function UserManagementIndex() {
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8">
+    <div style={{ padding: "32px 0" }}>
       {/* Header */}
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">User Management</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Manage user accounts, roles, and permissions. Total users: {data.total}
-          </p>
-        </div>
+      <div style={{ marginBottom: "32px" }}>
+        <h1 style={{
+          fontSize: "24px",
+          fontWeight: 600,
+          color: "#111827",
+          marginBottom: "8px",
+          letterSpacing: "-0.01em"
+        }}>
+          User Management
+        </h1>
+        <p style={{
+          fontSize: "14px",
+          color: "#6b7280",
+          fontWeight: 400
+        }}>
+          Manage user accounts, roles, and permissions. <span style={{ color: "#9ca3af" }}>Total users: {data.total}</span>
+        </p>
       </div>
 
-      {/* Filters */}
-      <div className="mt-6 bg-white shadow sm:rounded-lg p-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      {/* Search & Filter Controls */}
+      <div style={{
+        backgroundColor: "#ffffff",
+        border: "1px solid #e5e7eb",
+        borderRadius: "6px",
+        padding: "20px",
+        marginBottom: "24px"
+      }}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "16px" }}>
           {/* Search */}
-          <form onSubmit={handleSearch} className="sm:col-span-2">
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700">
+          <form onSubmit={handleSearch}>
+            <label htmlFor="search" style={{
+              display: "block",
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "#374151",
+              marginBottom: "6px"
+            }}>
               Search by email
             </label>
-            <div className="mt-1 flex rounded-md shadow-sm">
+            <div style={{ display: "flex", gap: "0" }}>
               <input
                 type="text"
                 name="search"
                 id="search"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Enter email to search..."
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                placeholder="Enter email address"
+                style={{
+                  flex: 1,
+                  padding: "8px 12px",
+                  fontSize: "14px",
+                  border: "1px solid #d1d5db",
+                  borderTopLeftRadius: "6px",
+                  borderBottomLeftRadius: "6px",
+                  borderRight: "none",
+                  outline: "none"
+                }}
               />
               <button
                 type="submit"
-                className="ml-3 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                style={{
+                  padding: "8px 20px",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#ffffff",
+                  backgroundColor: "#2563eb",
+                  border: "1px solid #2563eb",
+                  borderTopRightRadius: "6px",
+                  borderBottomRightRadius: "6px",
+                  cursor: "pointer"
+                }}
               >
                 Search
               </button>
@@ -160,14 +201,28 @@ export default function UserManagementIndex() {
 
           {/* Role Filter */}
           <div>
-            <label htmlFor="role-filter" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="role-filter" style={{
+              display: "block",
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "#374151",
+              marginBottom: "6px"
+            }}>
               Filter by role
             </label>
             <select
               id="role-filter"
               value={searchParams.get("role") || ""}
               onChange={(e) => handleRoleFilter(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                fontSize: "14px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                backgroundColor: "#ffffff",
+                outline: "none"
+              }}
             >
               <option value="">All Roles</option>
               <option value="admin">Admin</option>
@@ -180,17 +235,17 @@ export default function UserManagementIndex() {
       </div>
 
       {/* User Table */}
-      <div className="mt-8 flow-root">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <UserTable
-              users={data.users}
-              onSort={handleSort}
-              sortBy={sortBy}
-              sortOrder={sortOrder}
-            />
-          </div>
-        </div>
+      <div style={{
+        border: "1px solid #e5e7eb",
+        borderRadius: "6px",
+        overflow: "hidden"
+      }}>
+        <UserTable
+          users={data.users}
+          onSort={handleSort}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+        />
       </div>
 
       {/* Pagination */}
