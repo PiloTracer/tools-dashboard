@@ -21,6 +21,41 @@ class AuditRepository:
         # In production, prepare these statements for reuse
         pass
 
+    def log_audit_event(
+        self,
+        user_id: str,
+        action: str,
+        details: dict[str, Any],
+        ip_address: str | None = None,
+    ) -> None:
+        """Log an audit event (simplified wrapper for create_audit_log).
+
+        Args:
+            user_id: ID of the user being modified
+            action: Action performed (e.g., 'user.status_changed')
+            details: Dict containing action details including changed_by info
+            ip_address: IP address (optional)
+        """
+        admin_id = details.get("changed_by_id", "unknown")
+        admin_email = details.get("changed_by", "unknown")
+
+        # Remove admin info from changes dict
+        changes = {k: v for k, v in details.items()
+                  if k not in ("changed_by", "changed_by_id")}
+
+        try:
+            self.create_audit_log(
+                admin_id=admin_id,
+                admin_email=admin_email,
+                user_id=user_id,
+                action=action,
+                changes=changes,
+                ip_address=ip_address,
+            )
+        except Exception as e:
+            # Don't fail the operation if audit logging fails
+            print(f"Warning: Failed to log audit event: {e}")
+
     def create_audit_log(
         self,
         admin_id: str,

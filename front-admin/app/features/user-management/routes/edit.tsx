@@ -1,6 +1,6 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
-import { useLoaderData, useActionData, useNavigation, Link } from "@remix-run/react";
+import { useLoaderData, useActionData, useNavigation, Link, useFetcher } from "@remix-run/react";
 import { UserForm, type UserFormData } from "../ui/UserForm";
 
 type LoaderData = {
@@ -154,8 +154,29 @@ export default function UserManagementEdit() {
   const { user } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
+  const statusFetcher = useFetcher();
 
   const isSubmitting = navigation.state === "submitting";
+  const isTogglingStatus = statusFetcher.state !== "idle";
+  const currentStatus = user.status || "active";
+  const isActive = currentStatus === "active";
+
+  const handleStatusToggle = async () => {
+    const newStatus = isActive ? "inactive" : "active";
+    const reason = isActive ? "Disabled by administrator" : "Enabled by administrator";
+
+    statusFetcher.submit(
+      {
+        status: newStatus,
+        reason: reason,
+      },
+      {
+        method: "PATCH",
+        action: `/admin/api/users/${user.id}/status`,
+        encType: "application/json",
+      }
+    );
+  };
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8">
@@ -171,6 +192,40 @@ export default function UserManagementEdit() {
         <p className="mt-1 text-sm text-gray-600">
           Update user information for {user.email}
         </p>
+      </div>
+
+      {/* User Status Toggle */}
+      <div className="mb-6 bg-white shadow sm:rounded-lg border-l-4" style={{ borderLeftColor: isActive ? "#10b981" : "#ef4444" }}>
+        <div className="px-4 py-5 sm:p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-semibold leading-6 text-gray-900">
+                User Status
+              </h3>
+              <div className="mt-2 max-w-xl text-sm text-gray-500">
+                <p>
+                  This user is currently{" "}
+                  <span className="font-semibold" style={{ color: isActive ? "#10b981" : "#ef4444" }}>
+                    {isActive ? "ACTIVE" : "DISABLED"}
+                  </span>
+                  . {isActive ? "The user can log in and access the system." : "The user cannot log in or access the system."}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleStatusToggle}
+              disabled={isTogglingStatus}
+              className="inline-flex items-center rounded-md px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              style={{
+                backgroundColor: isTogglingStatus ? "#9ca3af" : (isActive ? "#ef4444" : "#10b981"),
+                cursor: isTogglingStatus ? "not-allowed" : "pointer",
+              }}
+            >
+              {isTogglingStatus ? "Processing..." : (isActive ? "Disable User" : "Enable User")}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Success/Error Messages */}

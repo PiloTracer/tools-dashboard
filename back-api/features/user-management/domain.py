@@ -369,6 +369,91 @@ class UserManagementService:
         # Return updated user detail
         return await self.get_user_detail(user_id, admin_user)
 
+    async def update_user_status(
+        self,
+        user_id: int,
+        request: UserStatusUpdateRequest,
+        admin_user: dict,
+        ip_address: str | None = None,
+    ) -> dict[str, Any]:
+        """Update user status (active/inactive/suspended).
+
+        This triggers session invalidation if status is set to inactive or suspended.
+
+        Args:
+            user_id: User ID to update
+            request: Status update request
+            admin_user: Current admin user (for audit)
+            ip_address: Admin's IP address (for audit)
+
+        Returns:
+            Updated user detail
+
+        Raises:
+            ValueError: If user not found or self-modification attempted
+        """
+        # Prevent self-modification
+        if user_id == admin_user["id"]:
+            raise ValueError("Cannot change your own status")
+
+        # Get old status for audit
+        old_user = await self.user_repo.get_user_by_id(user_id)
+        if not old_user:
+            raise ValueError(f"User {user_id} not found")
+
+        # 1. Update status in PostgreSQL
+        user = await self.user_repo.update_user_status(
+            user_id,
+            request.status,
+        )
+
+        if not user:
+            raise ValueError(f"User {user_id} not found")
+
+        # 2. Sync canonical data to Cassandra (if user has extended profile)
+        try:
+            self.user_ext_repo.sync_canonical_data(
+                user_id=str(user_id),
+                email=user["email"],
+                role=user["role"],
+                status=request.status,
+            )
+        except (ValueError, Exception) as e:
+            # Skip Cassandra sync if user_id is not UUID format
+            # This happens for integer-based user IDs from PostgreSQL
+            print(f"Warning: Skipping Cassandra sync for user {user_id}: {e}")
+
+        # 3. Invalidate all user sessions if status is inactive or suspended
+        if request.status in ("inactive", "suspended"):
+            try:
+                await self.auth_service.invalidate_user_sessions(
+                    user_id=user_id,
+                    reason=request.reason or f"Account {request.status}",
+                )
+            except Exception as e:
+                # Log error but don't fail the status update
+                print(f"Warning: Failed to invalidate sessions for user {user_id}: {e}")
+
+        # 4. Audit log
+        try:
+            self.audit_repo.log_audit_event(
+                user_id=str(user_id),
+                action="user.status_changed",
+                details={
+                    "old_status": old_user.get("status", "active"),
+                    "new_status": request.status,
+                    "reason": request.reason,
+                    "changed_by": admin_user["email"],
+                    "changed_by_id": str(admin_user["id"]),
+                },
+                ip_address=ip_address,
+            )
+        except Exception as e:
+            # Don't fail status update if audit logging fails
+            print(f"Warning: Failed to create audit log: {e}")
+
+        return await self.get_user_detail(user_id, admin_user)
+
     async def update_user_role(
         self,
         user_id: int,
@@ -436,75 +521,6 @@ class UserManagementService:
             changes={
                 "role": {"old": old_user["role"], "new": request.role},
                 "permissions": {"old": old_user["permissions"], "new": request.permissions},
-                "reason": request.reason,
-            },
-            ip_address=ip_address,
-        )
-
-        return await self.get_user_detail(user_id, admin_user)
-
-    async def update_user_status(
-        self,
-        user_id: int,
-        request: UserStatusUpdateRequest,
-        admin_user: dict,
-        ip_address: str | None = None,
-    ) -> dict[str, Any]:
-        """Update user status.
-
-        Note: Status column doesn't exist yet in PostgreSQL schema.
-        This is a placeholder implementation.
-
-        Args:
-            user_id: User ID to update
-            request: Status update request
-            admin_user: Current admin user (for audit)
-            ip_address: Admin's IP address (for audit)
-
-        Returns:
-            Updated user detail
-
-        Raises:
-            ValueError: If user not found or self-modification attempted
-        """
-        # Prevent self-modification
-        if user_id == admin_user["id"]:
-            raise ValueError("Cannot change your own status")
-
-        # Get user
-        user = await self.user_repo.get_user_by_id(user_id)
-        if not user:
-            raise ValueError(f"User {user_id} not found")
-
-        # TODO: Update status in PostgreSQL when column exists
-        # user = await self.user_repo.update_user_status(user_id, request.status)
-
-        # Sync to Cassandra
-        self.user_ext_repo.sync_canonical_data(
-            user_id=str(user_id),
-            email=user["email"],
-            role=user["role"],
-            status=request.status,
-        )
-
-        # Invalidate sessions if inactive or suspended
-        if request.status in ["inactive", "suspended"]:
-            try:
-                await self.auth_service.invalidate_user_sessions(
-                    user_id=user_id,
-                    reason=request.reason or f"Status changed to {request.status}",
-                )
-            except Exception as e:
-                print(f"Warning: Failed to invalidate sessions for user {user_id}: {e}")
-
-        # Create audit log
-        self.audit_repo.create_audit_log(
-            admin_id=str(admin_user["id"]),
-            admin_email=admin_user["email"],
-            user_id=str(user_id),
-            action="change_status",
-            changes={
-                "status": {"old": "active", "new": request.status},  # TODO: Track actual old status
                 "reason": request.reason,
             },
             ip_address=ip_address,

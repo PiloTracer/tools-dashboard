@@ -140,7 +140,7 @@ class UserRepository:
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow(
                 """
-                SELECT id, email, role, permissions, is_email_verified,
+                SELECT id, email, role, permissions, is_email_verified, status,
                        created_at, updated_at
                 FROM users
                 WHERE id = $1
@@ -220,7 +220,7 @@ class UserRepository:
 
             # Get users
             query = f"""
-                SELECT id, email, role, permissions, is_email_verified,
+                SELECT id, email, role, permissions, is_email_verified, status,
                        created_at, updated_at
                 FROM users
                 {where_sql}
@@ -255,7 +255,7 @@ class UserRepository:
         async with self.pool.acquire() as conn:
             rows = await conn.fetch(
                 """
-                SELECT id, email, role, permissions, is_email_verified,
+                SELECT id, email, role, permissions, is_email_verified, status,
                        created_at, updated_at
                 FROM users
                 WHERE email ILIKE $1
@@ -279,7 +279,7 @@ class UserRepository:
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow(
                 """
-                SELECT id, email, role, permissions, is_email_verified,
+                SELECT id, email, role, permissions, is_email_verified, status,
                        created_at, updated_at
                 FROM users
                 WHERE id = $1
@@ -329,7 +329,7 @@ class UserRepository:
                 UPDATE users
                 SET {', '.join(updates)}
                 WHERE id = ${param_index}
-                RETURNING id, email, role, permissions, is_email_verified,
+                RETURNING id, email, role, permissions, is_email_verified, status,
                           created_at, updated_at
             """
 
@@ -343,9 +343,6 @@ class UserRepository:
     ) -> dict[str, Any] | None:
         """Update user status.
 
-        Note: This is a placeholder. The users table doesn't currently have a status column.
-        This method will need to be updated when the schema is enhanced.
-
         Args:
             user_id: User's unique identifier
             status: New status (active, inactive, suspended)
@@ -353,9 +350,24 @@ class UserRepository:
         Returns:
             Updated user dict or None if not found
         """
-        # TODO: Add status column to users table schema
-        # For now, just return the user unchanged
-        return await self.get_user_by_id(user_id)
+        # Validate status
+        valid_statuses = ["active", "inactive", "suspended"]
+        if status not in valid_statuses:
+            raise ValueError(f"Invalid status. Must be one of: {', '.join(valid_statuses)}")
+
+        query = """
+            UPDATE users
+            SET status = $1, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $2
+            RETURNING *
+        """
+
+        result = await self.pool.fetchrow(query, status, user_id)
+
+        if not result:
+            return None
+
+        return dict(result)
 
     async def update_user_role(
         self,
@@ -381,7 +393,7 @@ class UserRepository:
                     permissions = $2::jsonb,
                     updated_at = $3
                 WHERE id = $4
-                RETURNING id, email, role, permissions, is_email_verified,
+                RETURNING id, email, role, permissions, is_email_verified, status,
                           created_at, updated_at
                 """,
                 role,

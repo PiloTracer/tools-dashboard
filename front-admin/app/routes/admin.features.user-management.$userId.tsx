@@ -1,6 +1,7 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { useLoaderData, useActionData, useNavigation, Link } from "@remix-run/react";
+import React from "react";
 import { UserForm, type UserFormData } from "../features/user-management/ui/UserForm";
 
 type LoaderData = {
@@ -180,8 +181,44 @@ export default function UserManagementEdit() {
   const { user } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
+  const [isTogglingStatus, setIsTogglingStatus] = React.useState(false);
+  const [currentStatus, setCurrentStatus] = React.useState((user as any).status || "active");
 
   const isSubmitting = navigation.state === "submitting";
+  const isActive = currentStatus === "active";
+
+  const handleStatusToggle = async () => {
+    const newStatus = isActive ? "inactive" : "active";
+    const reason = isActive ? "Disabled by administrator" : "Enabled by administrator";
+
+    setIsTogglingStatus(true);
+
+    try {
+      const response = await fetch(`/admin/api/users/${user.id}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: newStatus,
+          reason: reason,
+        }),
+      });
+
+      if (response.ok) {
+        setCurrentStatus(newStatus);
+      } else {
+        const error = await response.json();
+        console.error("Failed to update status:", error);
+        alert("Failed to update user status. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+      alert("Network error. Please try again.");
+    } finally {
+      setIsTogglingStatus(false);
+    }
+  };
 
   return (
     <div style={{ padding: "32px 0" }}>
@@ -215,6 +252,62 @@ export default function UserManagementEdit() {
         }}>
           Update user information for {user.email}
         </p>
+      </div>
+
+      {/* User Status Toggle */}
+      <div style={{
+        marginBottom: "24px",
+        backgroundColor: "#ffffff",
+        boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1)",
+        borderRadius: "8px",
+        borderLeft: `4px solid ${isActive ? "#10b981" : "#ef4444"}`
+      }}>
+        <div style={{ padding: "20px 24px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <h3 style={{
+                fontSize: "16px",
+                fontWeight: 600,
+                lineHeight: "24px",
+                color: "#111827"
+              }}>
+                User Status
+              </h3>
+              <div style={{ marginTop: "8px", maxWidth: "36rem" }}>
+                <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                  This user is currently{" "}
+                  <span style={{
+                    fontWeight: 600,
+                    color: isActive ? "#10b981" : "#ef4444"
+                  }}>
+                    {isActive ? "ACTIVE" : "DISABLED"}
+                  </span>
+                  . {isActive ? "The user can log in and access the system." : "The user cannot log in or access the system."}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleStatusToggle}
+              disabled={isTogglingStatus}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                borderRadius: "6px",
+                padding: "10px 14px",
+                fontSize: "14px",
+                fontWeight: 600,
+                color: "#ffffff",
+                boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+                border: "none",
+                backgroundColor: isTogglingStatus ? "#9ca3af" : (isActive ? "#ef4444" : "#10b981"),
+                cursor: isTogglingStatus ? "not-allowed" : "pointer",
+              }}
+            >
+              {isTogglingStatus ? "Processing..." : (isActive ? "Disable User" : "Enable User")}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Error Message */}

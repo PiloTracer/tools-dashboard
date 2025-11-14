@@ -49,6 +49,7 @@ class UserListItemResponse(BaseModel):
     role: str
     permissions: list[str]
     is_email_verified: bool
+    status: str | None = "active"
     created_at: str
     updated_at: str
     last_login: str | None
@@ -71,6 +72,7 @@ class UserDetailResponse(BaseModel):
     role: str
     permissions: list[str]
     is_email_verified: bool
+    status: str | None = "active"
     created_at: str
     updated_at: str
 
@@ -467,14 +469,28 @@ async def update_user_status(
     )
 
     try:
+        print(f"🔧 Updating user {user_id} status to {request_body.status}")
+        print(f"🔧 Admin user: {admin}")
         detail = await service.update_user_status(
             user_id,
             status_request,
             admin,
             ip_address=get_client_ip(request),
         )
+        print(f"✅ Status updated successfully")
         return UserDetailResponse(**detail)
     except ValueError as e:
+        print(f"❌ ValueError: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        print(f"❌ Unexpected error: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
