@@ -276,9 +276,18 @@ async def get_user_detail(
         detail = await service.get_user_detail(user_id, admin)
         return UserDetailResponse(**detail)
     except ValueError as e:
+        print(f"ERROR: Get user {user_id} failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
+        )
+    except Exception as e:
+        print(f"ERROR: Unexpected error getting user {user_id}: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error",
         )
 
 
@@ -325,9 +334,16 @@ async def update_user(
         )
         return UserDetailResponse(**detail)
     except ValueError as e:
+        print(f"ERROR: Update user {user_id} failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
+        )
+    except Exception as e:
+        print(f"ERROR: Unexpected error updating user {user_id}: {type(e).__name__}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error",
         )
 
 

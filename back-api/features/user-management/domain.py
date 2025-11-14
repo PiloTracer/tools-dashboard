@@ -109,17 +109,20 @@ class UserManagementService:
         )
 
         # Enhance with extended profile data from Cassandra
+        import uuid
+        USER_ID_NAMESPACE = uuid.UUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')
+
         enhanced_users = []
         for user in result["users"]:
             # Get extended profile if available
             # Note: PostgreSQL uses integer IDs, Cassandra expects UUIDs
-            # For now, gracefully handle missing extended profiles
+            # Generate deterministic UUID from integer user_id
             ext_profile = None
             try:
-                ext_profile = self.user_ext_repo.get_extended_profile(str(user["id"]))
+                user_uuid = str(uuid.uuid5(USER_ID_NAMESPACE, str(user["id"])))
+                ext_profile = self.user_ext_repo.get_extended_profile(user_uuid)
             except (ValueError, Exception):
-                # Extended profile doesn't exist or ID format mismatch
-                # This is expected for users created before extended profiles feature
+                # Extended profile doesn't exist yet
                 pass
 
             # Merge core and extended data
@@ -168,12 +171,15 @@ class UserManagementService:
 
         # Get extended profile from Cassandra
         # Note: PostgreSQL uses integer IDs, Cassandra expects UUIDs
-        # For now, gracefully handle missing extended profiles
+        # Generate deterministic UUID from integer user_id
         ext_profile = None
         try:
-            ext_profile = self.user_ext_repo.get_extended_profile(str(user_id))
+            import uuid
+            USER_ID_NAMESPACE = uuid.UUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')
+            user_uuid = str(uuid.uuid5(USER_ID_NAMESPACE, str(user_id)))
+            ext_profile = self.user_ext_repo.get_extended_profile(user_uuid)
         except (ValueError, Exception):
-            # Extended profile doesn't exist or ID format mismatch
+            # Extended profile doesn't exist yet
             pass
 
         # Merge all data
@@ -197,7 +203,7 @@ class UserManagementService:
             "industry": ext_profile.get("industry") if ext_profile else None,
             "language": ext_profile.get("language") if ext_profile else None,
             "timezone": ext_profile.get("timezone") if ext_profile else None,
-            "profile_completion_percentage": ext_profile.get("profile_completion_percentage") if ext_profile else 0,
+            "profile_completion_percentage": (ext_profile.get("profile_completion_percentage") or 0) if ext_profile else 0,
 
             # TODO: Add activity history, sessions
             "last_login": None,
@@ -247,13 +253,23 @@ class UserManagementService:
             if not user:
                 raise ValueError(f"User {user_id} not found")
 
-            # 2. Sync canonical data to Cassandra
-            self.user_ext_repo.sync_canonical_data(
-                user_id=str(user_id),
-                email=user["email"],
-                role=user["role"],
-                status="active",  # TODO: Use actual status when column exists
-            )
+            # 2. Sync canonical data to Cassandra (only if extended profile exists)
+            # Note: PostgreSQL uses integer IDs, Cassandra expects UUIDs
+            # Generate deterministic UUID from integer user_id
+            try:
+                import uuid
+                USER_ID_NAMESPACE = uuid.UUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')
+                user_uuid = str(uuid.uuid5(USER_ID_NAMESPACE, str(user_id)))
+
+                self.user_ext_repo.sync_canonical_data(
+                    user_id=user_uuid,
+                    email=user["email"],
+                    role=user["role"],
+                    status="active",  # TODO: Use actual status when column exists
+                )
+            except (ValueError, Exception):
+                # Extended profile doesn't exist yet
+                pass
 
         # 3. Update extended fields in Cassandra (if provided)
         extended_fields = {}
@@ -265,17 +281,54 @@ class UserManagementService:
                 changes[field] = {"old": None, "new": value}  # TODO: Track old values
 
         if extended_fields:
-            self.user_ext_repo.update_profile_fields(str(user_id), extended_fields)
+            # Create or update extended profile in Cassandra
+            # Note: For now, we'll create a UUID from the integer user_id
+            # In production, consider using a mapping table or different strategy
+            try:
+                # First, try to get the user data to create denormalized copy
+                user = await self.user_repo.get_user_by_id(user_id)
+                if user:
+                    # Generate a deterministic UUID from the integer user_id
+                    # UUID v5 uses SHA-1 hash of a namespace and name
+                    import uuid
+                    # Use a custom namespace for user IDs
+                    USER_ID_NAMESPACE = uuid.UUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')
+                    user_uuid = str(uuid.uuid5(USER_ID_NAMESPACE, str(user_id)))
+
+                    # Upsert extended profile with both extended fields and denormalized data
+                    self.user_ext_repo.upsert_extended_profile(
+                        user_id=user_uuid,
+                        extended_data=extended_fields,
+                        denormalized_data={
+                            "email": user["email"],
+                            "role": user["role"],
+                            "status": "active",  # TODO: Use actual status
+                        }
+                    )
+            except Exception as e:
+                # Log but don't fail the update if Cassandra fails
+                print(f"Warning: Failed to update extended profile for user {user_id}: {e}")
+                pass
 
         # 4. Create audit log
-        self.audit_repo.create_audit_log(
-            admin_id=str(admin_user["id"]),
-            admin_email=admin_user["email"],
-            user_id=str(user_id),
-            action="update_profile",
-            changes=changes,
-            ip_address=ip_address,
-        )
+        try:
+            import uuid
+            USER_ID_NAMESPACE = uuid.UUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')
+            admin_uuid = str(uuid.uuid5(USER_ID_NAMESPACE, str(admin_user["id"])))
+            user_uuid = str(uuid.uuid5(USER_ID_NAMESPACE, str(user_id)))
+
+            self.audit_repo.create_audit_log(
+                admin_id=admin_uuid,
+                admin_email=admin_user["email"],
+                user_id=user_uuid,
+                action="update_profile",
+                changes=changes,
+                ip_address=ip_address,
+            )
+        except (ValueError, Exception) as e:
+            # Audit logging is best-effort, don't fail the update
+            print(f"Warning: Failed to create audit log for user {user_id}: {e}")
+            pass
 
         # Return updated user detail
         return await self.get_user_detail(user_id, admin_user)
