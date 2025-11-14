@@ -1,7 +1,7 @@
-﻿import type { LoaderFunctionArgs } from "@remix-run/node";
+import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData, useSearchParams, useNavigate } from "@remix-run/react";
-import { UserTable, type User } from "../ui/UserTable";
+import { UserTable, type User } from "../features/user-management/ui/UserTable";
 import { useState } from "react";
 
 type LoaderData = {
@@ -26,7 +26,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const sortOrder = url.searchParams.get("sort_order") || "desc";
 
   // Build query params for back-api
-  const apiUrl = process.env.API_URL || "http://back-api:8100";
+  const apiUrl = process.env.API_URL || "http://back-api:8000";
   const queryParams = new URLSearchParams({
     page,
     page_size: pageSize,
@@ -40,7 +40,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   try {
     // TODO: Add Authorization header with admin JWT token
-    const response = await fetch(`${apiUrl}/api/admin/users?${queryParams}`, {
+    const response = await fetch(`${apiUrl}/admin/users?${queryParams}`, {
       headers: {
         // "Authorization": `Bearer ${token}`,
       },

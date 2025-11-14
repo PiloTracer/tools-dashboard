@@ -1,10 +1,180 @@
 ﻿name: user-management
 version: 1.0.0
+description: Admin dashboard for comprehensive user management including viewing, editing, role assignment, and status control
+
+# Routes
 routes:
-  - path: /features/user-management
+  - path: /admin/features/user-management
     file: routes/index.tsx
-  - path: /features/user-management/edit
+    description: User list page with pagination, search, filtering, and sorting
+    loader: Fetches paginated users from back-api GET /api/admin/users
+    features:
+      - Pagination with page size control
+      - Email search functionality
+      - Role filtering (admin, moderator, support, customer)
+      - Sortable columns (email, role, created_at)
+      - Total user count display
+      - Responsive design with Tailwind CSS
+
+  - path: /admin/features/user-management/:userId
     file: routes/edit.tsx
+    description: User detail and edit page
+    loader: Fetches user detail from back-api GET /api/admin/users/{id}
+    action: Updates user via back-api PUT /api/admin/users/{id}
+    features:
+      - User information card (ID, role, email verified, profile completion, joined date, last login)
+      - Comprehensive edit form with 4 sections
+      - Form validation and error handling
+      - Loading states during submission
+      - Success redirect to user list
+      - Back navigation
+
+# UI Components
 ui:
-  - ui/UserTable.tsx
-  - ui/UserForm.tsx
+  - name: UserTable.tsx
+    description: Responsive table component for displaying user lists
+    props:
+      - users (User[]): Array of user objects
+      - onSort (function): Sort handler callback
+      - sortBy (string): Current sort field
+      - sortOrder (asc|desc): Current sort order
+    features:
+      - Sortable columns with visual indicators
+      - Role badges with color coding
+      - Email verification status display
+      - Formatted date display
+      - View action links
+      - Empty state handling
+      - Hover effects for better UX
+
+  - name: UserForm.tsx
+    description: Comprehensive form component for creating/editing users
+    props:
+      - user (UserFormData): User data to populate form
+      - errors (Record<string, string>): Field-level errors
+      - isSubmitting (boolean): Loading state
+      - mode (create|edit): Form mode
+    sections:
+      - Core Information: Email (required)
+      - Personal Information: First name, last name, phone
+      - Professional Information: Company, job title, department, industry
+      - Preferences: Language, timezone
+    features:
+      - Default values from user prop
+      - Field-level error display
+      - Disabled state during submission
+      - Cancel and submit actions
+      - Responsive grid layout
+
+# Data Flow
+data_flow:
+  list_page:
+    - User navigates to /admin/features/user-management
+    - Remix loader executes server-side
+    - Loader builds query params from URL search params
+    - Loader fetches from back-api GET /api/admin/users
+    - Returns LoaderData with users, total, pagination info
+    - Component renders UserTable with data
+    - User interactions update URL params and trigger reloads
+
+  edit_page:
+    - User clicks View on user row
+    - Navigates to /admin/features/user-management/{userId}
+    - Remix loader fetches user detail from back-api
+    - Returns LoaderData with full user object
+    - Component renders user info card and UserForm
+    - User submits form
+    - Remix action extracts formData
+    - Action sends PUT request to back-api
+    - On success, redirects to list page
+    - On error, returns ActionData with errors
+
+# Styling
+styling:
+  framework: Tailwind CSS
+  theme:
+    colors:
+      primary: indigo-600
+      error: red-600
+      success: green-600
+    badges:
+      admin: red-100/red-800
+      moderator: purple-100/purple-800
+      support: blue-100/blue-800
+      customer: gray-100/gray-800
+  components:
+    - Responsive grid layouts (sm:, lg: breakpoints)
+    - Shadow and rounded corners for cards
+    - Hover states for interactive elements
+    - Focus rings for accessibility
+    - Disabled states with reduced opacity
+
+# API Integration
+api_integration:
+  base_url: process.env.API_URL || "http://back-api:8100"
+  endpoints:
+    - GET /api/admin/users?page={page}&page_size={size}&search={email}&role={role}&sort_by={field}&sort_order={order}
+    - GET /api/admin/users/{id}
+    - PUT /api/admin/users/{id}
+  authentication:
+    status: TODO
+    note: Authorization header with admin JWT token to be implemented
+  error_handling:
+    - 404: User not found (thrown as Response)
+    - 400: Validation errors (displayed in form)
+    - Network errors: Generic error message displayed
+
+# User Experience
+ux_features:
+  - Server-side rendering for fast initial load
+  - Progressive enhancement with client-side navigation
+  - Loading states during data submission
+  - Clear error messages at form and field level
+  - Breadcrumb navigation (Back to User List link)
+  - Keyboard accessible forms and tables
+  - Mobile-responsive design
+  - Visual feedback for user actions
+
+# Future Enhancements
+future_enhancements:
+  - Role and status change UI with confirmation modals
+  - Bulk operations interface (bulk role assignment, status updates)
+  - Audit log viewing tab on user detail page
+  - Export to CSV functionality
+  - Advanced filters (email verification status, date ranges)
+  - User creation flow
+  - Profile picture upload
+  - Real-time user activity indicators
+  - Inline editing in table view
+
+# Testing Strategy
+testing:
+  unit_tests:
+    - Component rendering with various props
+    - Form validation logic
+    - Sort and filter handler functions
+  integration_tests:
+    - Loader data fetching and error handling
+    - Action form submission and validation
+    - Navigation between list and detail pages
+  e2e_tests:
+    - Complete user edit workflow
+    - Search and filter functionality
+    - Pagination navigation
+    - Error state handling
+
+# Dependencies
+dependencies:
+  - "@remix-run/node": Server-side utilities
+  - "@remix-run/react": React components and hooks
+  - tailwindcss: Styling framework
+  - back-api service: User data API
+  - back-auth service: Authentication (future)
+
+# Notes
+notes:
+  - All API calls currently lack Authorization headers (marked with TODO comments)
+  - Edit route only supports profile updates, not role/status changes yet
+  - Form uses defaultValue (uncontrolled) for better Remix compatibility
+  - User list route returns empty data on error rather than throwing
+  - Date formatting uses browser locale for international support

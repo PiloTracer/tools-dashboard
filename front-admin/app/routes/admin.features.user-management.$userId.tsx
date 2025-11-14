@@ -1,7 +1,7 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { useLoaderData, useActionData, useNavigation, Link } from "@remix-run/react";
-import { UserForm, type UserFormData } from "../ui/UserForm";
+import { UserForm, type UserFormData } from "../features/user-management/ui/UserForm";
 
 type LoaderData = {
   user: UserFormData & {
@@ -32,11 +32,11 @@ export async function loader({ params }: LoaderFunctionArgs) {
     throw new Response("User ID is required", { status: 400 });
   }
 
-  const apiUrl = process.env.API_URL || "http://back-api:8100";
+  const apiUrl = process.env.API_URL || "http://back-api:8000";
 
   try {
     // TODO: Add Authorization header with admin JWT token
-    const response = await fetch(`${apiUrl}/api/admin/users/${userId}`, {
+    const response = await fetch(`${apiUrl}/admin/users/${userId}`, {
       headers: {
         // "Authorization": `Bearer ${token}`,
       },
@@ -111,11 +111,11 @@ export async function action({ request, params }: ActionFunctionArgs) {
   if (language) updatePayload.language = language;
   if (timezone) updatePayload.timezone = timezone;
 
-  const apiUrl = process.env.API_URL || "http://back-api:8100";
+  const apiUrl = process.env.API_URL || "http://back-api:8000";
 
   try {
     // TODO: Add Authorization header with admin JWT token
-    const response = await fetch(`${apiUrl}/api/admin/users/${userId}`, {
+    const response = await fetch(`${apiUrl}/admin/users/${userId}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

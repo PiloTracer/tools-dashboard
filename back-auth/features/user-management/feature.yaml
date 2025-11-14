@@ -1,0 +1,73 @@
+name: user-management
+version: 1.0.0
+service: back-auth
+type: admin-authentication
+description: User management authentication and authorization support for admin operations
+
+provides:
+  - Session invalidation for role/status changes
+  - Admin permission validation
+  - User access control
+
+endpoints:
+  - path: /admin/users/{user_id}/invalidate-sessions
+    method: POST
+    description: Invalidate all sessions for a user
+    auth_required: true
+    admin_only: true
+    request_body:
+      reason: string (optional)
+    response:
+      user_id: integer
+      sessions_invalidated: integer
+      reason: string (optional)
+
+  - path: /admin/users/me/permissions
+    method: GET
+    description: Get current admin user permissions
+    auth_required: true
+    admin_only: true
+    response:
+      user_id: integer
+      email: string
+      role: string
+      permissions: array of strings
+
+  - path: /admin/users/verify-admin
+    method: POST
+    description: Verify admin credentials
+    auth_required: true
+    admin_only: true
+    response:
+      is_admin: boolean
+      user_id: integer
+      email: string
+
+dependencies:
+  - core.dependencies (require_admin, get_current_user)
+  - services.session_service
+  - services.token_service
+  - core.database
+
+security:
+  - All endpoints require valid JWT token
+  - All endpoints require admin role
+  - Self-modification prevention (cannot invalidate own sessions)
+  - Audit logging for all actions (Phase 4)
+
+use_cases:
+  - Role change triggers session invalidation
+  - Status change to inactive/suspended triggers session invalidation
+  - Admin manually revokes user access
+  - Frontend checks admin permissions
+
+integration_points:
+  - back-api calls invalidate_sessions when role/status changes
+  - front-admin uses verify-admin for route protection
+  - front-admin uses me/permissions to show/hide UI elements
+
+notes:
+  - Session invalidation forces user to re-authenticate
+  - New authentication will use updated role/permissions
+  - Self-protection prevents admin from locking themselves out
+  - Audit logging will be added in Phase 4 (back-api integration)

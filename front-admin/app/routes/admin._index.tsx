@@ -87,10 +87,10 @@ export default function HomePage() {
           </p>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
-          <Link to="/features/user-management" style={{ ...ctaStyles, backgroundColor: "#4f46e5", color: "#fff", padding: "10px 18px", borderRadius: "999px" }}>
+          <Link to="/admin/features/user-management" style={{ ...ctaStyles, backgroundColor: "#4f46e5", color: "#fff", padding: "10px 18px", borderRadius: "999px" }}>
             Open user management →
           </Link>
-          <Link to="/features/task-scheduler" style={{ ...ctaStyles, padding: "10px 18px", borderRadius: "999px", border: "1px solid rgba(79,70,229,0.4)" }}>
+          <Link to="/admin/features/task-scheduler" style={{ ...ctaStyles, padding: "10px 18px", borderRadius: "999px", border: "1px solid rgba(79,70,229,0.4)" }}>
             Review task queue →
           </Link>
         </div>
@@ -113,7 +113,7 @@ export default function HomePage() {
           <p style={paragraphStyles}>
             Review accounts, adjust access levels, and audit recent changes across your tenants.
           </p>
-          <Link to="/features/user-management" style={ctaStyles}>
+          <Link to="/admin/features/user-management" style={ctaStyles}>
             Go to user management →
           </Link>
         </article>
@@ -122,7 +122,7 @@ export default function HomePage() {
           <p style={paragraphStyles}>
             Configure background jobs, review last run status, and refine retry policies quickly.
           </p>
-          <Link to="/features/task-scheduler" style={ctaStyles}>
+          <Link to="/admin/features/task-scheduler" style={ctaStyles}>
             Configure tasks →
           </Link>
         </article>

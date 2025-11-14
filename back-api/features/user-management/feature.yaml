@@ -1,0 +1,167 @@
+name: user-management
+version: 1.0.0
+service: back-api
+type: admin-business-logic
+description: Admin user management orchestration layer - coordinates operations across PostgreSQL, Cassandra, and back-auth
+
+provides:
+  - User listing with pagination, search, and filters
+  - User detail retrieval
+  - User profile updates
+  - User role management
+  - User status management
+  - Bulk operations
+  - Audit logging
+  - Dual-database synchronization
+
+endpoints:
+  - path: /api/admin/users
+    method: GET
+    description: List users with pagination and filters
+    auth_required: true
+    admin_only: true
+    query_params:
+      - page: integer (default 1)
+      - page_size: integer (default 20, max 100)
+      - search: string (search by email)
+      - role: string (filter by role)
+      - status: string (filter by status)
+      - sort_by: string (default created_at)
+      - sort_order: string (default desc)
+
+  - path: /api/admin/users/{user_id}
+    method: GET
+    description: Get detailed user information
+    auth_required: true
+    admin_only: true
+
+  - path: /api/admin/users/{user_id}
+    method: PUT
+    description: Update user information
+    auth_required: true
+    admin_only: true
+    request_body: UserUpdateRequestModel
+    side_effects:
+      - Updates PostgreSQL (core fields)
+      - Updates Cassandra (extended fields)
+      - Syncs canonical data to Cassandra
+      - Creates audit log
+
+  - path: /api/admin/users/{user_id}/role
+    method: PATCH
+    description: Update user role and permissions
+    auth_required: true
+    admin_only: true
+    request_body: UserRoleUpdateRequestModel
+    side_effects:
+      - Updates PostgreSQL
+      - Syncs canonical data to Cassandra
+      - Invalidates all user sessions (back-auth)
+      - Creates audit log
+
+  - path: /api/admin/users/{user_id}/status
+    method: PATCH
+    description: Update user status
+    auth_required: true
+    admin_only: true
+    request_body: UserStatusUpdateRequestModel
+    side_effects:
+      - Updates Cassandra (placeholder for PostgreSQL)
+      - Invalidates sessions if inactive/suspended
+      - Creates audit log
+
+  - path: /api/admin/users/bulk
+    method: POST
+    description: Perform bulk operations
+    auth_required: true
+    admin_only: true
+    request_body: BulkOperationRequestModel
+    supported_operations:
+      - update_role: Bulk role updates
+
+dependencies:
+  internal:
+    - back-postgres/repositories/user_repository
+    - back-cassandra/repositories/user_ext_repository
+    - back-cassandra/repositories/audit_repository
+
+  external:
+    - back-auth: ">=1.0.0" (session invalidation)
+
+  shared:
+    - shared/models/user.py
+
+data_flow:
+  primary:
+    - PostgreSQL (source of truth for core data)
+    - Cassandra (source of truth for extended profiles)
+    - Cassandra (audit logs)
+
+  synchronization:
+    - PostgreSQL updates → Cassandra canonical sync (email, role, status)
+
+  session_management:
+    - Role changes → back-auth session invalidation
+    - Status changes (inactive/suspended) → back-auth session invalidation
+
+security:
+  authentication:
+    - All endpoints require valid JWT token
+    - Admin role required
+
+  authorization:
+    - Self-modification prevention (cannot change own role/status)
+    - Permission checks via back-auth
+
+  audit:
+    - All admin actions logged to Cassandra
+    - Logs include: admin_id, user_id, action, changes, timestamp, IP
+
+  data_protection:
+    - Dual-database sync ensures consistency
+    - Session invalidation forces re-authentication
+    - Graceful degradation if back-auth unavailable
+
+business_rules:
+  - Admin cannot modify own account
+  - Role changes require session invalidation
+  - Status inactive/suspended requires session invalidation
+  - All mutations are audited
+  - Canonical data must be synced to Cassandra
+
+error_handling:
+  - ValueError → HTTP 400 (validation errors)
+  - User not found → HTTP 404
+  - Missing auth → HTTP 401
+  - Not admin → HTTP 403
+  - Back-auth failures logged but don't block operations
+
+performance:
+  - Pagination (max 100 items per page)
+  - Indexed queries in PostgreSQL
+  - Cassandra TTL (1 year) for data retention
+  - Async operations throughout
+
+testing:
+  unit_tests:
+    - Test domain logic independently
+    - Mock all repository dependencies
+    - Test self-modification prevention
+    - Test bulk operation logic
+
+  integration_tests:
+    - Test PostgreSQL → Cassandra sync
+    - Test back-auth session invalidation
+    - Test audit log creation
+    - Test complete CRUD flows
+
+  e2e_tests:
+    - Test frontend → back-api → databases
+    - Test role change flow with session invalidation
+    - Test bulk operations
+
+notes:
+  - Status column doesn't exist in PostgreSQL yet (placeholder implementation)
+  - update_user_status() will need enhancement when schema updated
+  - bulk_update_status() not yet implemented (waiting for status column)
+  - Auth middleware (get_current_admin) is placeholder - needs proper implementation

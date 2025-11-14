@@ -8,7 +8,7 @@ type AdminLayoutProps = {
 
 const NAV_ITEMS = [
   {
-    to: "/features/user-management",
+    to: "/admin/features/user-management",
     label: "User management",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" style={{ width: 18, height: 18 }}>
@@ -21,7 +21,7 @@ const NAV_ITEMS = [
     ),
   },
   {
-    to: "/features/task-scheduler",
+    to: "/admin/features/task-scheduler",
     label: "Task scheduler",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" style={{ width: 18, height: 18 }}>

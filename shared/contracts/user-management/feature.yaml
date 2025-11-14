@@ -1,0 +1,360 @@
+name: user-management
+version: 1.0.0
+type: cross-service
+description: Comprehensive admin user management system for viewing, editing, and managing user accounts, roles, and status
+
+services:
+  - name: front-admin
+    version: 1.0.0
+    provides:
+      - Admin UI for user management
+      - User listing with search, filter, pagination
+      - User detail view
+      - User edit forms
+      - Role assignment interface
+      - Status management interface
+      - Bulk operations UI
+
+  - name: back-api
+    version: 1.0.0
+    provides:
+      - endpoints:
+          # User listing and retrieval
+          - path: /api/admin/users
+            method: GET
+            description: List users with pagination, search, and filters
+            auth_required: true
+            admin_only: true
+            query_params:
+              - name: page
+                type: integer
+                default: 1
+                description: Page number
+              - name: page_size
+                type: integer
+                default: 20
+                description: Items per page (max 100)
+              - name: search
+                type: string
+                description: Search by email, name, or ID
+              - name: role
+                type: string
+                description: Filter by role
+              - name: status
+                type: string
+                description: Filter by status (active, inactive, suspended)
+              - name: sort_by
+                type: string
+                default: created_at
+                description: Sort field (email, created_at, last_login)
+              - name: sort_order
+                type: string
+                default: desc
+                description: Sort order (asc, desc)
+
+          - path: /api/admin/users/{user_id}
+            method: GET
+            description: Get detailed user information
+            auth_required: true
+            admin_only: true
+
+          # User updates
+          - path: /api/admin/users/{user_id}
+            method: PUT
+            description: Update user information
+            auth_required: true
+            admin_only: true
+            request_body: UserUpdateRequest
+
+          - path: /api/admin/users/{user_id}/status
+            method: PATCH
+            description: Update user status
+            auth_required: true
+            admin_only: true
+            request_body: UserStatusUpdateRequest
+
+          - path: /api/admin/users/{user_id}/role
+            method: PATCH
+            description: Update user role
+            auth_required: true
+            admin_only: true
+            request_body: UserRoleUpdateRequest
+
+          # Bulk operations
+          - path: /api/admin/users/bulk
+            method: POST
+            description: Perform bulk operations on multiple users
+            auth_required: true
+            admin_only: true
+            request_body: BulkOperationRequest
+
+          # Export
+          - path: /api/admin/users/export
+            method: POST
+            description: Export users to CSV
+            auth_required: true
+            admin_only: true
+            query_params:
+              - name: search
+                type: string
+              - name: role
+                type: string
+              - name: status
+                type: string
+
+  - name: back-auth
+    version: 1.0.0
+    provides:
+      - Role assignment and updates
+      - Permission validation
+      - Session invalidation on role/status changes
+      - endpoints:
+          - path: /auth/admin/users/{user_id}/invalidate-sessions
+            method: POST
+            description: Invalidate all user sessions
+            auth_required: true
+            admin_only: true
+
+  - name: back-postgres
+    version: 1.0.0
+    provides:
+      - repositories:
+          - user_repository:
+              methods:
+                - list_users (with pagination, search, filter, sort)
+                - search_users
+                - get_user_by_id
+                - update_user
+                - update_user_status
+                - update_user_role
+                - bulk_update_status
+                - bulk_update_roles
+
+  - name: back-cassandra
+    version: 1.0.0
+    provides:
+      - repositories:
+          - user_ext_repository:
+              methods:
+                - get_extended_profile
+                - update_profile_fields
+                - sync_canonical_data
+          - audit_repository:
+              methods:
+                - create_audit_log
+                - get_user_audit_logs
+                - get_admin_audit_logs
+
+  - name: shared
+    version: 1.0.0
+    provides:
+      - Data models (User, UserListItem, UserDetail, etc.)
+      - Request models (UserUpdateRequest, UserStatusUpdateRequest, etc.)
+      - Response models (UserListResponse, AuditLog, etc.)
+
+data_flow:
+  primary:
+    - front-admin → back-api → back-postgres (user data CRUD)
+    - front-admin → back-api → back-auth (role changes, session invalidation)
+    - front-admin → back-api → back-cassandra (extended profiles, audit logs)
+
+  synchronization:
+    - back-api updates PostgreSQL → back-api syncs to Cassandra (canonical data)
+
+dependencies:
+  back-api:
+    - back-auth: ">=1.2.0"
+    - back-postgres: ">=1.0.0"
+    - back-cassandra: ">=1.0.0"
+
+  back-auth:
+    - back-postgres: ">=1.0.0"
+    - back-cassandra: ">=1.0.0"
+
+  front-admin:
+    - back-api: ">=1.0.0"
+
+schemas:
+  models:
+    User:
+      description: Core user model
+      fields:
+        - id: string (UUID)
+        - email: string
+        - status: string (active | inactive | suspended)
+        - role: string (admin | customer | moderator | support)
+        - permissions: array of strings
+        - created_at: datetime
+        - updated_at: datetime
+
+    UserListItem:
+      description: User model for paginated list
+      fields:
+        - id: string (UUID)
+        - email: string
+        - first_name: string (optional)
+        - last_name: string (optional)
+        - role: string
+        - status: string
+        - created_at: datetime
+        - last_login: datetime (optional)
+
+    UserDetail:
+      description: Detailed user with extended info
+      fields:
+        - id: string
+        - email: string
+        - first_name: string (optional)
+        - last_name: string (optional)
+        - role: string
+        - status: string
+        - phone: string (optional)
+        - company: string (optional)
+        - job_title: string (optional)
+        - department: string (optional)
+        - industry: string (optional)
+        - language: string (optional)
+        - timezone: string (optional)
+        - created_at: datetime
+        - updated_at: datetime
+        - last_login: datetime (optional)
+        - login_count: integer
+        - profile_completion_percentage: integer (optional)
+
+    UserUpdateRequest:
+      description: Request to update user information
+      fields:
+        - email: string (optional)
+        - first_name: string (optional)
+        - last_name: string (optional)
+        - phone: string (optional)
+        - company: string (optional)
+        - job_title: string (optional)
+        - department: string (optional)
+        - industry: string (optional)
+        - language: string (optional)
+        - timezone: string (optional)
+
+    UserStatusUpdateRequest:
+      description: Request to update user status
+      fields:
+        - status: string (active | inactive | suspended)
+        - reason: string (optional)
+
+    UserRoleUpdateRequest:
+      description: Request to update user role
+      fields:
+        - role: string (admin | customer | moderator | support)
+        - reason: string (optional)
+
+    BulkOperationRequest:
+      description: Request for bulk operations
+      fields:
+        - user_ids: array of strings
+        - operation: string (update_status | update_role | export)
+        - parameters: object
+
+    UserListResponse:
+      description: Paginated user list response
+      fields:
+        - users: array of UserListItem
+        - total: integer
+        - page: integer
+        - page_size: integer
+        - total_pages: integer
+
+    AuditLog:
+      description: Audit log for admin actions
+      fields:
+        - id: string
+        - admin_id: string
+        - admin_email: string
+        - user_id: string
+        - action: string
+        - changes: object
+        - timestamp: datetime
+        - ip_address: string (optional)
+
+security:
+  authentication:
+    - All endpoints require valid JWT token
+    - Admin role required for all user-management endpoints
+    - Self-modification prevention (admin cannot change own role/status)
+
+  authorization:
+    - Permission check: users.read for viewing
+    - Permission check: users.write for updates
+    - Permission check: users.admin for role/status changes
+
+  audit:
+    - All admin actions logged to Cassandra
+    - Audit logs include: admin_id, user_id, action, changes, timestamp
+    - Audit logs retained for 2 years
+
+  session_management:
+    - Role changes invalidate user sessions
+    - Status changes to inactive/suspended invalidate sessions
+    - Session invalidation via back-auth service
+
+performance:
+  pagination:
+    - Default page size: 20
+    - Maximum page size: 100
+    - Indexed queries for search and filter
+
+  caching:
+    - User list cached for 30 seconds (admin view)
+    - User detail cached for 60 seconds
+    - Cache invalidated on updates
+
+validation:
+  email:
+    - Must be valid email format
+    - Must be unique in system
+    - Verified before update
+
+  status:
+    - Must be one of: active, inactive, suspended
+    - Status change requires reason (optional but recommended)
+
+  role:
+    - Must be one of: admin, customer, moderator, support
+    - Role change requires reason (optional but recommended)
+
+testing:
+  unit_tests:
+    - Test each service independently
+    - Mock cross-service dependencies
+    - Coverage target: 80%+
+
+  integration_tests:
+    - Test API → Repository flows
+    - Test Auth → API integration
+    - Test permission enforcement
+
+  e2e_tests:
+    - Test complete admin workflows
+    - Test frontend → backend → database flows
+    - Test role-based access control
+
+deployment:
+  order:
+    1. Deploy shared models
+    2. Deploy back-postgres (repository enhancements)
+    3. Deploy back-cassandra (repository enhancements)
+    4. Deploy back-auth (session invalidation)
+    5. Deploy back-api (business logic)
+    6. Deploy front-admin (UI)
+
+  rollback:
+    - Reverse deployment order
+    - Database migrations are reversible
+    - Feature flags for gradual rollout
+
+notes:
+  - PostgreSQL is source of truth for core user data (email, role, status)
+  - Cassandra stores extended profiles and canonical/denormalized data
+  - All PostgreSQL updates must sync canonical data to Cassandra
+  - Use TTL on all Cassandra writes (31536000 seconds = 1 year)
+  - Prevent self-modification (admin cannot change own role/status)
+  - Session invalidation is critical for security on role/status changes
