@@ -13,11 +13,32 @@ CREATE TABLE IF NOT EXISTS user_extended_profiles (
     -- Progressive profiling data (Cassandra source of truth)
     first_name text,
     last_name text,
-    phone text,
+
+    -- Contact information
+    mobile_phone text,
+    home_phone text,
+    work_phone text,
+
+    -- Address information
+    address_line1 text,
+    address_line2 text,
+    city text,
+    state_province text,
+    postal_code text,
+    country text,
+
+    -- Professional information
     company text,
     job_title text,
     department text,
     industry text,
+
+    -- Profile picture (stored in SeaweedFS object storage)
+    -- Future: S3 path format s3://user-profile-pictures/{user_id}_{timestamp}.{ext}
+    picture_url text,
+
+    -- Other details
+    other_details text,
 
     -- Preferences (Cassandra source of truth)
     language text,

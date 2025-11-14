@@ -29,11 +29,27 @@ class UserUpdateRequest:
     email: str | None = None
     first_name: str | None = None
     last_name: str | None = None
-    phone: str | None = None
+    # Contact information
+    mobile_phone: str | None = None
+    home_phone: str | None = None
+    work_phone: str | None = None
+    # Address information
+    address_line1: str | None = None
+    address_line2: str | None = None
+    city: str | None = None
+    state_province: str | None = None
+    postal_code: str | None = None
+    country: str | None = None
+    # Professional information
     company: str | None = None
     job_title: str | None = None
     department: str | None = None
     industry: str | None = None
+    # Profile picture
+    picture_url: str | None = None
+    # Other details
+    other_details: str | None = None
+    # Preferences
     language: str | None = None
     timezone: str | None = None
 
@@ -196,11 +212,27 @@ class UserManagementService:
             # Extended data (Cassandra)
             "first_name": ext_profile.get("first_name") if ext_profile else None,
             "last_name": ext_profile.get("last_name") if ext_profile else None,
-            "phone": ext_profile.get("phone") if ext_profile else None,
+            # Contact information
+            "mobile_phone": ext_profile.get("mobile_phone") if ext_profile else None,
+            "home_phone": ext_profile.get("home_phone") if ext_profile else None,
+            "work_phone": ext_profile.get("work_phone") if ext_profile else None,
+            # Address information
+            "address_line1": ext_profile.get("address_line1") if ext_profile else None,
+            "address_line2": ext_profile.get("address_line2") if ext_profile else None,
+            "city": ext_profile.get("city") if ext_profile else None,
+            "state_province": ext_profile.get("state_province") if ext_profile else None,
+            "postal_code": ext_profile.get("postal_code") if ext_profile else None,
+            "country": ext_profile.get("country") if ext_profile else None,
+            # Professional information
             "company": ext_profile.get("company") if ext_profile else None,
             "job_title": ext_profile.get("job_title") if ext_profile else None,
             "department": ext_profile.get("department") if ext_profile else None,
             "industry": ext_profile.get("industry") if ext_profile else None,
+            # Profile picture
+            "picture_url": ext_profile.get("picture_url") if ext_profile else None,
+            # Other details
+            "other_details": ext_profile.get("other_details") if ext_profile else None,
+            # Preferences
             "language": ext_profile.get("language") if ext_profile else None,
             "timezone": ext_profile.get("timezone") if ext_profile else None,
             "profile_completion_percentage": (ext_profile.get("profile_completion_percentage") or 0) if ext_profile else 0,
@@ -273,8 +305,12 @@ class UserManagementService:
 
         # 3. Update extended fields in Cassandra (if provided)
         extended_fields = {}
-        for field in ["first_name", "last_name", "phone", "company", "job_title",
-                      "department", "industry", "language", "timezone"]:
+        for field in ["first_name", "last_name",
+                      "mobile_phone", "home_phone", "work_phone",
+                      "address_line1", "address_line2", "city", "state_province", "postal_code", "country",
+                      "company", "job_title", "department", "industry",
+                      "picture_url", "other_details",
+                      "language", "timezone"]:
             value = getattr(request, field, None)
             if value is not None:
                 extended_fields[field] = value

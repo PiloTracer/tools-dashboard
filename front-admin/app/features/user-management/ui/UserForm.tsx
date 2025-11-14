@@ -1,15 +1,32 @@
 import type { FC } from "react";
+import { useState } from "react";
 import { Form } from "@remix-run/react";
 
 export type UserFormData = {
   email: string;
   first_name?: string;
   last_name?: string;
-  phone?: string;
+  // Contact information
+  mobile_phone?: string;
+  home_phone?: string;
+  work_phone?: string;
+  // Address information
+  address_line1?: string;
+  address_line2?: string;
+  city?: string;
+  state_province?: string;
+  postal_code?: string;
+  country?: string;
+  // Professional information
   company?: string;
   job_title?: string;
   department?: string;
   industry?: string;
+  // Profile picture
+  picture_url?: string;
+  // Other details
+  other_details?: string;
+  // Preferences
   language?: string;
   timezone?: string;
   role?: string;
@@ -66,9 +83,81 @@ const fieldGroupStyle = {
 };
 
 export const UserForm: FC<Props> = ({ user, errors, isSubmitting, mode = "edit" }) => {
+  const [imageError, setImageError] = useState(false);
+  const hasValidPicture = user?.picture_url && !imageError;
+
+  // Inline SVG for default avatar (eliminates path/routing issues)
+  const DefaultAvatarSvg = () => (
+    <svg width="120" height="120" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="200" height="200" fill="#E5E7EB"/>
+      <circle cx="100" cy="75" r="35" fill="#9CA3AF"/>
+      <path d="M40 200C40 155.817 74.8172 120 119 120H81C125.183 120 160 155.817 160 200V200H40V200Z" fill="#9CA3AF"/>
+    </svg>
+  );
+
   return (
     <Form method="post">
       <input type="hidden" name="intent" value="update-user" />
+
+      {/* Profile Picture */}
+      <div style={sectionStyle}>
+        <h3 style={sectionTitleStyle}>Profile Picture</h3>
+        <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
+          <div style={{
+            width: "120px",
+            height: "120px",
+            borderRadius: "6px",
+            overflow: "hidden",
+            border: "1px solid #e5e7eb",
+            backgroundColor: "#f9fafb",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}>
+            {hasValidPicture ? (
+              <img
+                src={user.picture_url}
+                alt="Profile"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover"
+                }}
+                onError={() => {
+                  // Set error state once, preventing infinite loop
+                  setImageError(true);
+                }}
+              />
+            ) : (
+              <DefaultAvatarSvg />
+            )}
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{
+              fontSize: "13px",
+              color: "#6b7280",
+              marginBottom: "8px"
+            }}>
+              Profile picture URL
+            </p>
+            <input
+              type="text"
+              name="picture_url"
+              id="picture_url"
+              defaultValue={user?.picture_url}
+              placeholder="https://example.com/picture.jpg"
+              style={inputStyle}
+            />
+            <p style={{
+              fontSize: "12px",
+              color: "#9ca3af",
+              marginTop: "4px"
+            }}>
+              Picture upload to SeaweedFS storage will be available in the next iteration
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* Core Information */}
       <div style={sectionStyle}>
@@ -125,17 +214,132 @@ export const UserForm: FC<Props> = ({ user, errors, isSubmitting, mode = "edit" 
           </div>
         </div>
 
+        <div style={fieldGroupStyle}>
+          <div>
+            <label htmlFor="mobile_phone" style={labelStyle}>
+              Mobile Phone
+            </label>
+            <input
+              type="tel"
+              name="mobile_phone"
+              id="mobile_phone"
+              defaultValue={user?.mobile_phone}
+              style={inputStyle}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="home_phone" style={labelStyle}>
+              Home Phone
+            </label>
+            <input
+              type="tel"
+              name="home_phone"
+              id="home_phone"
+              defaultValue={user?.home_phone}
+              style={inputStyle}
+            />
+          </div>
+        </div>
+
         <div>
-          <label htmlFor="phone" style={labelStyle}>
-            Phone Number
+          <label htmlFor="work_phone" style={labelStyle}>
+            Work Phone
           </label>
           <input
             type="tel"
-            name="phone"
-            id="phone"
-            defaultValue={user?.phone}
+            name="work_phone"
+            id="work_phone"
+            defaultValue={user?.work_phone}
             style={inputStyle}
           />
+        </div>
+      </div>
+
+      {/* Address Information */}
+      <div style={sectionStyle}>
+        <h3 style={sectionTitleStyle}>Address Information</h3>
+
+        <div>
+          <label htmlFor="address_line1" style={labelStyle}>
+            Address Line 1
+          </label>
+          <input
+            type="text"
+            name="address_line1"
+            id="address_line1"
+            defaultValue={user?.address_line1}
+            style={inputStyle}
+          />
+        </div>
+
+        <div style={{ marginTop: "16px" }}>
+          <label htmlFor="address_line2" style={labelStyle}>
+            Address Line 2
+          </label>
+          <input
+            type="text"
+            name="address_line2"
+            id="address_line2"
+            defaultValue={user?.address_line2}
+            style={inputStyle}
+          />
+        </div>
+
+        <div style={{ ...fieldGroupStyle, marginTop: "16px" }}>
+          <div>
+            <label htmlFor="city" style={labelStyle}>
+              City
+            </label>
+            <input
+              type="text"
+              name="city"
+              id="city"
+              defaultValue={user?.city}
+              style={inputStyle}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="state_province" style={labelStyle}>
+              State/Province
+            </label>
+            <input
+              type="text"
+              name="state_province"
+              id="state_province"
+              defaultValue={user?.state_province}
+              style={inputStyle}
+            />
+          </div>
+        </div>
+
+        <div style={{ ...fieldGroupStyle, marginTop: "16px" }}>
+          <div>
+            <label htmlFor="postal_code" style={labelStyle}>
+              Postal Code
+            </label>
+            <input
+              type="text"
+              name="postal_code"
+              id="postal_code"
+              defaultValue={user?.postal_code}
+              style={inputStyle}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="country" style={labelStyle}>
+              Country
+            </label>
+            <input
+              type="text"
+              name="country"
+              id="country"
+              defaultValue={user?.country}
+              style={inputStyle}
+            />
+          </div>
         </div>
       </div>
 
@@ -239,6 +443,28 @@ export const UserForm: FC<Props> = ({ user, errors, isSubmitting, mode = "edit" 
               <option value="Europe/Paris">Paris</option>
             </select>
           </div>
+        </div>
+      </div>
+
+      {/* Other Details */}
+      <div style={sectionStyle}>
+        <h3 style={sectionTitleStyle}>Other Details</h3>
+
+        <div>
+          <label htmlFor="other_details" style={labelStyle}>
+            Additional Information
+          </label>
+          <textarea
+            name="other_details"
+            id="other_details"
+            defaultValue={user?.other_details}
+            rows={4}
+            style={{
+              ...inputStyle,
+              resize: "vertical",
+              fontFamily: "inherit"
+            }}
+          />
         </div>
       </div>
 

@@ -75,11 +75,27 @@ class UserDetailResponse(BaseModel):
     # Extended fields
     first_name: str | None
     last_name: str | None
-    phone: str | None
+    # Contact information
+    mobile_phone: str | None
+    home_phone: str | None
+    work_phone: str | None
+    # Address information
+    address_line1: str | None
+    address_line2: str | None
+    city: str | None
+    state_province: str | None
+    postal_code: str | None
+    country: str | None
+    # Professional information
     company: str | None
     job_title: str | None
     department: str | None
     industry: str | None
+    # Profile picture
+    picture_url: str | None
+    # Other details
+    other_details: str | None
+    # Preferences
     language: str | None
     timezone: str | None
     profile_completion_percentage: int
@@ -94,11 +110,27 @@ class UserUpdateRequestModel(BaseModel):
     email: EmailStr | None = None
     first_name: str | None = Field(None, max_length=100)
     last_name: str | None = Field(None, max_length=100)
-    phone: str | None = Field(None, max_length=20)
+    # Contact information
+    mobile_phone: str | None = Field(None, max_length=20)
+    home_phone: str | None = Field(None, max_length=20)
+    work_phone: str | None = Field(None, max_length=20)
+    # Address information
+    address_line1: str | None = Field(None, max_length=200)
+    address_line2: str | None = Field(None, max_length=200)
+    city: str | None = Field(None, max_length=100)
+    state_province: str | None = Field(None, max_length=100)
+    postal_code: str | None = Field(None, max_length=20)
+    country: str | None = Field(None, max_length=100)
+    # Professional information
     company: str | None = Field(None, max_length=200)
     job_title: str | None = Field(None, max_length=100)
     department: str | None = Field(None, max_length=100)
     industry: str | None = Field(None, max_length=100)
+    # Profile picture
+    picture_url: str | None = Field(None, max_length=500)
+    # Other details
+    other_details: str | None = Field(None, max_length=1000)
+    # Preferences
     language: str | None = Field(None, max_length=10)
     timezone: str | None = Field(None, max_length=50)
 
@@ -316,11 +348,21 @@ async def update_user(
         email=request_body.email,
         first_name=request_body.first_name,
         last_name=request_body.last_name,
-        phone=request_body.phone,
+        mobile_phone=request_body.mobile_phone,
+        home_phone=request_body.home_phone,
+        work_phone=request_body.work_phone,
+        address_line1=request_body.address_line1,
+        address_line2=request_body.address_line2,
+        city=request_body.city,
+        state_province=request_body.state_province,
+        postal_code=request_body.postal_code,
+        country=request_body.country,
         company=request_body.company,
         job_title=request_body.job_title,
         department=request_body.department,
         industry=request_body.industry,
+        picture_url=request_body.picture_url,
+        other_details=request_body.other_details,
         language=request_body.language,
         timezone=request_body.timezone,
     )

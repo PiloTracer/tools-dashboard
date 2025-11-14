@@ -80,11 +80,27 @@ export async function action({ request, params }: ActionFunctionArgs) {
   const email = formData.get("email") as string;
   const firstName = formData.get("first_name") as string;
   const lastName = formData.get("last_name") as string;
-  const phone = formData.get("phone") as string;
+  // Contact information
+  const mobilePhone = formData.get("mobile_phone") as string;
+  const homePhone = formData.get("home_phone") as string;
+  const workPhone = formData.get("work_phone") as string;
+  // Address information
+  const addressLine1 = formData.get("address_line1") as string;
+  const addressLine2 = formData.get("address_line2") as string;
+  const city = formData.get("city") as string;
+  const stateProvince = formData.get("state_province") as string;
+  const postalCode = formData.get("postal_code") as string;
+  const country = formData.get("country") as string;
+  // Professional information
   const company = formData.get("company") as string;
   const jobTitle = formData.get("job_title") as string;
   const department = formData.get("department") as string;
   const industry = formData.get("industry") as string;
+  // Profile picture
+  const pictureUrl = formData.get("picture_url") as string;
+  // Other details
+  const otherDetails = formData.get("other_details") as string;
+  // Preferences
   const language = formData.get("language") as string;
   const timezone = formData.get("timezone") as string;
 
@@ -103,11 +119,21 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
   if (firstName) updatePayload.first_name = firstName;
   if (lastName) updatePayload.last_name = lastName;
-  if (phone) updatePayload.phone = phone;
+  if (mobilePhone) updatePayload.mobile_phone = mobilePhone;
+  if (homePhone) updatePayload.home_phone = homePhone;
+  if (workPhone) updatePayload.work_phone = workPhone;
+  if (addressLine1) updatePayload.address_line1 = addressLine1;
+  if (addressLine2) updatePayload.address_line2 = addressLine2;
+  if (city) updatePayload.city = city;
+  if (stateProvince) updatePayload.state_province = stateProvince;
+  if (postalCode) updatePayload.postal_code = postalCode;
+  if (country) updatePayload.country = country;
   if (company) updatePayload.company = company;
   if (jobTitle) updatePayload.job_title = jobTitle;
   if (department) updatePayload.department = department;
   if (industry) updatePayload.industry = industry;
+  if (pictureUrl) updatePayload.picture_url = pictureUrl;
+  if (otherDetails) updatePayload.other_details = otherDetails;
   if (language) updatePayload.language = language;
   if (timezone) updatePayload.timezone = timezone;
 

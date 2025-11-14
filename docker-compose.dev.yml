@@ -253,9 +253,30 @@ services:
       - "8025:8025"
     restart: unless-stopped
 
+  seaweedfs:
+    image: chrislusf/seaweedfs
+    ports:
+      - "8333:8333"  # S3 API port
+      - "9333:9333"  # Master port
+      - "8888:8888"  # Filer port
+    volumes:
+      - seaweed-data:/data
+      - ./seaweedfs-config/s3-config.json:/etc/seaweedfs/s3-config.json:ro
+      - ./seaweedfs-config/security.toml:/etc/seaweedfs/security.toml:ro
+    environment:
+      - WEED_MASTER_VOLUME_GROWTH_COPY_1=1
+    command: >
+      server -s3 -filer -dir=/data -volume.max=10
+      -s3.config=/etc/seaweedfs/s3-config.json
+      -master.volumeSizeLimitMB=1024
+      -master.defaultReplication=000
+      -s3.domainName=localhost
+    restart: unless-stopped
+
 volumes:
   front_admin_node_modules:
   front_public_node_modules:
   postgres_data:
   redis_data:
   cassandra_data:
+  seaweed-data:

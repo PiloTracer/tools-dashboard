@@ -1,0 +1,14 @@
+# SeaweedFS Security Configuration
+
+[jwt.signing]
+key = "seaweed_jwt_secret_key_change_in_production"
+
+[jwt.filer_signing]
+key = "seaweed_jwt_secret_key_change_in_production"
+
+[jwt.master_signing]
+key = "seaweed_jwt_secret_key_change_in_production"
+
+[access]
+# Require authentication for all access
+ui = true

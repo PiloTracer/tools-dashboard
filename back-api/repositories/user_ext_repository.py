@@ -86,8 +86,12 @@ class UserExtRepository:
             Extended profile dict or None if not found
         """
         query = """
-            SELECT user_id, first_name, last_name, phone, company,
-                   job_title, department, industry, language, timezone,
+            SELECT user_id, first_name, last_name,
+                   mobile_phone, home_phone, work_phone,
+                   address_line1, address_line2, city, state_province, postal_code, country,
+                   company, job_title, department, industry,
+                   picture_url, other_details,
+                   language, timezone,
                    communication_preferences, profile_completion_percentage,
                    last_profile_update, onboarding_completed, onboarding_step,
                    email, role, status, created_at, updated_at
@@ -104,11 +108,27 @@ class UserExtRepository:
             "user_id": str(row.user_id),
             "first_name": row.first_name,
             "last_name": row.last_name,
-            "phone": row.phone,
+            # Contact information
+            "mobile_phone": row.mobile_phone,
+            "home_phone": row.home_phone,
+            "work_phone": row.work_phone,
+            # Address information
+            "address_line1": row.address_line1,
+            "address_line2": row.address_line2,
+            "city": row.city,
+            "state_province": row.state_province,
+            "postal_code": row.postal_code,
+            "country": row.country,
+            # Professional information
             "company": row.company,
             "job_title": row.job_title,
             "department": row.department,
             "industry": row.industry,
+            # Profile picture
+            "picture_url": row.picture_url,
+            # Other details
+            "other_details": row.other_details,
+            # Preferences
             "language": row.language,
             "timezone": row.timezone,
             "communication_preferences": dict(row.communication_preferences) if row.communication_preferences else {},
@@ -116,6 +136,7 @@ class UserExtRepository:
             "last_profile_update": row.last_profile_update,
             "onboarding_completed": row.onboarding_completed,
             "onboarding_step": row.onboarding_step,
+            # Canonical data
             "email": row.email,
             "role": row.role,
             "status": row.status,
