@@ -1,0 +1,25 @@
+name: auto-auth
+version: 1.0.0
+description: OAuth 2.0 authorization server (user-facing)
+service: front-public
+
+routes:
+  - path: /oauth/authorize
+    file: oauth.authorize.tsx
+    description: OAuth authorization endpoint (consent screen)
+  - path: /oauth/token
+    file: oauth.token.tsx
+    description: Token exchange endpoint
+  - path: /oauth/revoke
+    file: oauth.revoke.tsx
+    description: Token revocation endpoint
+  - path: /.well-known/jwks.json
+    file: .well-known.jwks.json.tsx
+    description: JWKS endpoint (public keys)
+  - path: /.well-known/openid-configuration
+    file: .well-known.openid-configuration.tsx
+    description: OpenID discovery endpoint
+
+dependencies:
+  - back-auth (internal OAuth service)
+  - back-api (OAuth client management)

@@ -47,6 +47,9 @@ user_status_router = user_status_module.router
 user_management_module = importlib.import_module("features.user-management.api")
 user_management_router = user_management_module.router
 
+auto_auth_module = importlib.import_module("features.auto-auth.api")
+auto_auth_router = auto_auth_module.router
+
 app = FastAPI(title="Tools Dashboard API", version="0.1.0", lifespan=lifespan)
 
 # Configure CORS for frontend access
@@ -62,6 +65,7 @@ app.add_middleware(
 app.include_router(user_subscription_router)
 app.include_router(user_status_router)
 app.include_router(user_management_router)
+app.include_router(auto_auth_router)
 
 
 @app.get("/health", tags=["system"], summary="Service health")

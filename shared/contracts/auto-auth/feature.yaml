@@ -1,0 +1,297 @@
+name: auto-auth
+version: 1.0.0
+description: OAuth 2.0 authorization server and external application integration
+owner: Platform Team
+
+endpoints:
+  # OAuth Authorization Flow (front-public)
+  - method: GET
+    path: /oauth/authorize
+    description: OAuth 2.0 authorization endpoint (user consent)
+    service: front-public
+    authentication: session
+    parameters:
+      - name: client_id
+        type: string
+        required: true
+      - name: redirect_uri
+        type: string
+        required: true
+      - name: response_type
+        type: string
+        required: true
+        enum: [code]
+      - name: scope
+        type: string
+        required: true
+      - name: state
+        type: string
+        required: true
+      - name: code_challenge
+        type: string
+        required: true
+      - name: code_challenge_method
+        type: string
+        required: true
+        enum: [S256]
+
+  - method: POST
+    path: /oauth/token
+    description: OAuth 2.0 token endpoint (exchange code for tokens)
+    service: front-public
+    authentication: client_credentials
+    request_body:
+      content_type: application/x-www-form-urlencoded
+      fields:
+        - grant_type
+        - code
+        - redirect_uri
+        - client_id
+        - client_secret
+        - code_verifier
+
+  - method: POST
+    path: /oauth/revoke
+    description: OAuth 2.0 token revocation endpoint
+    service: front-public
+    authentication: client_credentials
+
+  - method: GET
+    path: /.well-known/jwks.json
+    description: JSON Web Key Set (public keys for JWT verification)
+    service: front-public
+    authentication: none
+
+  - method: GET
+    path: /.well-known/openid-configuration
+    description: OpenID Connect discovery document
+    service: front-public
+    authentication: none
+
+  # Admin API for External Apps (back-api)
+  - method: GET
+    path: /api/users/{user_id}
+    description: Get user profile for external applications
+    service: back-api
+    authentication: api_key
+    response_schema: UserProfile
+
+  - method: GET
+    path: /api/users/{user_id}/subscription
+    description: Get user subscription details
+    service: back-api
+    authentication: api_key
+    response_schema: UserSubscription
+
+  - method: GET
+    path: /api/users/{user_id}/limits
+    description: Get user rate limits and current usage
+    service: back-api
+    authentication: api_key
+    response_schema: RateLimits
+
+  - method: POST
+    path: /api/users/{user_id}/verify
+    description: Verify user identity and permissions
+    service: back-api
+    authentication: api_key
+    request_schema: UserVerificationRequest
+    response_schema: UserVerificationResponse
+
+  - method: POST
+    path: /api/users/{user_id}/usage
+    description: Record usage event for billing
+    service: back-api
+    authentication: api_key
+    request_schema: UsageEventCreate
+    response_schema: UsageEventResponse
+
+  # OAuth Client Management (back-api)
+  - method: POST
+    path: /api/oauth-clients
+    description: Register new OAuth client
+    service: back-api
+    authentication: admin
+    request_schema: OAuthClientCreate
+    response_schema: OAuthClientWithSecret
+
+  - method: GET
+    path: /api/oauth-clients/{client_id}
+    description: Get OAuth client details
+    service: back-api
+    authentication: admin
+    response_schema: OAuthClient
+
+  - method: PUT
+    path: /api/oauth-clients/{client_id}
+    description: Update OAuth client
+    service: back-api
+    authentication: admin
+    request_schema: OAuthClientUpdate
+    response_schema: OAuthClient
+
+  - method: DELETE
+    path: /api/oauth-clients/{client_id}
+    description: Delete OAuth client
+    service: back-api
+    authentication: admin
+
+  - method: GET
+    path: /api/oauth-clients
+    description: List all OAuth clients
+    service: back-api
+    authentication: admin
+
+  # API Key Management (back-api)
+  - method: POST
+    path: /api/api-keys
+    description: Generate API key for external app
+    service: back-api
+    authentication: admin
+    request_schema: OAuthApiKeyCreate
+    response_schema: OAuthApiKeyWithSecret
+
+  - method: GET
+    path: /api/api-keys
+    description: List all API keys
+    service: back-api
+    authentication: admin
+
+  - method: DELETE
+    path: /api/api-keys/{key_id}
+    description: Revoke API key
+    service: back-api
+    authentication: admin
+
+  # Internal OAuth Endpoints (back-auth)
+  - method: POST
+    path: /internal/oauth/generate-code
+    description: Generate OAuth authorization code
+    service: back-auth
+    authentication: internal
+    request_schema: OAuthAuthorizationCodeCreate
+
+  - method: POST
+    path: /internal/oauth/validate-code
+    description: Validate authorization code and PKCE
+    service: back-auth
+    authentication: internal
+
+  - method: POST
+    path: /internal/oauth/issue-tokens
+    description: Issue access and refresh tokens
+    service: back-auth
+    authentication: internal
+    response_schema: OAuthTokenResponse
+
+  - method: POST
+    path: /internal/oauth/refresh-tokens
+    description: Refresh access token
+    service: back-auth
+    authentication: internal
+    response_schema: OAuthTokenResponse
+
+  - method: POST
+    path: /internal/oauth/validate-token
+    description: Validate access token
+    service: back-auth
+    authentication: internal
+    response_schema: OAuthTokenValidation
+
+  - method: POST
+    path: /internal/oauth/revoke-token
+    description: Revoke token
+    service: back-auth
+    authentication: internal
+
+dependencies:
+  services:
+    - back-auth@1.0.0
+    - back-postgres@1.0.0
+    - back-cassandra@1.0.0
+    - back-redis@1.0.0
+
+  external:
+    - pyjwt>=2.8.0
+    - cryptography>=41.0.0
+    - bcrypt>=4.0.0
+
+database:
+  postgresql:
+    tables:
+      - oauth_clients
+      - oauth_consents
+      - oauth_api_keys
+
+  cassandra:
+    keyspace: auth_events
+    tables:
+      - oauth_authorization_codes
+      - oauth_tokens
+      - oauth_rsa_keys
+
+  redis:
+    keys:
+      - oauth:limits:{api_key}:{minute}
+      - oauth:user:{user_id}:limits
+      - oauth:user:{user_id}:subscription
+
+security:
+  oauth:
+    authorization_code_expiry: 600  # 10 minutes
+    access_token_expiry: 3600  # 1 hour
+    refresh_token_expiry: 2592000  # 30 days
+    pkce_required: true
+    jwt_algorithm: RS256
+
+  rate_limiting:
+    oauth_authorize: 10  # requests per minute per IP
+    oauth_token: 5  # requests per minute per client_id
+    api_endpoints: 100  # requests per minute per API key
+
+scopes:
+  - profile: Access user profile information
+  - email: Access user email address
+  - subscription: Access user subscription details
+  - admin: Administrative access (internal only)
+
+monitoring:
+  metrics:
+    - oauth_authorization_requests_total
+    - oauth_token_exchanges_total
+    - oauth_token_validation_total
+    - oauth_errors_total
+    - api_requests_total
+    - api_latency_seconds
+    - rate_limit_hits_total
+
+  logs:
+    - oauth.authorization.granted
+    - oauth.authorization.denied
+    - oauth.token.issued
+    - oauth.token.refreshed
+    - oauth.token.revoked
+    - api_key.created
+    - api_key.rotated
+    - api_key.revoked
+    - rate_limit.exceeded
+
+testing:
+  unit_tests:
+    - PKCE validation
+    - JWT token signing and verification
+    - Authorization code generation and expiry
+    - Refresh token rotation
+    - API key validation
+
+  integration_tests:
+    - Full OAuth authorization flow
+    - Token exchange with PKCE
+    - API key authentication
+    - Rate limiting enforcement
+
+  e2e_tests:
+    - External app OAuth flow
+    - User consent workflow
+    - Token refresh flow
+    - API key usage tracking

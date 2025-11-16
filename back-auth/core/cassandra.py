@@ -126,6 +126,15 @@ def record_event(user_id: int, event_type: str, metadata: Dict[str, Any] | None 
     session.execute(insert_event_statement, (user_id, datetime.utcnow(), event_type, safe_metadata))
 
 
+def get_cassandra_session() -> Session | None:
+    """Get the global Cassandra session.
+
+    Returns:
+        Cassandra session or None if not initialized
+    """
+    return session
+
+
 def shutdown_cassandra() -> None:
     global session, cluster
     if session:

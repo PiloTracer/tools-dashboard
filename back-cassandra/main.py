@@ -124,7 +124,16 @@ def run_cql_migrations(session) -> None:
             cql_content = cql_content.strip()
             # Split by semicolon and execute each statement
             statements = [stmt.strip() for stmt in cql_content.split(";") if stmt.strip()]
-            for statement in statements:
+            for idx, statement in enumerate(statements, 1):
+                # Skip comment-only statements (lines starting with -- or empty after removing comments)
+                statement_without_comments = '\n'.join(
+                    line for line in statement.split('\n')
+                    if not line.strip().startswith('--')
+                ).strip()
+                if not statement_without_comments:
+                    logger.info(f"  Statement {idx}/{len(statements)}: [SKIPPED - comment only]")
+                    continue
+                logger.info(f"  Statement {idx}/{len(statements)}: {statement[:80]}...")
                 session.execute(statement)
             logger.info(f"Migration {cql_file.name} completed successfully")
         except Exception as e:

@@ -1,0 +1,32 @@
+name: auto-auth
+version: 1.0.0
+description: OAuth 2.0 authorization server (internal endpoints)
+service: back-auth
+
+endpoints:
+  - path: /internal/oauth/generate-code
+    method: POST
+    description: Generate OAuth authorization code
+  - path: /internal/oauth/validate-code
+    method: POST
+    description: Validate authorization code and PKCE
+  - path: /internal/oauth/issue-tokens
+    method: POST
+    description: Issue access and refresh tokens
+  - path: /internal/oauth/refresh-tokens
+    method: POST
+    description: Refresh access token
+  - path: /internal/oauth/validate-token
+    method: POST
+    description: Validate access token
+  - path: /internal/oauth/revoke-token
+    method: POST
+    description: Revoke token
+  - path: /internal/oauth/jwks
+    method: GET
+    description: Get JWKS (public keys)
+
+dependencies:
+  - cassandra
+  - pyjwt>=2.8.0
+  - cryptography>=41.0.0

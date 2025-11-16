@@ -58,9 +58,25 @@ def _load_user_management_router():
     return module.router
 
 
+def _load_auto_auth_router():
+    """Load the auto-auth feature package despite the hyphenated directory name."""
+    feature_dir = Path(__file__).resolve().parent / "features" / "auto-auth" / "__init__.py"
+    module_name = "features.auto_auth"
+
+    spec = importlib.util.spec_from_file_location(module_name, feature_dir)
+    if spec is None or spec.loader is None:
+        raise ImportError("Unable to load auto-auth feature module")
+
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module.router
+
+
 user_registration_router = _load_user_registration_router()
 email_auth_router = _load_email_auth_router()
 user_management_router = _load_user_management_router()
+auto_auth_router = _load_auto_auth_router()
 
 app = FastAPI(title="Tools Dashboard Auth", version="0.1.0")
 
@@ -90,3 +106,4 @@ async def health() -> dict[str, str]:
 app.include_router(user_registration_router)
 app.include_router(email_auth_router)
 app.include_router(user_management_router)
+app.include_router(auto_auth_router)

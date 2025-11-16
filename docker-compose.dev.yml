@@ -66,6 +66,7 @@ services:
       - AUTH_SERVICE_URL=http://back-auth:8001
     volumes:
       - ./back-api:/app
+      - ./shared:/app/shared
     ports:
       - "8100:8000"
     depends_on:

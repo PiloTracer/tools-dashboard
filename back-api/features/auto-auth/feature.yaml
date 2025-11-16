@@ -1,0 +1,54 @@
+name: auto-auth
+version: 1.0.0
+description: OAuth client management and external app API endpoints
+service: back-api
+
+endpoints:
+  # External App APIs (API Key Auth)
+  - path: /api/users/{user_id}
+    method: GET
+    description: Get user profile
+  - path: /api/users/{user_id}/subscription
+    method: GET
+    description: Get user subscription
+  - path: /api/users/{user_id}/limits
+    method: GET
+    description: Get user rate limits
+  - path: /api/users/{user_id}/verify
+    method: POST
+    description: Verify user permissions
+  - path: /api/users/{user_id}/usage
+    method: POST
+    description: Record usage event
+
+  # OAuth Client Management (Admin Auth)
+  - path: /api/oauth-clients
+    method: POST
+    description: Register OAuth client
+  - path: /api/oauth-clients
+    method: GET
+    description: List OAuth clients
+  - path: /api/oauth-clients/{client_id}
+    method: GET
+    description: Get OAuth client
+  - path: /api/oauth-clients/{client_id}
+    method: PUT
+    description: Update OAuth client
+  - path: /api/oauth-clients/{client_id}
+    method: DELETE
+    description: Delete OAuth client
+
+  # API Key Management (Admin Auth)
+  - path: /api/api-keys
+    method: POST
+    description: Generate API key
+  - path: /api/api-keys
+    method: GET
+    description: List API keys
+  - path: /api/api-keys/{key_id}
+    method: DELETE
+    description: Revoke API key
+
+dependencies:
+  - postgresql
+  - bcrypt>=4.0.0
