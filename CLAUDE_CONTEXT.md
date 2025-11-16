@@ -167,19 +167,27 @@ docker-compose -f docker-compose.dev.yml exec redis redis-cli
 
 ## Current Development Priorities
 
-1. **User Registration & Auth** ✅ (90% complete)
+1. **User Registration & Auth** ✅ (Complete)
    - Email/password registration ✅
    - Google OAuth ✅
    - Email verification ✅
    - JWT session management ✅
    - User status indicators ✅
 
-2. **Hydration Fixes** 🔄 (In progress)
-   - Resolved StatusIndicator hydration errors
-   - Resolved UserMenu hydration errors
-   - Testing in progress
+2. **App Library** 🔄 (Phase 1 Complete, Phase 2 Next)
+   - **Phase 1: Foundation** ✅ (Complete)
+     - PostgreSQL schema (4 tables) ✅
+     - Cassandra schema (3 tables) ✅
+     - Pydantic models (23 models) ✅
+     - Seed data (E-Cards app) ✅
+   - **Phase 2: Backend API** 📋 (Next - Week 2)
+     - Repository layer
+     - Domain logic
+     - Public API endpoints
+     - Admin API endpoints
+   - **See:** `.claude/features/app-library/` for complete documentation
 
-3. **Progressive Profiling** 📋 (Next up)
+3. **Progressive Profiling** 📋 (Planned)
    - Multi-step onboarding flow
    - Conditional field collection
    - Progress tracking
@@ -188,6 +196,7 @@ docker-compose -f docker-compose.dev.yml exec redis redis-cli
    - User management
    - Role-based access control (RBAC)
    - Task scheduler
+   - App library management UI
 
 ---
 
@@ -272,6 +281,7 @@ The `.claude/` directory uses organized subdirectories for all Claude-generated 
 | Implementing feature | All of above + `<service>/features/<feature>/feature.yaml` |
 | Cross-service feature | All of above + `.claude/agents/CROSS_SERVICE_FEATURES.md` |
 | Using sub-agents | `.claude/agents/README.md` |
+| **App Library feature** | `CLAUDE_CONTEXT.md` + `.claude/features/app-library/QUICK_START.md` |
 
 ---
 
@@ -282,6 +292,11 @@ The `.claude/` directory uses organized subdirectories for all Claude-generated 
 - **Setup**: `DEVELOPER_SETUP.md`, `STACK_OPERATIONS.md`
 - **Fixes Applied**: `FIXES_APPLIED_*.md`, `CONSOLE_ERRORS_FIXED_*.md`
 - **Agent System**: `.claude/agents/README.md` for sub-agent workflows and templates
+- **App Library**: `.claude/features/app-library/` - Complete feature documentation
+  - `QUICK_START.md` - Quick reference guide
+  - `IMPLEMENTATION_PLAN.md` - Full implementation plan
+  - `DATABASE_SCHEMA.md` - Database schema details
+  - Phase logs in `.claude/implementations/`
 
 ---
 

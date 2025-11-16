@@ -22,9 +22,9 @@ CREATE TABLE IF NOT EXISTS oauth_clients (
     created_by INTEGER REFERENCES users(id)
 );
 
-CREATE INDEX idx_oauth_clients_client_id ON oauth_clients(client_id);
-CREATE INDEX idx_oauth_clients_is_active ON oauth_clients(is_active);
-CREATE INDEX idx_oauth_clients_created_at ON oauth_clients(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_oauth_clients_client_id ON oauth_clients(client_id);
+CREATE INDEX IF NOT EXISTS idx_oauth_clients_is_active ON oauth_clients(is_active);
+CREATE INDEX IF NOT EXISTS idx_oauth_clients_created_at ON oauth_clients(created_at DESC);
 
 -- Trigger to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_oauth_clients_updated_at()
@@ -35,6 +35,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_oauth_clients_updated_at ON oauth_clients;
 CREATE TRIGGER trigger_oauth_clients_updated_at
     BEFORE UPDATE ON oauth_clients
     FOR EACH ROW
@@ -60,9 +61,9 @@ CREATE TABLE IF NOT EXISTS oauth_consents (
     UNIQUE(user_id, client_id)
 );
 
-CREATE INDEX idx_oauth_consents_user_id ON oauth_consents(user_id);
-CREATE INDEX idx_oauth_consents_client_id ON oauth_consents(client_id);
-CREATE INDEX idx_oauth_consents_granted_at ON oauth_consents(granted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_oauth_consents_user_id ON oauth_consents(user_id);
+CREATE INDEX IF NOT EXISTS idx_oauth_consents_client_id ON oauth_consents(client_id);
+CREATE INDEX IF NOT EXISTS idx_oauth_consents_granted_at ON oauth_consents(granted_at DESC);
 
 COMMENT ON TABLE oauth_consents IS 'User consent records for OAuth clients';
 COMMENT ON COLUMN oauth_consents.scope IS 'Array of scopes user granted to this client';
@@ -85,11 +86,11 @@ CREATE TABLE IF NOT EXISTS oauth_api_keys (
     created_by INTEGER REFERENCES users(id)
 );
 
-CREATE INDEX idx_oauth_api_keys_key_hash ON oauth_api_keys(key_hash);
-CREATE INDEX idx_oauth_api_keys_client_id ON oauth_api_keys(client_id);
-CREATE INDEX idx_oauth_api_keys_is_active ON oauth_api_keys(is_active);
-CREATE INDEX idx_oauth_api_keys_expires_at ON oauth_api_keys(expires_at);
-CREATE INDEX idx_oauth_api_keys_created_at ON oauth_api_keys(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_oauth_api_keys_key_hash ON oauth_api_keys(key_hash);
+CREATE INDEX IF NOT EXISTS idx_oauth_api_keys_client_id ON oauth_api_keys(client_id);
+CREATE INDEX IF NOT EXISTS idx_oauth_api_keys_is_active ON oauth_api_keys(is_active);
+CREATE INDEX IF NOT EXISTS idx_oauth_api_keys_expires_at ON oauth_api_keys(expires_at);
+CREATE INDEX IF NOT EXISTS idx_oauth_api_keys_created_at ON oauth_api_keys(created_at DESC);
 
 COMMENT ON TABLE oauth_api_keys IS 'API keys for external applications to access admin endpoints';
 COMMENT ON COLUMN oauth_api_keys.key_hash IS 'bcrypt hash of API key (format: eak_...)';
@@ -111,10 +112,10 @@ CREATE TABLE IF NOT EXISTS oauth_usage_events (
     timestamp TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_oauth_usage_events_user_id ON oauth_usage_events(user_id);
-CREATE INDEX idx_oauth_usage_events_client_id ON oauth_usage_events(client_id);
-CREATE INDEX idx_oauth_usage_events_event_type ON oauth_usage_events(event_type);
-CREATE INDEX idx_oauth_usage_events_timestamp ON oauth_usage_events(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_oauth_usage_events_user_id ON oauth_usage_events(user_id);
+CREATE INDEX IF NOT EXISTS idx_oauth_usage_events_client_id ON oauth_usage_events(client_id);
+CREATE INDEX IF NOT EXISTS idx_oauth_usage_events_event_type ON oauth_usage_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_oauth_usage_events_timestamp ON oauth_usage_events(timestamp DESC);
 
 COMMENT ON TABLE oauth_usage_events IS 'Usage tracking for external applications (billing/analytics)';
 COMMENT ON COLUMN oauth_usage_events.event_type IS 'Type of event (e.g., cards_generated, api_call)';

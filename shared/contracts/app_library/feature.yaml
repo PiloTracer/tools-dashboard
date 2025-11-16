@@ -1,0 +1,392 @@
+name: app-library
+version: 1.0.0
+description: Application library management with OAuth integration and access control
+owner: Platform Team
+dependencies:
+  - auto-auth  # OAuth 2.0 infrastructure
+  - user-management  # User data and authentication
+
+# ============================================================================
+# Public API Endpoints (User-Facing)
+# ============================================================================
+endpoints:
+  # App Library - Public Endpoints
+  - method: GET
+    path: /api/oauth-clients
+    description: List all active applications available to the current user
+    service: back-api
+    authentication: session
+    response_schema: AppListResponse
+    query_parameters:
+      - name: include_inactive
+        type: boolean
+        required: false
+        default: false
+        description: Include inactive applications (admin only)
+
+  - method: GET
+    path: /api/oauth-clients/{client_id}
+    description: Get details of a specific application
+    service: back-api
+    authentication: session
+    response_schema: App
+    path_parameters:
+      - name: client_id
+        type: string
+        required: true
+        description: OAuth client ID
+
+  - method: POST
+    path: /api/user/app-preferences
+    description: Update user preferences for an application
+    service: back-api
+    authentication: session
+    request_schema: UserPreferenceUpdate
+    response_schema: UserPreference
+    request_body:
+      content_type: application/json
+      fields:
+        - is_favorite
+
+  - method: POST
+    path: /api/user/app-preferences/{app_client_id}/toggle-favorite
+    description: Toggle favorite status for an application
+    service: back-api
+    authentication: session
+    response_schema: UserPreference
+    path_parameters:
+      - name: app_client_id
+        type: string
+        required: true
+
+  # ============================================================================
+  # Admin API Endpoints (Management)
+  # ============================================================================
+
+  - method: GET
+    path: /api/admin/app-library
+    description: List all applications (admin view with inactive apps)
+    service: back-api
+    authentication: session
+    authorization: admin
+    response_schema: List[App]
+    query_parameters:
+      - name: include_deleted
+        type: boolean
+        required: false
+        default: false
+
+  - method: POST
+    path: /api/admin/app-library
+    description: Create a new application
+    service: back-api
+    authentication: session
+    authorization: admin
+    request_schema: AppCreate
+    response_schema: AppWithSecret
+    request_body:
+      content_type: application/json
+      required_fields:
+        - client_name
+        - dev_url
+        - redirect_uris
+        - allowed_scopes
+
+  - method: GET
+    path: /api/admin/app-library/{app_id}
+    description: Get application details (admin view)
+    service: back-api
+    authentication: session
+    authorization: admin
+    response_schema: AppDetailResponse
+    path_parameters:
+      - name: app_id
+        type: uuid
+        required: true
+
+  - method: PUT
+    path: /api/admin/app-library/{app_id}
+    description: Update application details
+    service: back-api
+    authentication: session
+    authorization: admin
+    request_schema: AppUpdate
+    response_schema: App
+    path_parameters:
+      - name: app_id
+        type: uuid
+        required: true
+
+  - method: DELETE
+    path: /api/admin/app-library/{app_id}
+    description: Delete (soft delete) an application
+    service: back-api
+    authentication: session
+    authorization: admin
+    response_schema: App
+    path_parameters:
+      - name: app_id
+        type: uuid
+        required: true
+
+  - method: PATCH
+    path: /api/admin/app-library/{app_id}/status
+    description: Toggle active/inactive status
+    service: back-api
+    authentication: session
+    authorization: admin
+    response_schema: App
+    path_parameters:
+      - name: app_id
+        type: uuid
+        required: true
+    request_body:
+      content_type: application/json
+      fields:
+        - is_active
+
+  - method: POST
+    path: /api/admin/app-library/{app_id}/regenerate-secret
+    description: Regenerate client secret
+    service: back-api
+    authentication: session
+    authorization: admin
+    response_schema: SecretRegenerateResponse
+    path_parameters:
+      - name: app_id
+        type: uuid
+        required: true
+
+  - method: POST
+    path: /api/admin/app-library/{app_id}/access
+    description: Update access control rules
+    service: back-api
+    authentication: session
+    authorization: admin
+    request_schema: AccessRuleCreate
+    response_schema: AccessRule
+    path_parameters:
+      - name: app_id
+        type: uuid
+        required: true
+    request_body:
+      content_type: application/json
+      fields:
+        - mode
+        - user_ids
+        - subscription_tiers
+
+  - method: GET
+    path: /api/admin/app-library/{app_id}/usage
+    description: Get usage statistics for an application
+    service: back-api
+    authentication: session
+    authorization: admin
+    response_schema: UsageStats
+    path_parameters:
+      - name: app_id
+        type: uuid
+        required: true
+    query_parameters:
+      - name: start_date
+        type: date
+        required: false
+        description: Start date for statistics (defaults to 30 days ago)
+      - name: end_date
+        type: date
+        required: false
+        description: End date for statistics (defaults to today)
+
+  - method: GET
+    path: /api/admin/app-library/{app_id}/audit-log
+    description: Get audit log for an application
+    service: back-api
+    authentication: session
+    authorization: admin
+    response_schema: List[AuditLog]
+    path_parameters:
+      - name: app_id
+        type: uuid
+        required: true
+    query_parameters:
+      - name: limit
+        type: integer
+        required: false
+        default: 50
+      - name: offset
+        type: integer
+        required: false
+        default: 0
+
+# ============================================================================
+# Data Schemas
+# ============================================================================
+schemas:
+  App:
+    description: Application model
+    fields:
+      id: uuid
+      client_id: string
+      client_name: string
+      description: string (optional)
+      logo_url: string (optional)
+      dev_url: string (optional)
+      prod_url: string (optional)
+      redirect_uris: array[string]
+      allowed_scopes: array[string]
+      is_active: boolean
+      created_at: datetime
+      updated_at: datetime
+      deleted_at: datetime (optional)
+      created_by: integer (optional)
+
+  AppCreate:
+    description: Request model for creating an application
+    fields:
+      client_name: string (required)
+      description: string (optional)
+      logo_url: string (optional)
+      dev_url: string (required)
+      prod_url: string (optional)
+      redirect_uris: array[string] (required, min 1)
+      allowed_scopes: array[string] (default: [profile, email])
+      is_active: boolean (default: false)
+
+  AppUpdate:
+    description: Request model for updating an application
+    fields:
+      client_name: string (optional)
+      description: string (optional)
+      logo_url: string (optional)
+      dev_url: string (optional)
+      prod_url: string (optional)
+      redirect_uris: array[string] (optional)
+      allowed_scopes: array[string] (optional)
+      is_active: boolean (optional)
+
+  AccessRule:
+    description: Access control rule
+    fields:
+      id: uuid
+      app_id: uuid
+      mode: enum[all_users, all_except, only_specified, subscription_based]
+      user_ids: array[integer]
+      subscription_tiers: array[string]
+      created_at: datetime
+      updated_at: datetime
+      created_by: integer (optional)
+
+  UserPreference:
+    description: User preference for an application
+    fields:
+      id: uuid
+      user_id: integer
+      app_client_id: string
+      is_favorite: boolean
+      last_launched_at: datetime (optional)
+      launch_count: integer
+      created_at: datetime
+      updated_at: datetime
+
+  UsageStats:
+    description: Application usage statistics
+    fields:
+      app_id: uuid
+      app_name: string
+      total_users: integer
+      total_launches: integer
+      daily_stats: array[DailyStats]
+
+  DailyStats:
+    description: Daily usage statistics
+    fields:
+      app_client_id: string
+      stat_date: date
+      total_launches: integer
+      unique_users_count: integer
+      successful_launches: integer
+      failed_launches: integer
+      computed_at: datetime
+
+# ============================================================================
+# Database Tables
+# ============================================================================
+database:
+  postgresql:
+    - table: oauth_clients
+      description: Extended with app-library columns (dev_url, prod_url, deleted_at)
+    - table: app_access_rules
+      description: Access control rules for applications
+    - table: user_app_preferences
+      description: User preferences (favorites, recently used)
+    - table: app_audit_log
+      description: Audit trail for application management
+
+  cassandra:
+    - keyspace: auth_events
+      tables:
+        - app_launch_events
+        - app_daily_stats
+        - user_app_activity
+
+# ============================================================================
+# Feature Flags
+# ============================================================================
+feature_flags:
+  app_library_enabled:
+    description: Enable/disable app library feature
+    default: true
+  app_library_admin_ui:
+    description: Enable admin UI for app management
+    default: true
+  app_library_analytics:
+    description: Enable usage analytics tracking
+    default: true
+
+# ============================================================================
+# Configuration
+# ============================================================================
+configuration:
+  cache_ttl_seconds: 300  # 5 minutes
+  max_apps_per_page: 50
+  max_redirect_uris: 10
+  default_scopes:
+    - profile
+    - email
+
+# ============================================================================
+# Events Published
+# ============================================================================
+events:
+  - name: app.created
+    description: New application created
+    payload:
+      app_id: uuid
+      client_id: string
+      created_by: integer
+
+  - name: app.updated
+    description: Application updated
+    payload:
+      app_id: uuid
+      changes: object
+
+  - name: app.deleted
+    description: Application deleted
+    payload:
+      app_id: uuid
+      deleted_by: integer
+
+  - name: app.launched
+    description: User launched an application
+    payload:
+      app_client_id: string
+      user_id: uuid
+      success: boolean
+
+  - name: app.favorite_toggled
+    description: User toggled favorite status
+    payload:
+      app_client_id: string
+      user_id: integer
+      is_favorite: boolean

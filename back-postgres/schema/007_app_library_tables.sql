@@ -62,11 +62,11 @@ CREATE TABLE IF NOT EXISTS app_access_rules (
 );
 
 -- Indexes
-CREATE INDEX idx_access_rules_app_id ON app_access_rules(app_id);
-CREATE INDEX idx_access_rules_mode ON app_access_rules(mode);
+CREATE INDEX IF NOT EXISTS idx_access_rules_app_id ON app_access_rules(app_id);
+CREATE INDEX IF NOT EXISTS idx_access_rules_mode ON app_access_rules(mode);
 
 -- GIN index for user_ids array searches
-CREATE INDEX idx_access_rules_user_ids ON app_access_rules USING GIN(user_ids);
+CREATE INDEX IF NOT EXISTS idx_access_rules_user_ids ON app_access_rules USING GIN(user_ids);
 
 -- Comments
 COMMENT ON TABLE app_access_rules IS 'Access control rules for applications';
@@ -98,11 +98,11 @@ CREATE TABLE IF NOT EXISTS user_app_preferences (
 );
 
 -- Indexes
-CREATE INDEX idx_user_prefs_user_id ON user_app_preferences(user_id);
-CREATE INDEX idx_user_prefs_app_client_id ON user_app_preferences(app_client_id);
-CREATE INDEX idx_user_prefs_favorite ON user_app_preferences(is_favorite) WHERE is_favorite = true;
-CREATE INDEX idx_user_prefs_last_launched ON user_app_preferences(last_launched_at DESC);
-CREATE INDEX idx_user_prefs_user_favorite ON user_app_preferences(user_id, is_favorite) WHERE is_favorite = true;
+CREATE INDEX IF NOT EXISTS idx_user_prefs_user_id ON user_app_preferences(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_prefs_app_client_id ON user_app_preferences(app_client_id);
+CREATE INDEX IF NOT EXISTS idx_user_prefs_favorite ON user_app_preferences(is_favorite) WHERE is_favorite = true;
+CREATE INDEX IF NOT EXISTS idx_user_prefs_last_launched ON user_app_preferences(last_launched_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_prefs_user_favorite ON user_app_preferences(user_id, is_favorite) WHERE is_favorite = true;
 
 -- Comments
 COMMENT ON TABLE user_app_preferences IS 'User preferences for applications (favorites, recently used)';
@@ -148,13 +148,13 @@ CREATE TABLE IF NOT EXISTS app_audit_log (
 );
 
 -- Indexes
-CREATE INDEX idx_audit_app_id ON app_audit_log(app_id);
-CREATE INDEX idx_audit_performed_by ON app_audit_log(performed_by);
-CREATE INDEX idx_audit_event_type ON app_audit_log(event_type);
-CREATE INDEX idx_audit_created_at ON app_audit_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_app_id ON app_audit_log(app_id);
+CREATE INDEX IF NOT EXISTS idx_audit_performed_by ON app_audit_log(performed_by);
+CREATE INDEX IF NOT EXISTS idx_audit_event_type ON app_audit_log(event_type);
+CREATE INDEX IF NOT EXISTS idx_audit_created_at ON app_audit_log(created_at DESC);
 
 -- GIN index for JSONB searches
-CREATE INDEX idx_audit_changes ON app_audit_log USING GIN(changes);
+CREATE INDEX IF NOT EXISTS idx_audit_changes ON app_audit_log USING GIN(changes);
 
 -- Comments
 COMMENT ON TABLE app_audit_log IS 'Audit trail for application management actions';

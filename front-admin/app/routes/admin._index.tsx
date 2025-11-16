@@ -118,6 +118,15 @@ export default function HomePage() {
           </Link>
         </article>
         <article style={cardStyles}>
+          <h3 style={headingStyles}>Application library</h3>
+          <p style={paragraphStyles}>
+            Manage OAuth 2.0 applications, configure access control, and monitor integration usage.
+          </p>
+          <Link to="/admin/features/app-library" style={ctaStyles}>
+            Manage applications →
+          </Link>
+        </article>
+        <article style={cardStyles}>
           <h3 style={headingStyles}>Task scheduler</h3>
           <p style={paragraphStyles}>
             Configure background jobs, review last run status, and refine retry policies quickly.
