@@ -51,5 +51,5 @@ This document captures initialization steps for each component so you can prepar
 - `.ai/token-guard.py` placeholder—extend to enforce token budgets.
 
 ## Environment Variables (Defaults)
-See `docker-compose.dev.yml` or `.env.dev` (if created) for canonical values. Compose files mount env vars directly so no additional files are required.
+See `docker-compose.dev.yml` or `.env.dev.example` (if created) for canonical values. Compose files mount env vars directly so no additional files are required.
 

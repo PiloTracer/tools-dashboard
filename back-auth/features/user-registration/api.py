@@ -30,6 +30,7 @@ from schemas import (
 from services import email as email_service
 from services import google_oauth
 from services.auth import create_user_session, generate_token
+from services.subscription import ensure_user_subscription
 
 logger = logging.getLogger(__name__)
 
@@ -246,6 +247,9 @@ async def login_user(
                 },
             )
 
+        # Ensure user has a subscription (auto-create Free tier if needed)
+        await ensure_user_subscription(session, user_record["id"])
+
         session_token, _ = await create_user_session(session, user_record["id"])
 
     record_event(user_record["id"], "email_login", {"email": user_record["email"]})
@@ -253,7 +257,7 @@ async def login_user(
     response = JSONResponse(
         content={
             "status": "authenticated",
-            "redirectTo": "/features/progressive-profiling",
+            "redirectTo": "/features/app-library",
             "email": user_record["email"],
             "message": "Signed in successfully.",
         }
@@ -285,6 +289,9 @@ async def verify_email(
 
         await user_repository.mark_email_verified(session, user_record["id"])
 
+        # Ensure user has a subscription (auto-create Free tier if needed)
+        await ensure_user_subscription(session, user_record["id"])
+
         session_token, _ = await create_user_session(session, user_record["id"])
 
     record_event(user_record["id"], "email_verified", {"email": user_record["email"]})
@@ -292,7 +299,7 @@ async def verify_email(
     response = JSONResponse(
         content={
             "status": "verified",
-            "redirectTo": "/features/progressive-profiling",
+            "redirectTo": "/features/app-library",
             "email": user_record["email"],
         }
     )
@@ -361,6 +368,9 @@ async def google_callback(
             raw_profile=userinfo,
         )
 
+        # Ensure user has a subscription (auto-create Free tier if needed)
+        await ensure_user_subscription(session, user_id)
+
         session_token, _ = await create_user_session(session, user_id)
 
     record_event(user_id, "google_connected", {"email": email})
@@ -368,7 +378,7 @@ async def google_callback(
     response = JSONResponse(
         content={
             "status": "verified" if email_verified else "pending",
-            "redirectTo": "/features/progressive-profiling",
+            "redirectTo": "/features/app-library",
             "email": email,
         }
     )
@@ -438,7 +448,7 @@ async def registration_status(request: Request, session: AsyncSession = Depends(
         return StatusResponse(status="pending", message="No user in session")
 
     status_value = "verified" if user_row["is_email_verified"] else "pending"
-    redirect_to = "/features/progressive-profiling" if status_value == "verified" else None
+    redirect_to = "/features/app-library" if status_value == "verified" else None
     verified_at = user_row.get("updated_at") if status_value == "verified" else None
     return StatusResponse(
         status=status_value,

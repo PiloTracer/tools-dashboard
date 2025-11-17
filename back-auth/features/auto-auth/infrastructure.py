@@ -35,8 +35,8 @@ class OAuthInfrastructure:
         client_id: str,
         scope: list[str],
         redirect_uri: str,
-        code_challenge: str,
-        code_challenge_method: str,
+        code_challenge: Optional[str],
+        code_challenge_method: Optional[str],
         expires_in: int = 600,
     ) -> None:
         """Store authorization code in Cassandra.
@@ -47,8 +47,8 @@ class OAuthInfrastructure:
             client_id: OAuth client ID
             scope: List of granted scopes
             redirect_uri: Redirect URI from authorization request
-            code_challenge: PKCE code challenge
-            code_challenge_method: PKCE challenge method (S256)
+            code_challenge: PKCE code challenge (optional for pre-initiated flows)
+            code_challenge_method: PKCE challenge method - S256 (optional for pre-initiated flows)
             expires_in: Expiry time in seconds (default 10 minutes)
         """
         query = """
@@ -71,8 +71,8 @@ class OAuthInfrastructure:
                 client_id,
                 set(scope),
                 redirect_uri,
-                code_challenge,
-                code_challenge_method,
+                code_challenge,  # Can be None
+                code_challenge_method,  # Can be None
                 now,
                 expires_at,
                 False,

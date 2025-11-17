@@ -161,7 +161,7 @@ class UserStatusStore {
    * Get redirect path after login
    */
   getRedirectPath(): string {
-    return this.state.navigation.nextLocation || "/app/dashboard";
+    return this.state.navigation.nextLocation || "/app/features/app-library";
   }
 
   /**

@@ -69,8 +69,8 @@ class OAuthDomain:
         user_id: UUID,
         client_id: str,
         scope: str,
-        code_challenge: str,
-        code_challenge_method: str,
+        code_challenge: Optional[str],
+        code_challenge_method: Optional[str],
         redirect_uri: str,
         expires_in: int = 600,
     ) -> str:
@@ -80,8 +80,8 @@ class OAuthDomain:
             user_id: User UUID
             client_id: OAuth client ID
             scope: Space-separated scopes
-            code_challenge: PKCE code challenge
-            code_challenge_method: PKCE challenge method
+            code_challenge: PKCE code challenge (optional for pre-initiated flows)
+            code_challenge_method: PKCE challenge method (optional for pre-initiated flows)
             redirect_uri: Redirect URI
             expires_in: Expiry time in seconds (default 10 minutes)
 
@@ -111,7 +111,7 @@ class OAuthDomain:
         code: str,
         client_id: str,
         redirect_uri: str,
-        code_verifier: str,
+        code_verifier: Optional[str],
     ) -> Optional[dict]:
         """Validate authorization code and PKCE.
 
@@ -119,7 +119,7 @@ class OAuthDomain:
             code: Authorization code
             client_id: OAuth client ID
             redirect_uri: Redirect URI from token request
-            code_verifier: PKCE code verifier
+            code_verifier: PKCE code verifier (optional for pre-initiated flows)
 
         Returns:
             Dict with user_id and scope if valid, None otherwise
@@ -146,15 +146,22 @@ class OAuthDomain:
         if auth_code["redirect_uri"] != redirect_uri:
             return None
 
-        # Validate PKCE
-        pkce_valid = self.validate_pkce(
-            code_verifier,
-            auth_code["code_challenge"],
-            auth_code["code_challenge_method"],
-        )
+        # Validate PKCE if code_challenge was provided during authorization
+        # For pre-initiated OAuth flows from App Library, PKCE is optional
+        if auth_code["code_challenge"] is not None:
+            # PKCE was used - verify the code_verifier
+            if not code_verifier:
+                # Code challenge was provided but no verifier
+                return None
 
-        if not pkce_valid:
-            return None
+            pkce_valid = self.validate_pkce(
+                code_verifier,
+                auth_code["code_challenge"],
+                auth_code["code_challenge_method"],
+            )
+
+            if not pkce_valid:
+                return None
 
         # Mark as used
         await self.infra.mark_authorization_code_as_used(code)

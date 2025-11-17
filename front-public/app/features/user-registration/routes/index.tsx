@@ -690,8 +690,13 @@ async function handleLoginSubmission(request: Request, formData: FormData): Prom
       );
     }
 
-    const fallbackRedirect = resolvePublicPath("/features/progressive-profiling");
+    // Check for return_to query parameter (for OAuth flow)
+    const url = new URL(request.url);
+    const returnTo = url.searchParams.get("return_to");
+
+    const fallbackRedirect = resolvePublicPath("/app/features/app-library");
     const targetRedirect =
+      resolveRedirectTarget(returnTo) ??
       resolveRedirectTarget(parsedResponse.data.redirectTo) ??
       resolveRedirectTarget(parsedResponse.data.next?.redirectTo) ??
       fallbackRedirect;

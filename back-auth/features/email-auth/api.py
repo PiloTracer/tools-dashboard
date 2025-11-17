@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_session, users
+from services.subscription import ensure_user_subscription
 from services.token_service import create_access_token, create_refresh_token
 
 router = APIRouter(prefix="/email", tags=["email-auth"])
@@ -93,6 +94,10 @@ async def login(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Email not verified. Please verify your email before logging in.",
         )
+
+    # Ensure user has a subscription (auto-create Free tier if needed)
+    # Note: session is already managed by FastAPI dependency injection
+    await ensure_user_subscription(session, user["id"])
 
     # Generate tokens
     access_token = create_access_token(

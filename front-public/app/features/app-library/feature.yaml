@@ -1,0 +1,202 @@
+name: app-library
+version: 1.0.0
+description: Application Library with OAuth Integration
+owner: Engineering Team
+status: active
+created: 2025-11-16
+
+# Feature metadata
+metadata:
+  display_name: Application Library
+  category: integration
+  tags:
+    - oauth
+    - applications
+    - sso
+    - authentication
+
+# Routes exposed by this feature
+routes:
+  - path: /app/features/app-library
+    file: routes/index.tsx
+    description: Main application library view
+    authentication_required: true
+    methods:
+      - GET
+
+  - path: /app/features/app-library/oauth-error
+    file: routes/oauth-error.tsx
+    description: OAuth error handler
+    authentication_required: false
+    methods:
+      - GET
+
+# Backend dependencies
+dependencies:
+  backend:
+    - service: back-api
+      endpoint: /api/oauth-clients
+      description: List available OAuth applications
+      method: GET
+
+    - service: back-auth
+      endpoint: /oauth/authorize
+      description: OAuth authorization endpoint
+      method: GET
+
+    - service: back-auth
+      endpoint: /oauth/token
+      description: OAuth token exchange endpoint
+      method: POST
+
+  database:
+    - service: back-postgres
+      tables:
+        - apps
+        - app_access_rules
+        - user_app_preferences
+        - app_audit_log
+
+    - service: back-cassandra
+      tables:
+        - auth_events.oauth_auth_events
+        - auth_events.app_launch_events
+
+# External integrations
+external_integrations:
+  - name: E-Cards
+    url_dev: http://localhost:7300
+    url_prod: https://ecards.epicstudio.com
+    client_id: ecards_a1b2c3d4
+    description: E-Card + QR-Code Batch Generator
+
+# Security configuration
+security:
+  oauth:
+    flow: authorization_code
+    pkce: required
+    code_challenge_method: S256
+    csrf_protection: state_parameter
+    token_storage: session_storage
+
+  authentication:
+    required: true
+    session_based: true
+    cookie_credentials: include
+
+# Feature flags (for gradual rollout)
+feature_flags:
+  enabled: true
+  beta_users: []
+  rollout_percentage: 100
+
+# UI Configuration
+ui:
+  components:
+    - AppCard
+    - AppGrid
+    - EmptyState
+    - LoadingState
+    - ErrorState
+
+  utilities:
+    - oauth.ts (PKCE generation, OAuth launch)
+    - api.ts (Backend API client)
+
+  styling:
+    framework: tailwind
+    theme: responsive
+    accessibility: wcag_2.1_aa
+
+# Performance targets
+performance:
+  target_load_time_ms: 2000
+  target_oauth_redirect_ms: 500
+  cache_strategy: session_storage
+
+# Monitoring and analytics
+monitoring:
+  track_events:
+    - app_library_view
+    - app_launch_initiated
+    - oauth_flow_started
+    - oauth_flow_completed
+    - oauth_flow_failed
+
+  error_tracking:
+    - oauth_launch_error
+    - api_fetch_error
+    - token_generation_error
+
+# Testing
+testing:
+  unit_tests:
+    - utils/oauth.test.ts
+    - utils/api.test.ts
+
+  integration_tests:
+    - routes/index.test.tsx
+    - routes/oauth-error.test.tsx
+
+  e2e_tests:
+    - app-library-full-flow.spec.ts
+
+# Documentation
+documentation:
+  planning:
+    - .claude/features/app-library/README.md
+    - .claude/features/app-library/USER_STORIES.md
+    - .claude/features/app-library/TECHNICAL_SPEC.md
+    - .claude/features/app-library/DATABASE_SCHEMA.md
+    - .claude/features/app-library/IMPLEMENTATION_PLAN.md
+
+  guides:
+    - .claude/features/app-library/OAUTH_IMPLEMENTATION_GUIDE.md
+
+  session_starters:
+    - .claude/prompts/app-library-starter.md
+
+  plans:
+    - .claude/plans/app-library-front-public.md
+
+# Deployment
+deployment:
+  environment_variables: []
+
+  required_services:
+    - back-api
+    - back-auth
+    - back-postgres
+    - back-cassandra
+
+  deployment_checklist:
+    - Database schema deployed
+    - Seed data loaded (E-Cards app)
+    - Back-API endpoints available
+    - OAuth server configured
+    - Frontend build successful
+    - Integration tests passing
+
+# Rollback plan
+rollback:
+  strategy: feature_flag
+  steps:
+    - Set feature_flags.enabled to false
+    - Revert authentication redirect to progressive-profiling
+    - Monitor for residual OAuth flows
+
+# Support
+support:
+  contact: support@tools-dashboard.io
+  documentation_url: /docs/app-library
+  troubleshooting_guide: .claude/features/app-library/README.md#FAQ
+
+# Changelog
+changelog:
+  - version: 1.0.0
+    date: 2025-11-16
+    changes:
+      - Initial implementation
+      - OAuth 2.0 with PKCE support
+      - Responsive UI with Tailwind CSS
+      - E-Cards integration

@@ -27,8 +27,8 @@ class GenerateCodeRequest(BaseModel):
     user_id: UUID
     client_id: str
     scope: str  # Space-separated
-    code_challenge: str
-    code_challenge_method: str = "S256"
+    code_challenge: str | None = None  # Optional for pre-initiated flows
+    code_challenge_method: str | None = "S256"  # Optional for pre-initiated flows
     redirect_uri: str
     expires_in: int = Field(default=600, ge=60, le=600)  # 1-10 minutes
 
@@ -43,7 +43,7 @@ class ValidateCodeRequest(BaseModel):
     code: str
     client_id: str
     redirect_uri: str
-    code_verifier: str
+    code_verifier: str | None = None  # Optional for pre-initiated flows
 
 
 class ValidateCodeResponse(BaseModel):

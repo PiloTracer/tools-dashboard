@@ -54,7 +54,7 @@ Source code/                 ~1 MB
 - Configuration files (.yml, .yaml, .json, .conf)
 - Documentation (.md files, except backups)
 - Feature metadata (feature.yaml)
-- Environment templates (.env.dev)
+- Environment templates (.env.dev.example)
 - Docker configs (Dockerfile.*, docker-compose.*)
 
 **Excluded** (via .claudeignore):
@@ -283,7 +283,7 @@ If working on specific areas, create focused contexts:
 3. **Differences to maintain**:
    - `.gitignore` excludes `.env` (secrets) - keep excluded
    - `.claudeignore` excludes `node_modules/` (size) - keep excluded
-   - `.claudeignore` may include `.env.dev` (template) - keep included
+   - `.claudeignore` may include `.env.dev.example` (template) - keep included
 
 4. **Automation** (optional):
    ```bash

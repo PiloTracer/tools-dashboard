@@ -337,7 +337,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export default function VerifyRoute() {
   const data = useLoaderData<typeof loader>();
-  const continueHref = usePublicHref("/features/progressive-profiling");
+  const continueHref = usePublicHref("/app/features/app-library");
 
   return (
     <section className="mx-auto flex max-w-2xl flex-col gap-6">

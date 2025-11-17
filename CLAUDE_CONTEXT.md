@@ -81,7 +81,7 @@ back-auth/features/
 - Domain services call repositories via internal APIs or direct imports
 
 ### Configuration
-- **Environment vars**: `.env.dev` (development), `.env.production` (prod)
+- **Environment vars**: `.env.dev.example` (development), `.env.production` (prod)
 - **Docker Compose**: Service orchestration, health checks, dependencies
 - **Feature YAML**: Metadata for feature registry and documentation
 
@@ -141,7 +141,7 @@ docker-compose -f docker-compose.dev.yml exec redis redis-cli
 - Python 3.11+ (for local dev without Docker)
 
 ### First-Time Setup
-1. Copy `.env.dev` and configure:
+1. Copy `.env.dev.example` and configure:
    - `JWT_SECRET_KEY` (generate with `openssl rand -base64 32`)
    - `DEFAULT_ADMIN_EMAIL` and `DEFAULT_ADMIN_PASSWORD`
    - SMTP settings for email (or use Mailhog for local)

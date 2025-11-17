@@ -1,7 +1,13 @@
 import { defineConfig } from "vite";
 import { vitePlugin as remix } from "@remix-run/dev";
+import path from "path";
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      "~": path.resolve(__dirname, "./app"),
+    },
+  },
   build: {
     sourcemap: true,
   },

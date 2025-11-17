@@ -77,7 +77,7 @@
 # ============================================================================
 # KEEP THESE (explicitly included despite patterns above)
 # ============================================================================
-# !.env.dev  # Example config - has placeholders, not real secrets
+# !.env.dev.example  # Example config - has placeholders, not real secrets
 # !docker-compose.dev.yml  # Primary dev config
 # !docker-compose.prod.yml  # Prod reference config
 

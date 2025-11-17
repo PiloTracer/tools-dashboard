@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from core.cassandra import init_cassandra, shutdown_cassandra
 from core.database import close_engine, get_session, init_engine
 from core.seed_admin import create_default_admin
+from core.seed_subscriptions import seed_subscription_packages
 
 
 def _load_user_registration_router():
@@ -89,6 +90,11 @@ async def startup() -> None:
     # Create default admin user if it doesn't exist
     async for session in get_session():
         await create_default_admin(session)
+        break
+
+    # Seed subscription packages (Free tier)
+    async for session in get_session():
+        await seed_subscription_packages(session)
         break
 
 

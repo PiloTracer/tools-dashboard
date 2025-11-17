@@ -11,8 +11,8 @@
 ### Initial Setup (5 minutes)
 ```bash
 # 1. Copy and configure environment
-cp .env.example .env.dev
-# Edit .env.dev - set JWT_SECRET_KEY, admin credentials
+cp .env.example .env.dev.example
+# Edit .env.dev.example - set JWT_SECRET_KEY, admin credentials
 
 # 2. Start all services
 docker-compose -f docker-compose.dev.yml up -d
@@ -295,7 +295,7 @@ docker-compose -f docker-compose.dev.yml logs <service-name>
    ```
 
 2. **Missing environment variables**
-   - Check `.env.dev` is present
+   - Check `.env.dev.example` is present
    - Verify all required vars are set
    - Check `docker-compose.dev.yml` for `${VAR}` references
 
@@ -322,7 +322,7 @@ docker-compose -f docker-compose.dev.yml logs <service-name>
    docker-compose -f docker-compose.dev.yml ps | grep healthy
    ```
 
-3. **Check connection string in .env.dev**:
+3. **Check connection string in .env.dev.example**:
    ```
    DATABASE_URL=postgresql+asyncpg://user:pass@postgresql:5432/main_db
    CASSANDRA_CONTACT_POINTS=cassandra
@@ -482,7 +482,7 @@ export function MyComponent() {
    curl http://localhost:8025
    ```
 
-2. **Verify SMTP config in .env.dev**:
+2. **Verify SMTP config in .env.dev.example**:
    ```
    MAIL_HOST=mailhog
    MAIL_PORT=1025
@@ -500,7 +500,7 @@ export function MyComponent() {
 
 ### Key Environment Variables
 
-#### Authentication (.env.dev)
+#### Authentication (.env.dev.example)
 ```bash
 # JWT
 JWT_SECRET_KEY=<generate with: openssl rand -base64 32>

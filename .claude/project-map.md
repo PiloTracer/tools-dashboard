@@ -195,7 +195,7 @@
 #### Root Level
 - `docker-compose.dev.yml` - Development environment (hot reload, volume mounts)
 - `docker-compose.prod.yml` - Production environment (optimized builds)
-- `.env.dev` - Development environment variables (example/template)
+- `.env.dev.example` - Development environment variables (example/template)
 - `.gitignore` - Git exclusions
 - `.claudeignore` - Claude Code context exclusions
 
@@ -307,7 +307,7 @@ back-auth → back-redis (caching, rate limiting)
 | API endpoint | `features/*/api.py` | `@router.get` or `@router.post` |
 | Database model | `repositories/*.py` | `class` definitions or SQL queries |
 | Component | `app/components/`, `app/features/*/ui/` | PascalCase `.tsx` files |
-| Configuration | `.env.dev`, `core/config.py` | `Settings` class or env vars |
+| Configuration | `.env.dev.example`, `core/config.py` | `Settings` class or env vars |
 | Feature metadata | `features/*/feature.yaml` | YAML files |
 
 ---
