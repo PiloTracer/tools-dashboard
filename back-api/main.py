@@ -72,6 +72,9 @@ app_library_module = importlib.import_module("features.app-library.api")
 app_library_public_router = app_library_module.public_router
 app_library_admin_router = app_library_module.admin_router
 
+users_module = importlib.import_module("features.users.api")
+users_router = users_module.router
+
 app = FastAPI(title="Tools Dashboard API", version="0.1.0", lifespan=lifespan)
 
 # Configure CORS for frontend access
@@ -90,6 +93,7 @@ app.include_router(user_management_router)
 app.include_router(auto_auth_router)
 app.include_router(app_library_public_router)
 app.include_router(app_library_admin_router)
+app.include_router(users_router)
 
 
 @app.get("/health", tags=["system"], summary="Service health")

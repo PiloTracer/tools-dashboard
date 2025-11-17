@@ -66,7 +66,7 @@ class OAuthDomain:
 
     async def generate_authorization_code(
         self,
-        user_id: UUID,
+        user_id: int,
         client_id: str,
         scope: str,
         code_challenge: Optional[str],
@@ -77,7 +77,7 @@ class OAuthDomain:
         """Generate OAuth authorization code.
 
         Args:
-            user_id: User UUID
+            user_id: User ID (integer from users table)
             client_id: OAuth client ID
             scope: Space-separated scopes
             code_challenge: PKCE code challenge (optional for pre-initiated flows)
@@ -244,7 +244,7 @@ class OAuthDomain:
 
     async def issue_access_token(
         self,
-        user_id: UUID,
+        user_id: int,
         client_id: str,
         scope: list[str],
         user_email: str,
@@ -254,7 +254,7 @@ class OAuthDomain:
         """Issue JWT access token.
 
         Args:
-            user_id: User UUID
+            user_id: User ID (integer from users table)
             client_id: OAuth client ID
             scope: List of scopes
             user_email: User email
@@ -309,7 +309,7 @@ class OAuthDomain:
 
     async def issue_refresh_token(
         self,
-        user_id: UUID,
+        user_id: int,
         client_id: str,
         scope: list[str],
         expires_in: int = 2592000,  # 30 days
@@ -317,7 +317,7 @@ class OAuthDomain:
         """Issue JWT refresh token.
 
         Args:
-            user_id: User UUID
+            user_id: User ID (integer from users table)
             client_id: OAuth client ID
             scope: List of scopes
             expires_in: Expiry time in seconds (default 30 days)

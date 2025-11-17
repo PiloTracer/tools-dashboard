@@ -24,7 +24,7 @@ router = APIRouter(prefix="/internal/oauth", tags=["auto-auth-internal"])
 
 class GenerateCodeRequest(BaseModel):
     """Request to generate authorization code."""
-    user_id: UUID
+    user_id: int  # User ID from users table (integer, not UUID)
     client_id: str
     scope: str  # Space-separated
     code_challenge: str | None = None  # Optional for pre-initiated flows

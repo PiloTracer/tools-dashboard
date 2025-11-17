@@ -129,19 +129,18 @@ export function retrieveOAuthState(appClientId: string): string | null {
 /**
  * Build OAuth authorization URL for launching an app
  *
- * This function generates the complete URL to redirect the user to the external
- * application with all necessary OAuth parameters for the authorization code flow.
+ * This function generates the complete URL to redirect the user to the OAuth
+ * authorization endpoint for the authorization code flow.
  *
- * IMPORTANT: For pre-initiated OAuth flows, we do NOT generate PKCE parameters.
- * This is because:
- * - Tools Dashboard initiates the flow by redirecting to the remote app
- * - The remote app will redirect to our OAuth authorize endpoint
- * - The remote app cannot access our sessionStorage to get code_verifier
- * - PKCE requires the same client to generate both challenge and verifier
- * - For pre-initiated flows, client_secret provides sufficient security
+ * IMPORTANT: For pre-initiated OAuth flows from App Library:
+ * - We redirect DIRECTLY to the OAuth authorization endpoint
+ * - We do NOT generate PKCE parameters (client_secret provides security)
+ * - We do NOT store the state (it's only validated by the authorization endpoint)
+ * - After authorization, the user is redirected to the remote app's callback
+ * - The remote app does NOT need to validate state (it didn't initiate the flow)
  *
  * @param app - Application configuration
- * @returns Complete OAuth launch URL
+ * @returns Complete OAuth authorization URL
  */
 export async function buildOAuthLaunchURL(app: {
   client_id: string;
@@ -151,21 +150,16 @@ export async function buildOAuthLaunchURL(app: {
   allowed_scopes: string[];
 }): Promise<string> {
   // Generate state for CSRF protection
-  const state = generateRandomString(32);
-  storeOAuthState(app.client_id, state);
+  const state = generateRandomString(64);
 
-  // Determine environment (dev or prod)
-  const isDev =
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === 'epicdev.com' ||
-    window.location.hostname.includes('127.0.0.1');
-
-  const appBaseUrl = isDev ? app.dev_url : (app.prod_url || app.dev_url);
+  // NOTE: We do NOT store state in sessionStorage for pre-initiated flows
+  // The remote app will receive the state in the callback but should not validate it
+  // because it did not initiate the OAuth flow
 
   // Build redirect URI (remote app's callback)
   const redirectUri = app.redirect_uris[0]; // Use first redirect URI
 
-  // Build OAuth parameters to pass to remote app (WITHOUT PKCE)
+  // Build OAuth parameters for authorization endpoint (WITHOUT PKCE)
   const oauthParams = new URLSearchParams({
     client_id: app.client_id,
     redirect_uri: redirectUri,
@@ -174,8 +168,11 @@ export async function buildOAuthLaunchURL(app: {
     response_type: 'code',
   });
 
-  // Return full URL to remote app with OAuth params
-  return `${appBaseUrl}?${oauthParams.toString()}`;
+  // Determine OAuth authorization endpoint URL
+  const authEndpoint = window.location.origin + '/oauth/authorize';
+
+  // Return full URL to OAuth authorization endpoint
+  return `${authEndpoint}?${oauthParams.toString()}`;
 }
 
 /**

@@ -31,7 +31,7 @@ class OAuthInfrastructure:
     async def store_authorization_code(
         self,
         code: str,
-        user_id: UUID,
+        user_id: int,
         client_id: str,
         scope: list[str],
         redirect_uri: str,
@@ -43,7 +43,7 @@ class OAuthInfrastructure:
 
         Args:
             code: Authorization code
-            user_id: User UUID
+            user_id: User ID (integer from users table, will be converted to UUID)
             client_id: OAuth client ID
             scope: List of granted scopes
             redirect_uri: Redirect URI from authorization request
@@ -51,23 +51,29 @@ class OAuthInfrastructure:
             code_challenge_method: PKCE challenge method - S256 (optional for pre-initiated flows)
             expires_in: Expiry time in seconds (default 10 minutes)
         """
+        now = datetime.utcnow()
+        expires_at = now + timedelta(seconds=expires_in)
+
+        # Convert integer user_id to UUID for Cassandra storage
+        # We use UUID v5 with a namespace to ensure consistent mapping
+        from uuid import uuid5, NAMESPACE_OID
+        user_uuid = uuid5(NAMESPACE_OID, f"user:{user_id}")
+
+        # Cassandra query - TTL must be literal value, not a parameter
         query = """
         INSERT INTO auth_events.oauth_authorization_codes (
             code, user_id, client_id, scope, redirect_uri,
             code_challenge, code_challenge_method,
             issued_at, expires_at, used, used_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        USING TTL ?
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        USING TTL %s
         """
-
-        now = datetime.utcnow()
-        expires_at = now + timedelta(seconds=expires_in)
 
         self.session.execute(
             query,
-            (
+            [
                 code,
-                user_id,
+                user_uuid,
                 client_id,
                 set(scope),
                 redirect_uri,
@@ -77,8 +83,8 @@ class OAuthInfrastructure:
                 expires_at,
                 False,
                 None,
-                expires_in,  # TTL
-            ),
+                expires_in,  # TTL value
+            ],
         )
 
     async def get_authorization_code(self, code: str) -> Optional[dict]:
@@ -95,10 +101,10 @@ class OAuthInfrastructure:
                code_challenge, code_challenge_method,
                issued_at, expires_at, used, used_at
         FROM auth_events.oauth_authorization_codes
-        WHERE code = ?
+        WHERE code = %s
         """
 
-        result = self.session.execute(query, (code,))
+        result = self.session.execute(query, [code])
         row = result.one()
 
         if not row:
@@ -126,11 +132,11 @@ class OAuthInfrastructure:
         """
         query = """
         UPDATE auth_events.oauth_authorization_codes
-        SET used = true, used_at = ?
-        WHERE code = ?
+        SET used = true, used_at = %s
+        WHERE code = %s
         """
 
-        self.session.execute(query, (datetime.utcnow(), code))
+        self.session.execute(query, [datetime.utcnow(), code])
 
     # ========================================================================
     # Token Operations
@@ -139,7 +145,7 @@ class OAuthInfrastructure:
     async def store_token(
         self,
         token_id: UUID,
-        user_id: UUID,
+        user_id: int,
         client_id: str,
         token_type: str,
         token_hash: str,
@@ -151,7 +157,7 @@ class OAuthInfrastructure:
 
         Args:
             token_id: Token UUID
-            user_id: User UUID
+            user_id: User ID (integer from users table, will be converted to UUID)
             client_id: OAuth client ID
             token_type: 'access' or 'refresh'
             token_hash: Hash of the token
@@ -162,19 +168,23 @@ class OAuthInfrastructure:
         now = datetime.utcnow()
         expires_at = now + timedelta(seconds=expires_in)
 
+        # Convert integer user_id to UUID for Cassandra storage
+        from uuid import uuid5, NAMESPACE_OID
+        user_uuid = uuid5(NAMESPACE_OID, f"user:{user_id}")
+
         # Store in main tokens table
         query = """
         INSERT INTO auth_events.oauth_tokens (
             token_id, user_id, client_id, token_type, token_hash,
             scope, issued_at, expires_at, revoked, revoked_at, parent_token_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
 
         self.session.execute(
             query,
-            (
+            [
                 token_id,
-                user_id,
+                user_uuid,
                 client_id,
                 token_type,
                 token_hash,
@@ -184,7 +194,7 @@ class OAuthInfrastructure:
                 False,
                 None,
                 parent_token_id,
-            ),
+            ],
         )
 
         # Store in denormalized user index table
@@ -192,12 +202,12 @@ class OAuthInfrastructure:
         INSERT INTO auth_events.oauth_tokens_by_user (
             user_id, client_id, token_id, token_type,
             issued_at, expires_at, revoked
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
 
         self.session.execute(
             query_user_index,
-            (user_id, client_id, token_id, token_type, now, expires_at, False),
+            [user_uuid, client_id, token_id, token_type, now, expires_at, False],
         )
 
     async def get_token_by_hash(self, token_hash: str) -> Optional[dict]:
@@ -213,11 +223,11 @@ class OAuthInfrastructure:
         SELECT token_id, user_id, client_id, token_type, token_hash,
                scope, issued_at, expires_at, revoked, revoked_at, parent_token_id
         FROM auth_events.oauth_tokens
-        WHERE token_hash = ?
+        WHERE token_hash = %s
         LIMIT 1
         """
 
-        result = self.session.execute(query, (token_hash,))
+        result = self.session.execute(query, [token_hash])
         row = result.one()
 
         if not row:
@@ -249,11 +259,11 @@ class OAuthInfrastructure:
         # Update main token table
         query = """
         UPDATE auth_events.oauth_tokens
-        SET revoked = true, revoked_at = ?
-        WHERE token_hash = ?
+        SET revoked = true, revoked_at = %s
+        WHERE token_hash = %s
         """
 
-        self.session.execute(query, (now, token_hash))
+        self.session.execute(query, [now, token_hash])
 
         # Get token info for revocation table
         token = await self.get_token_by_hash(token_hash)
@@ -262,13 +272,13 @@ class OAuthInfrastructure:
             query_revoke = """
             INSERT INTO auth_events.oauth_token_revocations (
                 token_hash, revoked_at, reason, user_id, client_id
-            ) VALUES (?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s)
             USING TTL 2592000
             """
 
             self.session.execute(
                 query_revoke,
-                (token_hash, now, reason, token["user_id"], token["client_id"]),
+                [token_hash, now, reason, token["user_id"], token["client_id"]],
             )
 
     async def is_token_revoked(self, token_hash: str) -> bool:
@@ -283,10 +293,10 @@ class OAuthInfrastructure:
         query = """
         SELECT token_hash
         FROM auth_events.oauth_token_revocations
-        WHERE token_hash = ?
+        WHERE token_hash = %s
         """
 
-        result = self.session.execute(query, (token_hash,))
+        result = self.session.execute(query, [token_hash])
         return result.one() is not None
 
     # ========================================================================
@@ -312,7 +322,7 @@ class OAuthInfrastructure:
         INSERT INTO auth_events.oauth_rsa_keys (
             key_id, public_key, private_key, algorithm,
             created_at, expires_at, is_active
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
 
         now = datetime.utcnow()
@@ -320,7 +330,7 @@ class OAuthInfrastructure:
 
         self.session.execute(
             query,
-            (key_id, public_key, private_key, algorithm, now, expires_at, True),
+            [key_id, public_key, private_key, algorithm, now, expires_at, True],
         )
 
     async def get_active_rsa_key(self) -> Optional[dict]:
@@ -366,10 +376,10 @@ class OAuthInfrastructure:
         query = """
         SELECT public_key
         FROM auth_events.oauth_rsa_keys
-        WHERE key_id = ?
+        WHERE key_id = %s
         """
 
-        result = self.session.execute(query, (key_id,))
+        result = self.session.execute(query, [key_id])
         row = result.one()
 
         return row.public_key if row else None
@@ -401,7 +411,7 @@ class OAuthInfrastructure:
     async def log_session_activity(
         self,
         session_id: UUID,
-        user_id: UUID,
+        user_id: int,
         client_id: str,
         activity_type: str,
         ip_address: str,
@@ -412,7 +422,7 @@ class OAuthInfrastructure:
 
         Args:
             session_id: Session UUID
-            user_id: User UUID
+            user_id: User ID (integer from users table, will be converted to UUID)
             client_id: OAuth client ID
             activity_type: Type of activity (e.g., 'authorization', 'token_issued')
             ip_address: Client IP address
@@ -421,26 +431,30 @@ class OAuthInfrastructure:
         """
         now = datetime.utcnow()
 
+        # Convert integer user_id to UUID for Cassandra storage
+        from uuid import uuid5, NAMESPACE_OID
+        user_uuid = uuid5(NAMESPACE_OID, f"user:{user_id}")
+
         # Store in main activity table
         query = """
         INSERT INTO auth_events.oauth_session_activity (
             session_id, timestamp, user_id, client_id, activity_type,
             ip_address, user_agent, metadata
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
 
         self.session.execute(
             query,
-            (
+            [
                 session_id,
                 now,
-                user_id,
+                user_uuid,
                 client_id,
                 activity_type,
                 ip_address,
                 user_agent,
                 metadata or {},
-            ),
+            ],
         )
 
         # Store in user-indexed table
@@ -448,12 +462,12 @@ class OAuthInfrastructure:
         INSERT INTO auth_events.oauth_session_activity_by_user (
             user_id, timestamp, session_id, client_id,
             activity_type, ip_address
-        ) VALUES (?, ?, ?, ?, ?, ?)
+        ) VALUES (%s, %s, %s, %s, %s, %s)
         """
 
         self.session.execute(
             query_user_index,
-            (user_id, now, session_id, client_id, activity_type, ip_address),
+            [user_uuid, now, session_id, client_id, activity_type, ip_address],
         )
 
 
