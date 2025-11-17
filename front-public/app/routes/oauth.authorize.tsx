@@ -6,7 +6,6 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { Form, useLoaderData } from "@remix-run/react";
-import { getSession, commitSession } from "../utils/session.server";
 
 interface OAuthClient {
   client_id: string;
@@ -51,18 +50,42 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return redirect(`${redirectUri}?error=invalid_request&error_description=Only+S256+PKCE+method+is+supported&state=${state}`);
   }
 
-  // Get user session
-  const session = await getSession(request.headers.get("Cookie"));
-  const userId = session.get("userId");
+  // Validate user session via back-auth
+  const BACK_AUTH_URL = process.env.AUTH_API_URL || "http://back-auth:8001";
 
-  if (!userId) {
-    // User not authenticated - redirect to login
+  let userId: number;
+  try {
+    const statusResponse = await fetch(`${BACK_AUTH_URL}/user-registration/status`, {
+      method: "GET",
+      headers: {
+        "Cookie": request.headers.get("Cookie") || "",
+      },
+    });
+
+    if (!statusResponse.ok) {
+      // User not authenticated - redirect to login
+      const returnTo = encodeURIComponent(request.url);
+      return redirect(`/app/features/user-registration?return_to=${returnTo}`);
+    }
+
+    const statusData = await statusResponse.json();
+
+    // Check if user is verified (authenticated) and has userId
+    if (statusData.status !== "verified" || !statusData.userId) {
+      // User not authenticated or not verified - redirect to login
+      const returnTo = encodeURIComponent(request.url);
+      return redirect(`/app/features/user-registration?return_to=${returnTo}`);
+    }
+
+    userId = statusData.userId;
+  } catch (error) {
+    console.error("Failed to validate session:", error);
     const returnTo = encodeURIComponent(request.url);
     return redirect(`/app/features/user-registration?return_to=${returnTo}`);
   }
 
   // Get OAuth client details from back-api
-  const BACK_API_URL = process.env.BACK_API_URL || "http://localhost:8100";
+  const BACK_API_URL = process.env.BACKEND_API_URL || "http://back-api:8000";
 
   try {
     const clientResponse = await fetch(`${BACK_API_URL}/api/oauth-clients/${clientId}`);
@@ -134,11 +157,32 @@ export async function action({ request }: ActionFunctionArgs) {
     throw new Error("Missing required parameters");
   }
 
-  // Get user session
-  const session = await getSession(request.headers.get("Cookie"));
-  const userId = session.get("userId");
+  // Validate user session via back-auth
+  const BACK_AUTH_URL = process.env.AUTH_API_URL || "http://back-auth:8001";
 
-  if (!userId) {
+  let userId: number;
+  try {
+    const statusResponse = await fetch(`${BACK_AUTH_URL}/user-registration/status`, {
+      method: "GET",
+      headers: {
+        "Cookie": request.headers.get("Cookie") || "",
+      },
+    });
+
+    if (!statusResponse.ok) {
+      throw new Error("User not authenticated");
+    }
+
+    const statusData = await statusResponse.json();
+
+    // Check if user is verified (authenticated) and has userId
+    if (statusData.status !== "verified" || !statusData.userId) {
+      throw new Error("User not authenticated");
+    }
+
+    userId = statusData.userId;
+  } catch (error) {
+    console.error("Failed to validate session:", error);
     throw new Error("User not authenticated");
   }
 
@@ -148,8 +192,6 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   // User approved - generate authorization code
-  const BACK_AUTH_URL = process.env.BACK_AUTH_URL || "http://localhost:8101";
-
   try {
     const codeResponse = await fetch(`${BACK_AUTH_URL}/internal/oauth/generate-code`, {
       method: "POST",

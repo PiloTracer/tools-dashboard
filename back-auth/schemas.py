@@ -50,6 +50,7 @@ class GoogleCallbackRequest(BaseModel):
 class StatusResponse(BaseModel):
     status: str
     email: Optional[str] = None
+    userId: Optional[int] = None  # Added for OAuth authorization
     redirectTo: Optional[str] = None
     message: Optional[str] = None
     verifiedAt: Optional[datetime] = None

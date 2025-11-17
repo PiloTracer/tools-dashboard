@@ -24,8 +24,8 @@ export async function action({ request }: ActionFunctionArgs) {
   const codeVerifier = formData.get("code_verifier");
   const refreshToken = formData.get("refresh_token");
 
-  const BACK_AUTH_URL = process.env.BACK_AUTH_URL || "http://localhost:8101";
-  const BACK_API_URL = process.env.BACK_API_URL || "http://localhost:8100";
+  const BACK_AUTH_URL = process.env.AUTH_API_URL || "http://back-auth:8001";
+  const BACK_API_URL = process.env.BACKEND_API_URL || "http://back-api:8000";
 
   // Validate grant_type
   if (grantType !== "authorization_code" && grantType !== "refresh_token") {
@@ -47,8 +47,9 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
-    // Verify client credentials via back-api
-    // For now, we'll skip this step and validate during code exchange
+    // Note: Client credentials (client_id + client_secret) should be validated
+    // For now, we rely on authorization code validation which includes client_id verification
+    // TODO: Add explicit client_secret verification via back-api
 
     // AUTHORIZATION CODE GRANT
     if (grantType === "authorization_code") {

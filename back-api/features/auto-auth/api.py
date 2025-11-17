@@ -53,20 +53,23 @@ async def get_oauth_domain() -> OAuthClientDomain:
     Returns:
         OAuthClientDomain instance
     """
-    # TODO: Inject actual PostgreSQL session
-    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+    from sqlalchemy.ext.asyncio import AsyncSession
     from sqlalchemy.orm import sessionmaker
-    import os
 
-    DATABASE_URL = os.getenv(
-        "DATABASE_URL",
-        "postgresql+asyncpg://user:password@localhost:5432/main_db"
+    # Import global database manager
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from database import db_manager
+
+    # Use shared SQLAlchemy engine
+    async_session_factory = sessionmaker(
+        db_manager.sqlalchemy_engine,
+        class_=AsyncSession,
+        expire_on_commit=False
     )
 
-    engine = create_async_engine(DATABASE_URL)
-    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-    async with async_session() as session:
+    async with async_session_factory() as session:
         infra = OAuthClientInfrastructure(session)
         yield OAuthClientDomain(infra)
 

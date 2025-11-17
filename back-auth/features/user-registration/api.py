@@ -453,6 +453,7 @@ async def registration_status(request: Request, session: AsyncSession = Depends(
     return StatusResponse(
         status=status_value,
         email=user_row["email"],
+        userId=user_row["id"],  # Include userId for OAuth authorization
         redirectTo=redirect_to,
         message="Account verified" if status_value == "verified" else "Awaiting verification",
         verifiedAt=verified_at,

@@ -5,6 +5,7 @@ import asyncpg
 from cassandra.cluster import Cluster
 from cassandra.auth import PlainTextAuthProvider
 from typing import Any
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
 
 
 class DatabaseManager:
@@ -14,6 +15,7 @@ class DatabaseManager:
         self.pg_pool: asyncpg.Pool | None = None
         self.cassandra_session: Any | None = None
         self.cassandra_cluster: Cluster | None = None
+        self.sqlalchemy_engine: AsyncEngine | None = None
 
     async def connect_postgresql(self) -> None:
         """Initialize PostgreSQL connection pool."""
@@ -30,6 +32,17 @@ class DatabaseManager:
             command_timeout=60,
         )
         print(f"✅ PostgreSQL pool created: {database_url}")
+
+        # Also create SQLAlchemy engine for auto-auth feature
+        # Convert postgresql:// to postgresql+asyncpg://
+        sqlalchemy_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
+        self.sqlalchemy_engine = create_async_engine(
+            sqlalchemy_url,
+            pool_size=10,
+            max_overflow=20,
+            pool_pre_ping=True,
+        )
+        print(f"✅ SQLAlchemy engine created: {sqlalchemy_url}")
 
     def connect_cassandra(self) -> None:
         """Initialize Cassandra connection."""
@@ -50,6 +63,10 @@ class DatabaseManager:
         if self.pg_pool:
             await self.pg_pool.close()
             print("🔌 PostgreSQL pool closed")
+
+        if self.sqlalchemy_engine:
+            await self.sqlalchemy_engine.dispose()
+            print("🔌 SQLAlchemy engine disposed")
 
         if self.cassandra_cluster:
             self.cassandra_cluster.shutdown()

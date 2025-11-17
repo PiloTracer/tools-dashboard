@@ -11,8 +11,62 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, Table, MetaData, Column, String, ARRAY, Boolean, TIMESTAMP, Integer
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.ext.asyncio import AsyncSession
+
+
+def _define_oauth_clients_table(metadata: MetaData) -> Table:
+    """Define OAuth clients table schema."""
+    return Table(
+        "oauth_clients",
+        metadata,
+        Column("id", PGUUID(as_uuid=True), primary_key=True),
+        Column("client_id", String),
+        Column("client_secret_hash", String),
+        Column("client_name", String),
+        Column("description", String),
+        Column("logo_url", String),
+        Column("dev_url", String),
+        Column("prod_url", String),
+        Column("redirect_uris", ARRAY(String)),
+        Column("allowed_scopes", ARRAY(String)),
+        Column("is_active", Boolean),
+        Column("created_at", TIMESTAMP),
+        Column("updated_at", TIMESTAMP),
+        Column("created_by", Integer),
+    )
+
+
+def _define_oauth_consents_table(metadata: MetaData) -> Table:
+    """Define OAuth consents table schema."""
+    return Table(
+        "oauth_consents",
+        metadata,
+        Column("id", PGUUID(as_uuid=True), primary_key=True),
+        Column("user_id", Integer),
+        Column("client_id", String),
+        Column("scope", ARRAY(String)),
+        Column("granted_at", TIMESTAMP),
+    )
+
+
+def _define_oauth_api_keys_table(metadata: MetaData) -> Table:
+    """Define OAuth API keys table schema."""
+    return Table(
+        "oauth_api_keys",
+        metadata,
+        Column("id", PGUUID(as_uuid=True), primary_key=True),
+        Column("key_hash", String),
+        Column("client_id", String),
+        Column("name", String),
+        Column("description", String),
+        Column("is_active", Boolean),
+        Column("last_used_at", TIMESTAMP),
+        Column("expires_at", TIMESTAMP),
+        Column("created_at", TIMESTAMP),
+        Column("created_by", Integer),
+    )
 
 
 class OAuthClientInfrastructure:
@@ -56,26 +110,8 @@ class OAuthClientInfrastructure:
         Returns:
             Created client data
         """
-        from sqlalchemy import Table, MetaData, Column, String, ARRAY, Boolean, TIMESTAMP, Integer
-        from sqlalchemy.dialects.postgresql import UUID as PGUUID
-
         metadata = MetaData()
-        oauth_clients = Table(
-            "oauth_clients",
-            metadata,
-            Column("id", PGUUID(as_uuid=True), primary_key=True),
-            Column("client_id", String),
-            Column("client_secret_hash", String),
-            Column("client_name", String),
-            Column("description", String),
-            Column("logo_url", String),
-            Column("redirect_uris", ARRAY(String)),
-            Column("allowed_scopes", ARRAY(String)),
-            Column("is_active", Boolean),
-            Column("created_at", TIMESTAMP),
-            Column("updated_at", TIMESTAMP),
-            Column("created_by", Integer),
-        )
+        oauth_clients = _define_oauth_clients_table(metadata)
 
         query = oauth_clients.insert().values(
             client_id=client_id,
@@ -104,16 +140,21 @@ class OAuthClientInfrastructure:
         Returns:
             Client data or None
         """
-        from sqlalchemy import Table, MetaData
-
         metadata = MetaData()
-        oauth_clients = Table("oauth_clients", metadata, autoload_with=self.session.bind)
+        oauth_clients = _define_oauth_clients_table(metadata)
 
         query = select(oauth_clients).where(oauth_clients.c.client_id == client_id)
         result = await self.session.execute(query)
         row = result.mappings().first()
 
-        return dict(row) if row else None
+        if not row:
+            return None
+
+        # Convert UUID to string for Pydantic
+        client_data = dict(row)
+        if client_data.get("id"):
+            client_data["id"] = str(client_data["id"])
+        return client_data
 
     async def validate_client_credentials(
         self, client_id: str, client_secret: str
@@ -143,10 +184,8 @@ class OAuthClientInfrastructure:
         Returns:
             List of client data
         """
-        from sqlalchemy import Table, MetaData
-
         metadata = MetaData()
-        oauth_clients = Table("oauth_clients", metadata, autoload_with=self.session.bind)
+        oauth_clients = _define_oauth_clients_table(metadata)
 
         query = select(oauth_clients).order_by(oauth_clients.c.created_at.desc())
         result = await self.session.execute(query)
@@ -165,10 +204,8 @@ class OAuthClientInfrastructure:
         Returns:
             Updated client data or None
         """
-        from sqlalchemy import Table, MetaData
-
         metadata = MetaData()
-        oauth_clients = Table("oauth_clients", metadata, autoload_with=self.session.bind)
+        oauth_clients = _define_oauth_clients_table(metadata)
 
         query = (
             update(oauth_clients)
@@ -192,10 +229,8 @@ class OAuthClientInfrastructure:
         Returns:
             True if deleted
         """
-        from sqlalchemy import Table, MetaData
-
         metadata = MetaData()
-        oauth_clients = Table("oauth_clients", metadata, autoload_with=self.session.bind)
+        oauth_clients = _define_oauth_clients_table(metadata)
 
         query = delete(oauth_clients).where(oauth_clients.c.client_id == client_id)
         result = await self.session.execute(query)
@@ -217,10 +252,8 @@ class OAuthClientInfrastructure:
         Returns:
             True if consented
         """
-        from sqlalchemy import Table, MetaData
-
         metadata = MetaData()
-        oauth_consents = Table("oauth_consents", metadata, autoload_with=self.session.bind)
+        oauth_consents = _define_oauth_consents_table(metadata)
 
         query = select(oauth_consents).where(
             oauth_consents.c.user_id == user_id,
@@ -240,20 +273,10 @@ class OAuthClientInfrastructure:
             client_id: Client identifier
             scope: List of scopes
         """
-        from sqlalchemy import Table, MetaData, Column, String, ARRAY, TIMESTAMP, Integer
-        from sqlalchemy.dialects.postgresql import UUID as PGUUID
         from sqlalchemy.dialects.postgresql import insert
 
         metadata = MetaData()
-        oauth_consents = Table(
-            "oauth_consents",
-            metadata,
-            Column("id", PGUUID(as_uuid=True), primary_key=True),
-            Column("user_id", Integer),
-            Column("client_id", String),
-            Column("scope", ARRAY(String)),
-            Column("granted_at", TIMESTAMP),
-        )
+        oauth_consents = _define_oauth_consents_table(metadata)
 
         # Upsert: insert or update if exists
         insert_stmt = insert(oauth_consents).values(
@@ -296,24 +319,8 @@ class OAuthClientInfrastructure:
         Returns:
             Created API key data
         """
-        from sqlalchemy import Table, MetaData, Column, String, Boolean, TIMESTAMP, Integer
-        from sqlalchemy.dialects.postgresql import UUID as PGUUID
-
         metadata = MetaData()
-        oauth_api_keys = Table(
-            "oauth_api_keys",
-            metadata,
-            Column("id", PGUUID(as_uuid=True), primary_key=True),
-            Column("key_hash", String),
-            Column("client_id", String),
-            Column("name", String),
-            Column("description", String),
-            Column("is_active", Boolean),
-            Column("last_used_at", TIMESTAMP),
-            Column("expires_at", TIMESTAMP),
-            Column("created_at", TIMESTAMP),
-            Column("created_by", Integer),
-        )
+        oauth_api_keys = _define_oauth_api_keys_table(metadata)
 
         query = oauth_api_keys.insert().values(
             key_hash=key_hash,
@@ -340,10 +347,8 @@ class OAuthClientInfrastructure:
         Returns:
             Client data if valid, None otherwise
         """
-        from sqlalchemy import Table, MetaData
-
         metadata = MetaData()
-        oauth_api_keys = Table("oauth_api_keys", metadata, autoload_with=self.session.bind)
+        oauth_api_keys = _define_oauth_api_keys_table(metadata)
 
         # Get all active API keys
         query = select(oauth_api_keys).where(
@@ -379,10 +384,8 @@ class OAuthClientInfrastructure:
         Returns:
             List of API key data
         """
-        from sqlalchemy import Table, MetaData
-
         metadata = MetaData()
-        oauth_api_keys = Table("oauth_api_keys", metadata, autoload_with=self.session.bind)
+        oauth_api_keys = _define_oauth_api_keys_table(metadata)
 
         query = select(oauth_api_keys).order_by(oauth_api_keys.c.created_at.desc())
         result = await self.session.execute(query)
@@ -398,10 +401,8 @@ class OAuthClientInfrastructure:
         Returns:
             True if revoked
         """
-        from sqlalchemy import Table, MetaData
-
         metadata = MetaData()
-        oauth_api_keys = Table("oauth_api_keys", metadata, autoload_with=self.session.bind)
+        oauth_api_keys = _define_oauth_api_keys_table(metadata)
 
         query = (
             update(oauth_api_keys)
