@@ -23,11 +23,25 @@ router = APIRouter(prefix="/users", tags=["users"])
 # Response Models
 # ============================================================================
 
+class SubscriptionInfo(BaseModel):
+    """Subscription information."""
+    tier: str
+    status: str
+    cardsPerMonth: int
+    currentUsage: int
+    llmCredits: int
+    resetDate: str
+
+
 class UserInfoResponse(BaseModel):
     """User information response."""
     id: str
     username: str
     email: str
+    display_name: str
+    subscription: SubscriptionInfo | None = None
+    createdAt: str
+    updatedAt: str
 
 
 # ============================================================================
