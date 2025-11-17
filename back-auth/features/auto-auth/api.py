@@ -48,13 +48,13 @@ class ValidateCodeRequest(BaseModel):
 
 class ValidateCodeResponse(BaseModel):
     """Response with validated code data."""
-    user_id: UUID
+    user_id: int  # Integer user ID from users table
     scope: list[str]
 
 
 class IssueTokensRequest(BaseModel):
     """Request to issue tokens."""
-    user_id: UUID
+    user_id: int  # Integer user ID from users table
     client_id: str
     scope: list[str]
     user_email: str
@@ -84,7 +84,7 @@ class ValidateTokenRequest(BaseModel):
 class ValidateTokenResponse(BaseModel):
     """Token validation response."""
     valid: bool
-    user_id: UUID | None = None
+    user_id: int | None = None  # Integer user ID from users table
     client_id: str | None = None
     scope: list[str] | None = None
     error: str | None = None
@@ -286,7 +286,7 @@ async def refresh_tokens(
     await domain.revoke_token(request.refresh_token)
 
     # Extract user info from payload
-    user_id = UUID(payload["sub"])
+    user_id = int(payload["sub"])  # Convert string to integer
     scope = payload.get("scope", "").split()
 
     # TODO: Fetch user email and name from database
@@ -349,7 +349,7 @@ async def validate_token(
 
     return ValidateTokenResponse(
         valid=True,
-        user_id=UUID(payload["sub"]),
+        user_id=int(payload["sub"]),  # Convert string to integer
         client_id=payload.get("aud"),
         scope=payload.get("scope", "").split(),
     )

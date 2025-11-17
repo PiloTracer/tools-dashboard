@@ -43,7 +43,7 @@ class OAuthInfrastructure:
 
         Args:
             code: Authorization code
-            user_id: User ID (integer from users table, will be converted to UUID)
+            user_id: User ID (integer from users table)
             client_id: OAuth client ID
             scope: List of granted scopes
             redirect_uri: Redirect URI from authorization request
@@ -54,26 +54,24 @@ class OAuthInfrastructure:
         now = datetime.utcnow()
         expires_at = now + timedelta(seconds=expires_in)
 
-        # Convert integer user_id to UUID for Cassandra storage
-        # We use UUID v5 with a namespace to ensure consistent mapping
-        from uuid import uuid5, NAMESPACE_OID
-        user_uuid = uuid5(NAMESPACE_OID, f"user:{user_id}")
+        # Store integer user_id directly (Cassandra supports int type)
+        # No need to convert to UUID - we'll use the integer directly
 
-        # Cassandra query - TTL must be literal value, not a parameter
-        query = """
+        # Cassandra query using f-string for TTL
+        query = f"""
         INSERT INTO auth_events.oauth_authorization_codes (
             code, user_id, client_id, scope, redirect_uri,
             code_challenge, code_challenge_method,
             issued_at, expires_at, used, used_at
         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        USING TTL %s
+        USING TTL {expires_in}
         """
 
         self.session.execute(
             query,
             [
                 code,
-                user_uuid,
+                user_id,  # Store integer directly
                 client_id,
                 set(scope),
                 redirect_uri,
@@ -83,7 +81,6 @@ class OAuthInfrastructure:
                 expires_at,
                 False,
                 None,
-                expires_in,  # TTL value
             ],
         )
 
@@ -157,7 +154,7 @@ class OAuthInfrastructure:
 
         Args:
             token_id: Token UUID
-            user_id: User ID (integer from users table, will be converted to UUID)
+            user_id: User ID (integer from users table)
             client_id: OAuth client ID
             token_type: 'access' or 'refresh'
             token_hash: Hash of the token
@@ -168,9 +165,7 @@ class OAuthInfrastructure:
         now = datetime.utcnow()
         expires_at = now + timedelta(seconds=expires_in)
 
-        # Convert integer user_id to UUID for Cassandra storage
-        from uuid import uuid5, NAMESPACE_OID
-        user_uuid = uuid5(NAMESPACE_OID, f"user:{user_id}")
+        # Store integer user_id directly (Cassandra supports int type)
 
         # Store in main tokens table
         query = """
@@ -184,7 +179,7 @@ class OAuthInfrastructure:
             query,
             [
                 token_id,
-                user_uuid,
+                user_id,  # Store integer directly
                 client_id,
                 token_type,
                 token_hash,
@@ -207,7 +202,7 @@ class OAuthInfrastructure:
 
         self.session.execute(
             query_user_index,
-            [user_uuid, client_id, token_id, token_type, now, expires_at, False],
+            [user_id, client_id, token_id, token_type, now, expires_at, False],
         )
 
     async def get_token_by_hash(self, token_hash: str) -> Optional[dict]:
@@ -422,7 +417,7 @@ class OAuthInfrastructure:
 
         Args:
             session_id: Session UUID
-            user_id: User ID (integer from users table, will be converted to UUID)
+            user_id: User ID (integer from users table)
             client_id: OAuth client ID
             activity_type: Type of activity (e.g., 'authorization', 'token_issued')
             ip_address: Client IP address
@@ -431,9 +426,7 @@ class OAuthInfrastructure:
         """
         now = datetime.utcnow()
 
-        # Convert integer user_id to UUID for Cassandra storage
-        from uuid import uuid5, NAMESPACE_OID
-        user_uuid = uuid5(NAMESPACE_OID, f"user:{user_id}")
+        # Store integer user_id directly (Cassandra supports int type)
 
         # Store in main activity table
         query = """
@@ -448,7 +441,7 @@ class OAuthInfrastructure:
             [
                 session_id,
                 now,
-                user_uuid,
+                user_id,  # Store integer directly
                 client_id,
                 activity_type,
                 ip_address,
@@ -467,7 +460,7 @@ class OAuthInfrastructure:
 
         self.session.execute(
             query_user_index,
-            [user_uuid, now, session_id, client_id, activity_type, ip_address],
+            [user_id, now, session_id, client_id, activity_type, ip_address],
         )
 
 

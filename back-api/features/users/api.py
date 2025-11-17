@@ -77,50 +77,103 @@ async def get_current_user(
 
     token = parts[1]
 
-    # Validate token using auto-auth domain
-    import importlib
-    auto_auth_domain_module = importlib.import_module("features.auto-auth.domain")
-    auto_auth_infra_module = importlib.import_module("features.auto-auth.infrastructure")
+    # Validate token by calling back-auth's internal endpoint
+    import httpx
 
-    OAuthDomain = auto_auth_domain_module.OAuthDomain
-    OAuthInfrastructure = auto_auth_infra_module.OAuthInfrastructure
+    BACK_AUTH_URL = "http://back-auth:8001"
 
-    # Get OAuth domain to validate token
-    oauth_infra = OAuthInfrastructure(db_manager.cassandra_session)
-    oauth_domain = OAuthDomain(oauth_infra)
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{BACK_AUTH_URL}/internal/oauth/validate-token",
+                json={"token": token},
+                timeout=10.0,
+            )
+    except Exception as e:
+        print(f"ERROR: Failed to call validate-token: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to validate token: {str(e)}",
+        )
 
-    # Validate access token
-    payload = await oauth_domain.validate_access_token(token)
+    print(f"DEBUG: Validation response status: {response.status_code}")
+    print(f"DEBUG: Validation response body: {response.text}")
 
-    if not payload:
+    if response.status_code != 200:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired access token",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Extract user_id from token (it's stored as string in JWT)
-    user_id_str = payload.get("sub")
-    if not user_id_str:
+    validation_result = response.json()
+    print(f"DEBUG: Validation result: {validation_result}")
+
+    if not validation_result.get("valid"):
+        print(f"DEBUG: Token not valid. Error: {validation_result.get('error')}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=validation_result.get("error", "Invalid or expired access token"),
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Extract user_id from validation result (it's a UUID string)
+    user_id_uuid_str = validation_result.get("user_id")
+    print(f"DEBUG: user_id_uuid_str = {user_id_uuid_str}")
+
+    if not user_id_uuid_str:
+        print("DEBUG: Missing user_id in validation result")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token payload - missing user ID",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Convert user_id to integer (our users table uses integer IDs)
+    # Extract user_id from JWT token directly (without library)
+    # JWT format: header.payload.signature (base64url encoded)
+    import base64
+    import json
+
     try:
-        user_id = int(user_id_str)
-    except ValueError:
+        print("DEBUG: Starting JWT decode")
+        # Split JWT and get payload (second part)
+        parts = token.split('.')
+        print(f"DEBUG: JWT parts count: {len(parts)}")
+
+        if len(parts) != 3:
+            raise ValueError("Invalid JWT format")
+
+        # Decode payload (add padding if needed)
+        payload_b64 = parts[1]
+        print(f"DEBUG: Payload base64 length: {len(payload_b64)}")
+
+        # Add padding for base64 decoding
+        padding = 4 - len(payload_b64) % 4
+        if padding != 4:
+            payload_b64 += '=' * padding
+        print(f"DEBUG: After padding: {len(payload_b64)}")
+
+        # Decode base64 and parse JSON
+        payload_json = base64.urlsafe_b64decode(payload_b64)
+        print(f"DEBUG: Decoded payload JSON: {payload_json[:100]}")
+
+        payload = json.loads(payload_json)
+        print(f"DEBUG: Parsed payload: {payload}")
+
+        # Extract user_id (stored as string in "sub" claim)
+        user_id = int(payload["sub"])
+        print(f"DEBUG: Extracted user_id: {user_id}")
+    except Exception as e:
+        print(f"DEBUG: JWT decode failed: {type(e).__name__}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload - invalid user ID format",
+            detail=f"Invalid token payload: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     # Fetch user from PostgreSQL
     query = """
-    SELECT id, email, full_name
+    SELECT id, email
     FROM users
     WHERE id = $1
     """

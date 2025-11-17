@@ -21,7 +21,7 @@ USE auth_events;
 
 CREATE TABLE IF NOT EXISTS oauth_authorization_codes (
     code text PRIMARY KEY,
-    user_id uuid,
+    user_id int,
     client_id text,
     scope set<text>,
     redirect_uri text,
@@ -51,7 +51,7 @@ CREATE INDEX IF NOT EXISTS idx_authcodes_used ON oauth_authorization_codes(used)
 
 CREATE TABLE IF NOT EXISTS oauth_tokens (
     token_id uuid PRIMARY KEY,
-    user_id uuid,
+    user_id int,
     client_id text,
     token_type text,  -- 'access' or 'refresh'
     token_hash text,
@@ -85,7 +85,7 @@ CREATE INDEX IF NOT EXISTS idx_tokens_type ON oauth_tokens(token_type);
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS oauth_tokens_by_user (
-    user_id uuid,
+    user_id int,
     client_id text,
     token_id uuid,
     token_type text,
@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS oauth_token_revocations (
     token_hash text PRIMARY KEY,
     revoked_at timestamp,
     reason text,
-    user_id uuid,
+    user_id int,
     client_id text
 ) WITH default_time_to_live = 2592000
    AND gc_grace_seconds = 86400
@@ -148,7 +148,7 @@ CREATE INDEX IF NOT EXISTS idx_revocations_client_id ON oauth_token_revocations(
 CREATE TABLE IF NOT EXISTS oauth_session_activity (
     session_id uuid,
     timestamp timestamp,
-    user_id uuid,
+    user_id int,
     client_id text,
     activity_type text,  -- 'authorization', 'token_issued', 'token_refreshed', 'token_revoked'
     ip_address text,
@@ -174,7 +174,7 @@ CREATE INDEX IF NOT EXISTS idx_activity_type ON oauth_session_activity(activity_
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS oauth_session_activity_by_user (
-    user_id uuid,
+    user_id int,
     timestamp timestamp,
     session_id uuid,
     client_id text,
