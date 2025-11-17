@@ -187,7 +187,7 @@ async def get_current_user(
 
     # Fetch user from PostgreSQL
     query = """
-    SELECT id, email
+    SELECT id, email, created_at, updated_at
     FROM users
     WHERE id = $1
     """
@@ -206,9 +206,70 @@ async def get_current_user(
             detail="User not found",
         )
 
-    # Return user information
+    # Fetch subscription data (loose coupling - optional)
+    subscription_data = None
+    try:
+        sub_query = """
+        SELECT
+            s.package_slug as tier,
+            s.status,
+            s.created_at as subscription_started,
+            s.expires_at as reset_date,
+            f.cards_per_month,
+            f.current_usage,
+            f.llm_credits
+        FROM subscriptions s
+        LEFT JOIN financial f ON f.user_id = s.user_id
+        WHERE s.user_id = $1 AND s.status = 'active'
+        ORDER BY s.created_at DESC
+        LIMIT 1
+        """
+
+        sub_row = await db_manager.pg_pool.fetchrow(sub_query, user_id)
+
+        if sub_row:
+            subscription_data = SubscriptionInfo(
+                tier=sub_row["tier"] or "free",
+                status=sub_row["status"] or "active",
+                cardsPerMonth=sub_row["cards_per_month"] or 100,
+                currentUsage=sub_row["current_usage"] or 0,
+                llmCredits=sub_row["llm_credits"] or 50,
+                resetDate=sub_row["reset_date"].isoformat() if sub_row["reset_date"] else "",
+            )
+        else:
+            # Default free subscription if none exists
+            from datetime import datetime, timedelta
+            reset_date = (datetime.utcnow() + timedelta(days=30)).isoformat() + "Z"
+            subscription_data = SubscriptionInfo(
+                tier="free",
+                status="active",
+                cardsPerMonth=100,
+                currentUsage=0,
+                llmCredits=50,
+                resetDate=reset_date,
+            )
+    except Exception as e:
+        # Log error but don't fail the request (loose coupling)
+        print(f"Warning: Could not fetch subscription data for user {user_id}: {e}")
+        # Provide default subscription
+        from datetime import datetime, timedelta
+        reset_date = (datetime.utcnow() + timedelta(days=30)).isoformat() + "Z"
+        subscription_data = SubscriptionInfo(
+            tier="free",
+            status="active",
+            cardsPerMonth=100,
+            currentUsage=0,
+            llmCredits=50,
+            resetDate=reset_date,
+        )
+
+    # Return complete user information
     return UserInfoResponse(
         id=str(user_row["id"]),
         username=user_row["email"].split("@")[0],  # Use email prefix as username
         email=user_row["email"],
+        display_name=user_row["email"].split("@")[0],  # Use email prefix as display name
+        subscription=subscription_data,
+        createdAt=user_row["created_at"].isoformat() + "Z",
+        updatedAt=user_row["updated_at"].isoformat() + "Z",
     )
