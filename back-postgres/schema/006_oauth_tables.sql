@@ -142,7 +142,7 @@ INSERT INTO oauth_clients (
     'E-Cards Application (Development)',
     'E-Cards system for digital business card management',
     'http://localhost:7300/logo.png',
-    ARRAY['http://localhost:7300/auth/callback', 'http://localhost:7300/oauth/callback'],
+    ARRAY['http://localhost:7300/oauth/complete'],
     ARRAY['profile', 'email', 'subscription']
 ) ON CONFLICT (client_id) DO NOTHING;
 

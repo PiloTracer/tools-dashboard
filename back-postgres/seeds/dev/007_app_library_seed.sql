@@ -34,8 +34,8 @@ INSERT INTO oauth_clients (
     'http://localhost:7300',
     'https://ecards.epicstudio.com',
     ARRAY[
-        'http://localhost:7300/auth/callback',
-        'https://ecards.epicstudio.com/auth/callback'
+        'http://localhost:7300/oauth/complete',
+        'https://ecards.epicstudio.com/oauth/complete'
     ],
     ARRAY['profile', 'email', 'subscription'],
     true,
@@ -100,7 +100,7 @@ ON CONFLICT (user_id, app_client_id) DO UPDATE SET
 --     redirect_uri, scopes, success, ip_address, user_agent
 -- ) VALUES (
 --     'ecards_a1b2c3d4', '2025-11-15', toTimestamp(now()), uuid(),
---     'http://localhost:7300/auth/callback', {'profile', 'email', 'subscription'},
+--     'http://localhost:7300/oauth/complete', {'profile', 'email', 'subscription'},
 --     true, '127.0.0.1', 'Mozilla/5.0 (Test Browser)'
 -- );
 

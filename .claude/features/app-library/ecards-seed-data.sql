@@ -45,9 +45,9 @@ INSERT INTO apps (
     'http://localhost:7300',
     'https://ecards.epicstudio.com',
     ARRAY[
-        'http://localhost:7300/auth/callback',
+        'http://localhost:7300/oauth/complete',
         'http://localhost:7300/callback',
-        'https://ecards.epicstudio.com/auth/callback',
+        'https://ecards.epicstudio.com/oauth/complete',
         'https://ecards.epicstudio.com/callback'
     ],
     ARRAY['profile', 'email', 'subscription'],
@@ -244,7 +244,7 @@ INSERT INTO auth_events.app_launch_events (
     '2025-11-15',
     toTimestamp(now()),
     550e8400-e29b-41d4-a716-446655440001,
-    'http://localhost:7300/auth/callback',
+    'http://localhost:7300/oauth/complete',
     {'profile', 'email', 'subscription'},
     'auth_code_sample_12345',
     true,

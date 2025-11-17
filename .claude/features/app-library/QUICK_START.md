@@ -101,8 +101,8 @@ Prod URL:      https://ecards.epicstudio.com
 ```
 
 **Redirect URIs:**
-- `http://localhost:7300/auth/callback`
-- `https://ecards.epicstudio.com/auth/callback`
+- `http://localhost:7300/oauth/complete`
+- `https://ecards.epicstudio.com/oauth/complete`
 
 **Scopes:**
 - `profile`
@@ -129,7 +129,7 @@ app_data = AppCreate(
     client_name="My App",
     description="App description",
     dev_url="http://localhost:3000",
-    redirect_uris=["http://localhost:3000/auth/callback"],
+    redirect_uris=["http://localhost:3000/oauth/complete"],
     allowed_scopes=["profile", "email"]
 )
 

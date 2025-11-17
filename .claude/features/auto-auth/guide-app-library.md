@@ -102,7 +102,7 @@ The **app-library** feature is a dashboard component in the tools-dashboard plat
 │                    (e.g., E-Cards at http://localhost:7300)      │
 │                                                                  │
 │  Frontend:                                                       │
-│  - /auth/callback (receives OAuth code)                         │
+│  - /oauth/complete (receives OAuth code)                         │
 │  - Displays loading screen during auth                          │
 │                                                                  │
 │  Backend:                                                        │
@@ -358,7 +358,7 @@ export async function fetchAvailableApps(): Promise<AppConfig[]> {
         logo_url: client.logo_url,
         redirect_uris: client.redirect_uris,
         allowed_scopes: client.allowed_scopes,
-        launch_url: client.redirect_uris[0]?.split('/auth/callback')[0] || '#',
+        launch_url: client.redirect_uris[0]?.split('/oauth/complete')[0] || '#',
       }));
   } catch (error) {
     console.error('Error fetching apps:', error);
@@ -486,7 +486,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         logo_url: client.logo_url,
         redirect_uris: client.redirect_uris,
         allowed_scopes: client.allowed_scopes,
-        launch_url: client.redirect_uris[0]?.split("/auth/callback")[0] || "#",
+        launch_url: client.redirect_uris[0]?.split("/oauth/complete")[0] || "#",
       }));
 
     return json<LoaderData>({ apps, userEmail });
@@ -580,7 +580,7 @@ This section explains how external applications (like E-Cards) integrate with to
 # .env
 OAUTH_CLIENT_ID=ecards_app
 OAUTH_CLIENT_SECRET=your_client_secret_here
-OAUTH_REDIRECT_URI=http://localhost:7300/auth/callback
+OAUTH_REDIRECT_URI=http://localhost:7300/oauth/complete
 OAUTH_AUTHORIZE_URL=http://epicdev.com/oauth/authorize
 OAUTH_TOKEN_URL=http://epicdev.com/oauth/token
 OAUTH_JWKS_URL=http://epicdev.com/.well-known/jwks.json
@@ -607,7 +607,7 @@ const router = express.Router();
  * OAuth Callback Handler
  * Receives authorization code and exchanges for tokens
  */
-router.get('/auth/callback', async (req, res) => {
+router.get('/oauth/complete', async (req, res) => {
   const { code, state } = req.query;
 
   // Validate state (CSRF protection)
@@ -1028,7 +1028,7 @@ def login():
 
     return redirect(auth_url)
 
-@auth_bp.route('/auth/callback')
+@auth_bp.route('/oauth/complete')
 def callback():
     """Handle OAuth callback"""
 
@@ -1268,10 +1268,10 @@ export default new AuthService();
 # Ensure exact match (including protocol, port, path)
 
 # Example:
-Registered: http://localhost:7300/auth/callback
-Used:       http://localhost:7300/auth/callback ✅
+Registered: http://localhost:7300/oauth/complete
+Used:       http://localhost:7300/oauth/complete ✅
 
-Registered: http://localhost:7300/auth/callback
+Registered: http://localhost:7300/oauth/complete
 Used:       http://localhost:7300/callback ❌ (wrong path)
 ```
 

@@ -172,6 +172,12 @@ async def validate_authorization_code(
     Raises:
         HTTPException 400: If code is invalid
     """
+    print(f"DEBUG: Validating authorization code")
+    print(f"DEBUG: code={request.code[:20]}...")
+    print(f"DEBUG: client_id={request.client_id}")
+    print(f"DEBUG: redirect_uri={request.redirect_uri}")
+    print(f"DEBUG: code_verifier={'present' if request.code_verifier else 'null'}")
+
     result = await domain.validate_authorization_code(
         code=request.code,
         client_id=request.client_id,
@@ -179,11 +185,16 @@ async def validate_authorization_code(
         code_verifier=request.code_verifier,
     )
 
+    print(f"DEBUG: Validation result={result is not None}")
+
     if not result:
+        print(f"DEBUG: Code validation failed!")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired authorization code",
         )
+
+    print(f"DEBUG: Code validated successfully - user_id={result['user_id']}")
 
     return ValidateCodeResponse(
         user_id=result["user_id"],

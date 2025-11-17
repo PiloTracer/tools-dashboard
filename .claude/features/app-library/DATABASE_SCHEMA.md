@@ -492,8 +492,8 @@ INSERT INTO apps (
     'http://localhost:7300',
     'https://ecards.epicstudio.com',
     ARRAY[
-        'http://localhost:7300/auth/callback',
-        'https://ecards.epicstudio.com/auth/callback'
+        'http://localhost:7300/oauth/complete',
+        'https://ecards.epicstudio.com/oauth/complete'
     ],
     ARRAY['profile', 'email', 'subscription'],
     true,

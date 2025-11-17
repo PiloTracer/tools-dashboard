@@ -88,8 +88,8 @@ class AppCreate(BaseModel):
                 "dev_url": "http://localhost:7300",
                 "prod_url": "https://ecards.epicstudio.com",
                 "redirect_uris": [
-                    "http://localhost:7300/auth/callback",
-                    "https://ecards.epicstudio.com/auth/callback"
+                    "http://localhost:7300/oauth/complete",
+                    "https://ecards.epicstudio.com/oauth/complete"
                 ],
                 "allowed_scopes": ["profile", "email", "subscription"],
                 "is_active": True

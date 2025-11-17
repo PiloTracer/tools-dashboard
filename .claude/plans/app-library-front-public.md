@@ -349,7 +349,7 @@ front-public/app/features/app-library/
 10. front-public redirects to remote app with OAuth params:
     - Remote App URL?
     - client_id=ecards_a1b2c3d4
-    - redirect_uri=http://localhost:7300/auth/callback
+    - redirect_uri=http://localhost:7300/oauth/complete
     - scope=profile email subscription
     - code_challenge=<SHA256 hash>
     - code_challenge_method=S256
@@ -1020,7 +1020,7 @@ sessionStorage.setItem('pkce_verifier_ecards_a1b2c3d4', codeVerifier);
 // Step 4: Authorization request
 const authUrl = `http://epicdev.com/oauth/authorize?` +
   `client_id=ecards_a1b2c3d4&` +
-  `redirect_uri=http://localhost:7300/auth/callback&` +
+  `redirect_uri=http://localhost:7300/oauth/complete&` +
   `scope=profile email subscription&` +
   `code_challenge=${codeChallenge}&` +
   `code_challenge_method=S256&` +
@@ -1035,7 +1035,7 @@ const tokenResponse = await fetch('http://epicdev.com/oauth/token', {
     code: 'authorization_code_from_callback',
     client_id: 'ecards_a1b2c3d4',
     client_secret: 'dev_secret_ecards_2025',
-    redirect_uri: 'http://localhost:7300/auth/callback',
+    redirect_uri: 'http://localhost:7300/oauth/complete',
     code_verifier: codeVerifier, // Retrieved from sessionStorage
   }),
 });
@@ -1088,7 +1088,7 @@ When a user clicks "Launch App" in the tools-dashboard app library, they will be
 ```
 http://localhost:7300/?
   client_id=ecards_a1b2c3d4&
-  redirect_uri=http://localhost:7300/auth/callback&
+  redirect_uri=http://localhost:7300/oauth/complete&
   scope=profile email subscription&
   code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&
   code_challenge_method=S256&
@@ -1155,7 +1155,7 @@ function handleSignIn() {
 After the user approves (or denies) authorization, they will be redirected back to your `redirect_uri` with an authorization code:
 
 ```
-http://localhost:7300/auth/callback?
+http://localhost:7300/oauth/complete?
   code=auth_code_12345&
   state=random_state_token
 ```
@@ -1163,7 +1163,7 @@ http://localhost:7300/auth/callback?
 **Extract the code and validate state:**
 
 ```typescript
-// In your callback handler (e.g., /auth/callback route)
+// In your callback handler (e.g., /oauth/complete route)
 const params = new URLSearchParams(window.location.search);
 const code = params.get('code');
 const state = params.get('state');
@@ -1205,7 +1205,7 @@ const tokenResponse = await fetch('http://epicdev.com/oauth/token', {
     code: code,
     client_id: 'ecards_a1b2c3d4',
     client_secret: 'dev_secret_ecards_2025', // IMPORTANT: This should be stored securely on your backend
-    redirect_uri: 'http://localhost:7300/auth/callback',
+    redirect_uri: 'http://localhost:7300/oauth/complete',
     code_verifier: sessionStorage.getItem('pkce_verifier_ecards_a1b2c3d4'), // Retrieved from sessionStorage
   }),
 });

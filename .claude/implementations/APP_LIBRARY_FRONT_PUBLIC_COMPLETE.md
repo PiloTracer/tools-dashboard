@@ -177,7 +177,7 @@ Status: Active ✓
 ┌─────────────────────────────────────────────────────────────────────┐
 │ 4. Remote Application (e.g., E-Cards at localhost:7300)            │
 │    URL: http://localhost:7300?client_id=ecards_a1b2c3d4&           │
-│         redirect_uri=http://localhost:7300/auth/callback&          │
+│         redirect_uri=http://localhost:7300/oauth/complete&          │
 │         scope=profile+email+subscription&                          │
 │         code_challenge=<SHA256_HASH>&                              │
 │         code_challenge_method=S256&                                │
@@ -200,7 +200,7 @@ Status: Active ✓
                                  │ Redirect with auth code
                                  ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│ 6. Remote App Callback (e.g., localhost:7300/auth/callback)        │
+│ 6. Remote App Callback (e.g., localhost:7300/oauth/complete)        │
 │    - Remote app receives authorization code                        │
 │    - Exchanges code for access_token (POST /oauth/token)           │
 │    - Stores access_token (httpOnly cookie)                         │
@@ -246,7 +246,7 @@ Status: Active ✓
 5. **Expected:** Redirected to `http://epicdev.com/oauth/authorize?...`
 6. **Expected:** Authorization consent screen appears (if first time)
 7. **In Consent Screen:** Click "Approve" to authorize E-Cards
-8. **Expected:** Redirected back to `http://localhost:7300/auth/callback?code=...`
+8. **Expected:** Redirected back to `http://localhost:7300/oauth/complete?code=...`
 9. **Expected:** E-Cards exchanges authorization code for access token
 10. **Expected:** User logged into E-Cards application
 

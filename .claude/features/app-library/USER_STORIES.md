@@ -449,7 +449,7 @@ The Application Library feature enables users to discover and launch integrated 
 - [ ] **AC10.3:** I can configure multiple redirect URIs for dev/staging/prod
 - [ ] **AC10.4:** I can request scopes: `profile`, `email`, `subscription`, `usage`
 - [ ] **AC10.5:** When user launches my app:
-  - User is redirected to my `/auth/callback` with authorization code
+  - User is redirected to my `/oauth/complete` with authorization code
   - I can exchange the code for access and refresh tokens
   - I can fetch user profile data using API key
   - I can verify subscription status

@@ -179,7 +179,7 @@ export default function OAuthClients() {
                 required
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="http://localhost:7300/auth/callback&#10;https://app.example.com/oauth/callback"
+                placeholder="http://localhost:7300/oauth/complete&#10;https://app.example.com/oauth/callback"
               />
             </div>
 

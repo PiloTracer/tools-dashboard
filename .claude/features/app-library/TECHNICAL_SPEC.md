@@ -262,8 +262,8 @@ class App(BaseModel):
                 "dev_url": "http://localhost:7300",
                 "prod_url": "https://ecards.example.com",
                 "redirect_uris": [
-                    "http://localhost:7300/auth/callback",
-                    "https://ecards.example.com/auth/callback"
+                    "http://localhost:7300/oauth/complete",
+                    "https://ecards.example.com/oauth/complete"
                 ],
                 "allowed_scopes": ["profile", "email", "subscription"],
                 "is_active": True,
@@ -386,7 +386,7 @@ class UsageStats(BaseModel):
     "client_name": "E-Card + QR-Code Batch Generator",
     "description": "Create stunning personalized cards with dynamic QR codes",
     "logo_url": "https://example.com/logos/ecards.png",
-    "redirect_uris": ["http://localhost:7300/auth/callback"],
+    "redirect_uris": ["http://localhost:7300/oauth/complete"],
     "allowed_scopes": ["profile", "email", "subscription"],
     "launch_url": "http://localhost:7300"
   }
@@ -430,7 +430,7 @@ async def get_oauth_clients(
   "client_name": "E-Card + QR-Code Batch Generator",
   "description": "Create stunning personalized cards with dynamic QR codes",
   "logo_url": "https://example.com/logos/ecards.png",
-  "redirect_uris": ["http://localhost:7300/auth/callback"],
+  "redirect_uris": ["http://localhost:7300/oauth/complete"],
   "allowed_scopes": ["profile", "email", "subscription"],
   "launch_url": "http://localhost:7300"
 }
@@ -453,8 +453,8 @@ async def get_oauth_clients(
   "dev_url": "http://localhost:7300",
   "prod_url": "https://ecards.epicstudio.com",
   "redirect_uris": [
-    "http://localhost:7300/auth/callback",
-    "https://ecards.epicstudio.com/auth/callback"
+    "http://localhost:7300/oauth/complete",
+    "https://ecards.epicstudio.com/oauth/complete"
   ],
   "allowed_scopes": ["profile", "email", "subscription"],
   "is_active": false

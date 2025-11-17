@@ -210,31 +210,37 @@ async def get_current_user(
     subscription_data = None
     try:
         sub_query = """
-        SELECT
-            s.package_slug as tier,
-            s.status,
-            s.created_at as subscription_started,
-            s.expires_at as reset_date,
-            f.cards_per_month,
-            f.current_usage,
-            f.llm_credits
-        FROM subscriptions s
-        LEFT JOIN financial f ON f.user_id = s.user_id
-        WHERE s.user_id = $1 AND s.status = 'active'
-        ORDER BY s.created_at DESC
+        SELECT tier, status, renewed_at
+        FROM subscriptions
+        WHERE user_id = $1 AND status = 'active'
+        ORDER BY renewed_at DESC NULLS LAST
         LIMIT 1
         """
 
         sub_row = await db_manager.pg_pool.fetchrow(sub_query, user_id)
 
         if sub_row:
+            from datetime import datetime, timedelta
+            # Calculate reset date (30 days from renewed_at or now)
+            reset_date = sub_row["renewed_at"] or datetime.utcnow()
+            reset_date = (reset_date + timedelta(days=30)).isoformat() + "Z"
+
+            # Map tier to usage limits
+            tier_limits = {
+                "free": {"cards": 100, "credits": 50},
+                "standard": {"cards": 500, "credits": 200},
+                "premium": {"cards": 2000, "credits": 1000},
+                "enterprise": {"cards": 10000, "credits": 5000},
+            }
+            limits = tier_limits.get(sub_row["tier"], tier_limits["free"])
+
             subscription_data = SubscriptionInfo(
                 tier=sub_row["tier"] or "free",
                 status=sub_row["status"] or "active",
-                cardsPerMonth=sub_row["cards_per_month"] or 100,
-                currentUsage=sub_row["current_usage"] or 0,
-                llmCredits=sub_row["llm_credits"] or 50,
-                resetDate=sub_row["reset_date"].isoformat() if sub_row["reset_date"] else "",
+                cardsPerMonth=limits["cards"],
+                currentUsage=0,  # TODO: Track actual usage
+                llmCredits=limits["credits"],
+                resetDate=reset_date,
             )
         else:
             # Default free subscription if none exists

@@ -177,7 +177,7 @@ export const AppForm: FC<Props> = ({ app, mode, actionData }) => {
                     ? "border-red-600"
                     : "border-gray-300"
                 }`}
-                placeholder="http://localhost:3000/auth/callback&#10;https://app.example.com/auth/callback"
+                placeholder="http://localhost:3000/oauth/complete&#10;https://app.example.com/oauth/complete"
               />
               {actionData?.fieldErrors?.redirect_uris && (
                 <p className="mt-1.5 text-xs text-red-600">

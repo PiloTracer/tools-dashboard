@@ -115,7 +115,7 @@ CREATE INDEX IF NOT EXISTS idx_user_app_activity_app_client_id
 --        redirect_uri, scopes, success, ip_address, user_agent
 --    ) VALUES (
 --        'ecards_app', '2025-11-15', toTimestamp(now()), uuid(),
---        'http://localhost:7300/auth/callback', {'profile', 'email'},
+--        'http://localhost:7300/oauth/complete', {'profile', 'email'},
 --        true, '192.168.1.1', 'Mozilla/5.0...'
 --    );
 --

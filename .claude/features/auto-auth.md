@@ -268,7 +268,7 @@ front-admin/app/features/auto-auth/
 window.location.href =
   'http://epicdev.com/app/oauth/authorize?' +
   'client_id=ecards_app' +
-  '&redirect_uri=http://localhost:7300/auth/callback' +
+  '&redirect_uri=http://localhost:7300/oauth/complete' +
   '&response_type=code' +
   '&scope=profile+email+subscription' +
   '&state=RANDOM_CSRF_TOKEN' +
@@ -439,7 +439,7 @@ Content-Type: application/x-www-form-urlencoded
 
 grant_type=authorization_code
 &code=AUTH_CODE_FROM_REDIRECT
-&redirect_uri=http://localhost:7300/auth/callback
+&redirect_uri=http://localhost:7300/oauth/complete
 &client_id=ecards_app
 &client_secret=CLIENT_SECRET
 &code_verifier=ORIGINAL_PKCE_CODE_VERIFIER
@@ -856,7 +856,7 @@ To integrate with tools-dashboard auto-auth, external applications must:
    - Application name
    - Description
    - Logo URL
-   - Redirect URIs (e.g., `http://localhost:7300/auth/callback`)
+   - Redirect URIs (e.g., `http://localhost:7300/oauth/complete`)
    - Requested scopes (profile, email, subscription)
 3. Receive:
    - `client_id` (e.g., `ecards_app`)
@@ -884,7 +884,7 @@ window.location.href =
 
 **Step 2: Handle Callback**
 ```javascript
-// Callback route: /auth/callback
+// Callback route: /oauth/complete
 const url = new URL(window.location.href);
 const code = url.searchParams.get('code');
 const state = url.searchParams.get('state');

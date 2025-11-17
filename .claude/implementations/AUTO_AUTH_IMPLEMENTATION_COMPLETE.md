@@ -300,7 +300,7 @@ front-admin/app/features/auto-auth/
 // E-Cards redirects user to tools-dashboard
 window.location.href = "http://epicdev.com/oauth/authorize?" +
   "client_id=ecards_app" +
-  "&redirect_uri=http://localhost:7300/auth/callback" +
+  "&redirect_uri=http://localhost:7300/oauth/complete" +
   "&response_type=code" +
   "&scope=profile+email+subscription" +
   "&state=CSRF_TOKEN" +
@@ -316,7 +316,7 @@ window.location.href = "http://epicdev.com/oauth/authorize?" +
 
 ### Step 3: Authorization Code Issued
 ```
-Redirect to: http://localhost:7300/auth/callback?code=AUTH_CODE&state=CSRF_TOKEN
+Redirect to: http://localhost:7300/oauth/complete?code=AUTH_CODE&state=CSRF_TOKEN
 ```
 
 ### Step 4: E-Cards Exchanges Code for Tokens
@@ -326,7 +326,7 @@ Content-Type: application/x-www-form-urlencoded
 
 grant_type=authorization_code
 &code=AUTH_CODE
-&redirect_uri=http://localhost:7300/auth/callback
+&redirect_uri=http://localhost:7300/oauth/complete
 &client_id=ecards_app
 &client_secret=CLIENT_SECRET
 &code_verifier=PKCE_CODE_VERIFIER
@@ -492,7 +492,7 @@ def test_get_user_profile()
    Click "New OAuth Client"
    Fill in:
      - Client Name: E-Cards
-     - Redirect URIs: http://localhost:7300/auth/callback
+     - Redirect URIs: http://localhost:7300/oauth/complete
      - Scopes: profile, email, subscription
    Save client_id and client_secret (shown only once!)
    ```
