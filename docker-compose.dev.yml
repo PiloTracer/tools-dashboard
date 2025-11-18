@@ -14,6 +14,7 @@ services:
       - back-auth
       - back-websockets
       - feature-registry
+    mem_limit: 128m
 
   front-admin:
     build:
@@ -32,6 +33,7 @@ services:
     depends_on:
       - back-api
       - back-auth
+    mem_limit: 1g
 
   front-public:
     build:
@@ -52,6 +54,7 @@ services:
     depends_on:
       - back-api
       - back-auth
+    mem_limit: 1g
 
   back-api:
     build:
@@ -76,6 +79,7 @@ services:
         condition: service_healthy
       cassandra:
         condition: service_healthy
+    mem_limit: 768m
 
   back-auth:
     build:
@@ -137,6 +141,7 @@ services:
         condition: service_healthy
       mailhog:
         condition: service_started
+    mem_limit: 512m
 
   back-websockets:
     build:
@@ -150,6 +155,7 @@ services:
       - "8102:8010"
     depends_on:
       - redis
+    mem_limit: 256m
 
   back-workers:
     build:
@@ -163,6 +169,7 @@ services:
     depends_on:
       - redis
       - back-api
+    mem_limit: 512m
 
   back-postgres-service:
     build:
@@ -177,6 +184,7 @@ services:
         condition: service_healthy
       back-auth:
         condition: service_healthy
+    mem_limit: 256m
 
   back-cassandra:
     build:
@@ -189,6 +197,7 @@ services:
     depends_on:
       cassandra:
         condition: service_healthy
+    mem_limit: 256m
 
   feature-registry:
     build:
@@ -203,6 +212,7 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
+    mem_limit: 512m
 
   redis:
     image: redis:7-alpine
@@ -217,6 +227,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    mem_limit: 256m
 
   postgresql:
     image: postgres:15
@@ -233,6 +244,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    mem_limit: 1g
 
   cassandra:
     image: cassandra:4
@@ -253,6 +265,7 @@ services:
     ports:
       - "8025:8025"
     restart: unless-stopped
+    mem_limit: 128m
 
   seaweedfs:
     image: chrislusf/seaweedfs
@@ -273,6 +286,7 @@ services:
       -master.defaultReplication=000
       -s3.domainName=localhost
     restart: unless-stopped
+    mem_limit: 256m
 
 volumes:
   front_admin_node_modules:
