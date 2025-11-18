@@ -33,7 +33,7 @@ services:
     depends_on:
       - back-api
       - back-auth
-    mem_limit: 1g
+    mem_limit: 512m
 
   front-public:
     build:
@@ -54,7 +54,7 @@ services:
     depends_on:
       - back-api
       - back-auth
-    mem_limit: 1g
+    mem_limit: 512m
 
   back-api:
     build:
@@ -244,7 +244,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    mem_limit: 1g
+    mem_limit: 512m
 
   cassandra:
     image: cassandra:4
