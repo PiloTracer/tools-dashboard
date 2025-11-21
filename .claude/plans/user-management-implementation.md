@@ -420,9 +420,9 @@ This addendum contains essential information about:
 #### Tasks
 
 1. **Documentation**
-   - [ ] Update front-admin/CONTEXT.md with user-management examples
-   - [ ] Update back-api/CONTEXT.md with user-management patterns
-   - [ ] Update back-auth/CONTEXT.md with role management info
+   - [ ] Update front-admin/CLAUDE_CONTEXT.md with user-management examples
+   - [ ] Update back-api/CLAUDE_CONTEXT.md with user-management patterns
+   - [ ] Update back-auth/CLAUDE_CONTEXT.md with role management info
    - [ ] Create user guide for admins (how to use the feature)
    - [ ] Document API endpoints (OpenAPI/Swagger)
    - [ ] Document audit log format

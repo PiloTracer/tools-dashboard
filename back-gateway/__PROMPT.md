@@ -9,5 +9,5 @@ Prompt Steps:
 3. Specify rate limit tiers or JWT validation adjustments.
 4. Request diff output limited to config files.
 
-Always validate against constraints in CONTEXT.md.
+Always validate against constraints in CLAUDE_CONTEXT.md.
 ```

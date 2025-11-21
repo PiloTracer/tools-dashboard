@@ -104,11 +104,11 @@ Please read the following context files in order:
 3. .claude/agents/user-management.yaml
 4. .claude/plans/user-management-implementation.md
 5. .claude/plans/user-management-cassandra-addendum.md
-6. front-admin/CONTEXT.md
-7. back-api/CONTEXT.md
-8. back-auth/CONTEXT.md
-9. back-postgres/CONTEXT.md
-10. back-cassandra/CONTEXT.md
+6. front-admin/CLAUDE_CONTEXT.md
+7. back-api/CLAUDE_CONTEXT.md
+8. back-auth/CLAUDE_CONTEXT.md
+9. back-postgres/CLAUDE_CONTEXT.md
+10. back-cassandra/CLAUDE_CONTEXT.md
 
 After reading these files, you will understand:
 - The overall project architecture

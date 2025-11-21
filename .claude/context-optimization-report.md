@@ -157,7 +157,7 @@ If working on specific areas, create focused contexts:
 
 ### Can Be Consolidated
 
-1. **CONTEXT.md Files**:
+1. **CLAUDE_CONTEXT.md Files**:
    - Each service has its own
    - **Recommendation**: Keep them - they provide service-specific details
    - **Action**: Ensure they don't duplicate CLAUDE_CONTEXT.md content
@@ -302,7 +302,7 @@ If working on specific areas, create focused contexts:
 
 **When adding new code**:
 1. If creating a new dependency directory → update `.claudeignore`
-2. If adding a new service → create service `CONTEXT.md`
+2. If adding a new service → create service `CLAUDE_CONTEXT.md`
 3. If adding a feature → create `feature.yaml`
 
 **When troubleshooting**:
@@ -373,7 +373,7 @@ For large teams working on isolated features:
 CLAUDE_CONTEXT.md           <- Overview, tech stack, critical info
 ├── .claude/project-map.md  <- Detailed navigation
 ├── .claude/dev-guide.md    <- How-to reference
-└── Service CONTEXT.md      <- Service-specific details
+└── Service CLAUDE_CONTEXT.md      <- Service-specific details
 ```
 
 **Alternative** (if context still too large):

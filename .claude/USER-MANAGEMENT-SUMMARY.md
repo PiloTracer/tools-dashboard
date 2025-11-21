@@ -171,10 +171,10 @@ Please read the following context files in order:
 2. .claude/agents/CROSS_SERVICE_FEATURES.md
 3. .claude/agents/user-management.yaml
 4. .claude/plans/user-management-implementation.md
-5. front-admin/CONTEXT.md
-6. back-api/CONTEXT.md
-7. back-auth/CONTEXT.md
-8. back-postgres/CONTEXT.md
+5. front-admin/CLAUDE_CONTEXT.md
+6. back-api/CLAUDE_CONTEXT.md
+7. back-auth/CLAUDE_CONTEXT.md
+8. back-postgres/CLAUDE_CONTEXT.md
 
 After reading these files, you will understand:
 - The overall project architecture
@@ -359,7 +359,7 @@ See: `.claude/agents/user-management.yaml`
 1. **Always start with context**: Load the agent definition and plan
 2. **Follow the phases**: Don't skip ahead (shared → data → auth → api → frontend)
 3. **Test as you go**: Write tests for each layer before moving on
-4. **Document changes**: Update service CONTEXT.md files as you implement
+4. **Document changes**: Update service CLAUDE_CONTEXT.md files as you implement
 5. **Verify security**: Double-check admin auth and audit logging
 6. **Use checkpoints**: Verify progress at each phase completion
 
@@ -371,7 +371,7 @@ If you have questions during implementation:
 - Check `.claude/agents/user-management.yaml` for architecture guidance
 - Check `.claude/plans/user-management-implementation.md` for detailed tasks
 - Check `.claude/agents/CROSS_SERVICE_FEATURES.md` for cross-service patterns
-- Check service-specific `CONTEXT.md` files for service guidelines
+- Check service-specific `CLAUDE_CONTEXT.md` files for service guidelines
 
 ---
 

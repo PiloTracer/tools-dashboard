@@ -10,7 +10,7 @@ Context:
 - Contracts: shared/contracts/<feature-name>/feature.yaml
 
 Tasks:
-1. Review `CONTEXT.md` and feature contract for constraints.
+1. Review `CLAUDE_CONTEXT.md` and feature contract for constraints.
 2. Implement/update:
    - API routers in `api.py`
    - Domain logic in `domain.py`

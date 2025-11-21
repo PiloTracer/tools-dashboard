@@ -102,7 +102,7 @@ Please summarize the architecture and data flow for me.
 | **4. Business API** | Orchestration & endpoints | 3-4 hours | `back-api/features/user-management/*` |
 | **5. Frontend** | Admin UI components | 4-6 hours | `front-admin/app/features/user-management/*` |
 | **6. Testing** | Integration & E2E tests | 2-3 hours | Test files across all services |
-| **7. Documentation** | Docs & deployment | 1-2 hours | Service CONTEXT.md files, user guides |
+| **7. Documentation** | Docs & deployment | 1-2 hours | Service CLAUDE_CONTEXT.md files, user guides |
 
 **Total Estimate**: 15-20 hours across 5 sessions
 
@@ -179,7 +179,7 @@ When implementing, always remember:
 - `CLAUDE_CONTEXT.md` - Project overview
 
 ### For Implementation
-- Service-specific `CONTEXT.md` files - Guidelines for each service
+- Service-specific `CLAUDE_CONTEXT.md` files - Guidelines for each service
 - `.claude/prompts/user-management-starter.md` - Phase-specific prompts
 
 ---

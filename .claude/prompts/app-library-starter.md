@@ -68,7 +68,7 @@ Work on APP-LIBRARY feature, Phase 2: Backend API.
 Read:
 1. .claude/features/app-library/IMPLEMENTATION_PLAN.md (Phase 2 section)
 2. .claude/features/app-library/TECHNICAL_SPEC.md (API Endpoints section)
-3. back-api/CONTEXT.md
+3. back-api/CLAUDE_CONTEXT.md
 
 Focus on:
 - Implementing repository layer (PostgreSQL, Cassandra)
@@ -85,7 +85,7 @@ Read:
 1. .claude/features/app-library/IMPLEMENTATION_PLAN.md (Phase 3 section)
 2. .claude/features/app-library/USER_STORIES.md (Admin stories)
 3. .claude/features/app-library/TECHNICAL_SPEC.md (Frontend Components section)
-4. front-admin/CONTEXT.md
+4. front-admin/CLAUDE_CONTEXT.md
 
 Focus on:
 - Building admin application list view
@@ -103,7 +103,7 @@ Read:
 2. .claude/features/app-library/USER_STORIES.md (User stories)
 3. .claude/features/app-library/TECHNICAL_SPEC.md (Frontend Components section)
 4. .claude/features/auto-auth/guide-app-library.md
-5. front-public/CONTEXT.md
+5. front-public/CLAUDE_CONTEXT.md
 
 Focus on:
 - Building app library dashboard

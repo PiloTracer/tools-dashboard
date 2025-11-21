@@ -128,7 +128,7 @@ Structure your answer as:
 - **Location:** `front-cards/` directory (monorepo structure)
 
 **Required Reading:**
-- `CONTEXT.md` – Overall project description and architecture
+- `CLAUDE_CONTEXT.md` – Overall project description and architecture
 - `CONTEXT_TECH_STACK.md` – Complete tech stack for all services
 
 **Design System:**

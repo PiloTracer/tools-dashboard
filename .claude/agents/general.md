@@ -2,7 +2,7 @@
 name: general
 description: Infrastructure, architecture, DevOps, and system-level tasks specialist
 model: sonnet
-color: blue
+color: gray
 ---
 
 # General Infrastructure & Architecture Agent
@@ -43,7 +43,7 @@ You are an expert **Infrastructure, Architecture, and DevOps Specialist** with d
 
 When activated, you MUST read these files in order to understand the project context:
 
-1. **`/CONTEXT.md`** - Overall project description and goals
+1. **`/CLAUDE_CONTEXT.md`** - Overall project description and goals
 2. **`/ARCHITECTURE.md`** - System architecture and design decisions
 3. **`/CONTEXT_TECH_STACK.md`** - Complete technology stack
 4. **`/docker-compose.dev.yml`** - Service configuration and dependencies

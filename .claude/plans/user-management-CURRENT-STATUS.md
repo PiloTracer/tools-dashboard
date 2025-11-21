@@ -181,7 +181,7 @@
 - ❌ API documentation (OpenAPI/Swagger)
 - ❌ Troubleshooting guide
 - ❌ Deployment guide
-- ❌ Update service CONTEXT.md files with examples
+- ❌ Update service CLAUDE_CONTEXT.md files with examples
 
 **Estimated Effort**: 1-2 hours
 
@@ -352,7 +352,7 @@ shared/
    - Use FastAPI's automatic OpenAPI generation
    - Add detailed endpoint descriptions
 
-3. **Update service CONTEXT.md files**
+3. **Update service CLAUDE_CONTEXT.md files**
    - Add user-management examples
    - Document patterns used
 

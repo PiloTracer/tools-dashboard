@@ -11,7 +11,7 @@ Guide AI coding assistants in a focused, low-context workflow for the Tools Dash
    - Identify the *exact* feature directory (e.g. `back-api/features/user-registration`).
    - Ask the AI to restate scope and list affected files. 
 2. **Contract & Context Prompt**
-   - Provide relevant `feature.yaml`, `CONTEXT.md`, and contract snippets from `shared/`.
+   - Provide relevant `feature.yaml`, `CLAUDE_CONTEXT.md`, and contract snippets from `shared/`.
    - Request a readiness checklist: dependencies, migrations, tests.
 3. **Implementation Prompt** *(repeat per file)*
    - Give file path, purpose, acceptance criteria, and coding standards.

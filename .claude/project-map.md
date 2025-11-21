@@ -204,7 +204,7 @@ Each service has:
 - `Dockerfile.dev` - Development Docker image
 - `Dockerfile.prod` - Production Docker image
 - `requirements.txt` (Python) or `package.json` (Node.js)
-- `CONTEXT.md` - Service-specific documentation
+- `CLAUDE_CONTEXT.md` - Service-specific documentation
 - `__PROMPT.md` - AI agent instructions for that service
 
 ---

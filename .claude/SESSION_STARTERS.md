@@ -34,7 +34,7 @@ Then fix the errors and document in .claude/fixes/
 ```
 Please read:
 1. CLAUDE_CONTEXT.md
-2. front-public/CONTEXT.md
+2. front-public/CLAUDE_CONTEXT.md
 
 I want to work on the public frontend.
 ```
@@ -43,7 +43,7 @@ I want to work on the public frontend.
 ```
 Please read:
 1. CLAUDE_CONTEXT.md
-2. front-admin/CONTEXT.md
+2. front-admin/CLAUDE_CONTEXT.md
 
 I want to work on the admin dashboard.
 ```
@@ -52,7 +52,7 @@ I want to work on the admin dashboard.
 ```
 Please read:
 1. CLAUDE_CONTEXT.md
-2. back-api/CONTEXT.md
+2. back-api/CLAUDE_CONTEXT.md
 
 I want to work on the business API.
 ```
@@ -61,7 +61,7 @@ I want to work on the business API.
 ```
 Please read:
 1. CLAUDE_CONTEXT.md
-2. back-auth/CONTEXT.md
+2. back-auth/CLAUDE_CONTEXT.md
 
 I want to work on authentication.
 ```
@@ -70,7 +70,7 @@ I want to work on authentication.
 ```
 Please read:
 1. CLAUDE_CONTEXT.md
-2. back-postgres/CONTEXT.md
+2. back-postgres/CLAUDE_CONTEXT.md
 
 I want to work on PostgreSQL repositories.
 ```
@@ -79,7 +79,7 @@ I want to work on PostgreSQL repositories.
 ```
 Please read:
 1. CLAUDE_CONTEXT.md
-2. back-cassandra/CONTEXT.md
+2. back-cassandra/CLAUDE_CONTEXT.md
 
 I want to work on Cassandra repositories.
 ```
@@ -88,7 +88,7 @@ I want to work on Cassandra repositories.
 ```
 Please read:
 1. CLAUDE_CONTEXT.md
-2. back-workers/CONTEXT.md
+2. back-workers/CLAUDE_CONTEXT.md
 
 I want to work on background jobs.
 ```
@@ -101,7 +101,7 @@ I want to work on background jobs.
 ```
 Please read:
 1. CLAUDE_CONTEXT.md
-2. {service}/CONTEXT.md
+2. {service}/CLAUDE_CONTEXT.md
 3. .claude/agents/README.md
 4. .claude/agents/templates/single-service-feature.yaml
 
@@ -185,7 +185,7 @@ Help me:
 ```
 Please read:
 1. CLAUDE_CONTEXT.md
-2. {service}/CONTEXT.md
+2. {service}/CLAUDE_CONTEXT.md
 
 There's a bug in {service}: {bug description}
 ```
@@ -201,7 +201,7 @@ Then explore the codebase and explain how {feature} works.
 ```
 Please read:
 1. CLAUDE_CONTEXT.md
-2. {service}/CONTEXT.md
+2. {service}/CLAUDE_CONTEXT.md
 
 Help me add tests for {feature} in {service}.
 ```
@@ -247,7 +247,7 @@ I want to implement {feature}
 ```
 Please read:
 1. CLAUDE_CONTEXT.md
-2. {service}/CONTEXT.md
+2. {service}/CLAUDE_CONTEXT.md
 
 I want to work on {service}
 ```

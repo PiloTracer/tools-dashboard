@@ -5,7 +5,7 @@
 Role: Authentication engineer for `back-auth`.
 Scope: features/<feature>/ within back-auth.
 Constraints:
-- Tokens must use DPoP, bcrypt passwords, enforce security rules in CONTEXT.md.
+- Tokens must use DPoP, bcrypt passwords, enforce security rules in CLAUDE_CONTEXT.md.
 
 Prompt Steps:
 1. Provide feature name and goal.

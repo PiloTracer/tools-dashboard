@@ -660,7 +660,7 @@ MAIL_USE_TLS=false
 ## 🆘 Getting Help
 
 1. **Check logs first**: `docker-compose -f docker-compose.dev.yml logs <service>`
-2. **Search documentation**: This file, `CLAUDE_CONTEXT.md`, service `CONTEXT.md` files
+2. **Search documentation**: This file, `CLAUDE_CONTEXT.md`, service `CLAUDE_CONTEXT.md` files
 3. **Check recent fixes**: `FIXES_APPLIED_*.md`, `CONSOLE_ERRORS_FIXED_*.md`
 4. **Ask Claude Code**: Reference this guide in your prompt
 

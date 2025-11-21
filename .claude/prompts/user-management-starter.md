@@ -15,11 +15,11 @@ Please read the following context files in order:
 3. .claude/agents/user-management.yaml
 4. .claude/plans/user-management-implementation.md
 5. .claude/plans/user-management-cassandra-addendum.md
-6. front-admin/CONTEXT.md
-7. back-api/CONTEXT.md
-8. back-auth/CONTEXT.md
-9. back-postgres/CONTEXT.md
-10. back-cassandra/CONTEXT.md
+6. front-admin/CLAUDE_CONTEXT.md
+7. back-api/CLAUDE_CONTEXT.md
+8. back-auth/CLAUDE_CONTEXT.md
+9. back-postgres/CLAUDE_CONTEXT.md
+10. back-cassandra/CLAUDE_CONTEXT.md
 
 After reading these files, you will understand:
 - The overall project architecture
@@ -69,7 +69,7 @@ Work on USER-MANAGEMENT feature, Phase 2: Data Layer.
 Read:
 1. .claude/agents/user-management.yaml
 2. .claude/plans/user-management-implementation.md (Phase 2 section)
-3. back-postgres/CONTEXT.md
+3. back-postgres/CLAUDE_CONTEXT.md
 
 Focus on:
 - Enhancing user_repository.py with search/filter/pagination
@@ -83,7 +83,7 @@ Work on USER-MANAGEMENT feature, Phase 3: Authentication Layer.
 Read:
 1. .claude/agents/user-management.yaml
 2. .claude/plans/user-management-implementation.md (Phase 3 section)
-3. back-auth/CONTEXT.md
+3. back-auth/CLAUDE_CONTEXT.md
 
 Focus on:
 - Implementing back-auth/features/user-management/
@@ -98,7 +98,7 @@ Work on USER-MANAGEMENT feature, Phase 4: Business API.
 Read:
 1. .claude/agents/user-management.yaml
 2. .claude/plans/user-management-implementation.md (Phase 4 section)
-3. back-api/CONTEXT.md
+3. back-api/CLAUDE_CONTEXT.md
 
 Focus on:
 - Implementing back-api/features/user-management/
@@ -113,7 +113,7 @@ Work on USER-MANAGEMENT feature, Phase 5: Admin Frontend.
 Read:
 1. .claude/agents/user-management.yaml
 2. .claude/plans/user-management-implementation.md (Phase 5 section)
-3. front-admin/CONTEXT.md
+3. front-admin/CLAUDE_CONTEXT.md
 
 Focus on:
 - Implementing UI components in front-admin/app/features/user-management/ui/
@@ -145,7 +145,7 @@ Read:
 2. .claude/plans/user-management-implementation.md (Phase 7 section)
 
 Focus on:
-- Updating service CONTEXT.md files
+- Updating service CLAUDE_CONTEXT.md files
 - Creating user documentation
 - Deployment preparation
 - Rollback planning
@@ -176,7 +176,7 @@ I'm working on USER-MANAGEMENT and unclear about service boundaries.
 Read:
 1. .claude/agents/CROSS_SERVICE_FEATURES.md (Service Boundaries section)
 2. .claude/agents/user-management.yaml (Service Responsibilities section)
-3. [specific service]/CONTEXT.md
+3. [specific service]/CLAUDE_CONTEXT.md
 
 Question: Should [action] go in [service A] or [service B]?
 ```

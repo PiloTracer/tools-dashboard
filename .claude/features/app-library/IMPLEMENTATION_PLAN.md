@@ -172,7 +172,7 @@ docker-compose -f docker-compose.dev.yml exec postgresql psql -U user -d main_db
 - Test migrations (up and down)
 - Verify seed data
 - Document any issues
-- Update CONTEXT.md files
+- Update CLAUDE_CONTEXT.md files
 
 ---
 
@@ -521,7 +521,7 @@ touch back-api/features/app-library/cassandra_repository.py
 
 **Documentation Updates:**
 - Update `CLAUDE_CONTEXT.md`
-- Update service CONTEXT.md files
+- Update service CLAUDE_CONTEXT.md files
 - Create user guide
 - Create admin guide
 - Update API documentation
