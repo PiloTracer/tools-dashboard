@@ -12,7 +12,7 @@ When starting a new conversation, use this structure:
 ```
 Working on feature: <feature-name>
 Location: <path-to-feature>
-Read: CLAUDE_CONTEXT.md + <feature-path>/feature.yaml + <service>/CLAUDE_CONTEXT.md
+Read: DOCS_CONTEXT.md + <feature-path>/feature.yaml + <service>/DOCS_CONTEXT.md
 ```
 
 ### Real Example 1: Simple Feature Modification (Single Service)
@@ -24,8 +24,8 @@ Working on feature: user-subscription
 Location: back-api/features/user-subscription/
 
 Context files to read:
-1. /CLAUDE_CONTEXT.md (architecture overview)
-2. /back-api/CLAUDE_CONTEXT.md (service constraints)
+1. /DOCS_CONTEXT.md (architecture overview)
+2. /back-api/DOCS_CONTEXT.md (service constraints)
 3. /back-api/features/user-subscription/feature.yaml (current contract)
 4. /back-api/features/user-subscription/domain.py (business logic)
 
@@ -66,8 +66,8 @@ Working on feature: user-subscription (contract update)
 Location: shared/contracts/user-subscription/
 
 Context files to read:
-1. /CLAUDE_CONTEXT.md (sections: Architecture, Feature-Focused Development)
-2. /shared/CLAUDE_CONTEXT.md (contract guidelines)
+1. /DOCS_CONTEXT.md (sections: Architecture, Feature-Focused Development)
+2. /shared/DOCS_CONTEXT.md (contract guidelines)
 3. /shared/contracts/user-subscription/feature.yaml (current contract)
 
 Goal: Add real-time subscription status change events to the contract
@@ -104,8 +104,8 @@ Working on feature: user-subscription (backend implementation)
 Location: back-api/features/user-subscription/
 
 Context files to read:
-1. /CLAUDE_CONTEXT.md (service topology diagram)
-2. /back-api/CLAUDE_CONTEXT.md (service constraints)
+1. /DOCS_CONTEXT.md (service topology diagram)
+2. /back-api/DOCS_CONTEXT.md (service constraints)
 3. /shared/contracts/user-subscription/feature.yaml (UPDATED in Phase 1)
 4. /back-api/features/user-subscription/feature.yaml (current implementation)
 5. /back-api/features/user-subscription/domain.py (business logic)
@@ -155,8 +155,8 @@ Working on feature: user-subscription (PostgreSQL support)
 Location: back-postgres/repositories/
 
 Context files to read:
-1. /CLAUDE_CONTEXT.md (data separation guidelines)
-2. /back-postgres/CLAUDE_CONTEXT.md (schema constraints)
+1. /DOCS_CONTEXT.md (data separation guidelines)
+2. /back-postgres/DOCS_CONTEXT.md (schema constraints)
 3. /shared/contracts/user-subscription/feature.yaml (UPDATED contract)
 4. /back-postgres/repositories/financial_repository.py (existing pattern reference)
 
@@ -184,8 +184,8 @@ Working on feature: user-subscription (Cassandra metadata)
 Location: back-cassandra/repositories/
 
 Context files to read:
-1. /CLAUDE_CONTEXT.md (data separation guidelines)
-2. /back-cassandra/CLAUDE_CONTEXT.md (CQL constraints, TTL requirements)
+1. /DOCS_CONTEXT.md (data separation guidelines)
+2. /back-cassandra/DOCS_CONTEXT.md (CQL constraints, TTL requirements)
 3. /shared/contracts/user-subscription/feature.yaml (UPDATED contract)
 4. /back-cassandra/repositories/subscription_metadata_repository.py (existing pattern)
 
@@ -231,8 +231,8 @@ Working on feature: user-subscription (Redis integration)
 Location: back-redis/
 
 Context files to read:
-1. /CLAUDE_CONTEXT.md (service topology)
-2. /back-redis/CLAUDE_CONTEXT.md (key patterns, TTL requirements)
+1. /DOCS_CONTEXT.md (service topology)
+2. /back-redis/DOCS_CONTEXT.md (key patterns, TTL requirements)
 3. /shared/contracts/user-subscription/feature.yaml (UPDATED contract)
 4. /back-redis/pubsub.py (existing pub/sub pattern)
 
@@ -270,8 +270,8 @@ Working on feature: user-subscription (real-time notifications)
 Location: back-websockets/
 
 Context files to read:
-1. /CLAUDE_CONTEXT.md (service topology)
-2. /back-websockets/CLAUDE_CONTEXT.md (message size, rate limits, security)
+1. /DOCS_CONTEXT.md (service topology)
+2. /back-websockets/DOCS_CONTEXT.md (message size, rate limits, security)
 3. /shared/contracts/user-subscription/feature.yaml (UPDATED contract with events)
 4. /back-websockets/connection_manager.py (connection handling)
 5. /back-redis/pubsub.py (UPDATED in Phase 3C - channel definitions)
@@ -316,8 +316,8 @@ Working on feature: user-subscription (real-time UI)
 Location: front-public/app/features/user-subscription/
 
 Context files to read:
-1. /CLAUDE_CONTEXT.md (frontend standards)
-2. /front-public/CLAUDE_CONTEXT.md (Remix patterns, accessibility)
+1. /DOCS_CONTEXT.md (frontend standards)
+2. /front-public/DOCS_CONTEXT.md (Remix patterns, accessibility)
 3. /shared/contracts/user-subscription/feature.yaml (UPDATED contract with events)
 4. /front-public/app/features/user-subscription/feature.yaml (current UI routes)
 5. /front-public/app/features/user-subscription/ui/SubscriptionCard.tsx (main component)
@@ -512,8 +512,8 @@ Start a dedicated conversation for a single feature:
 I need to work on the "user-registration" feature.
 
 Context needed:
-- CLAUDE_CONTEXT.md (this file)
-- back-api/CLAUDE_CONTEXT.md
+- DOCS_CONTEXT.md (this file)
+- back-api/DOCS_CONTEXT.md
 - back-api/features/user-registration/feature.yaml
 - back-api/features/user-registration/*.py
 
@@ -530,7 +530,7 @@ I need to modify the following features:
 2. Feature B: front-public/app/features/feature-b/
 
 Context needed:
-- CLAUDE_CONTEXT.md
+- DOCS_CONTEXT.md
 - Both feature.yaml files
 - Shared contract in shared/contracts/
 
@@ -541,8 +541,8 @@ Goal: [describe the integration change]
 
 **Always load context in this order:**
 
-1. **CLAUDE_CONTEXT.md** (this file) - Architecture overview
-2. **Service CLAUDE_CONTEXT.md** - Service-specific constraints
+1. **DOCS_CONTEXT.md** (this file) - Architecture overview
+2. **Service DOCS_CONTEXT.md** - Service-specific constraints
 3. **feature.yaml** - Feature contract
 4. **Implementation files** - Only the files you need to change
 
@@ -613,8 +613,8 @@ Changes needed:
 - Update domain logic to handle grace periods
 
 Please read:
-1. CLAUDE_CONTEXT.md
-2. back-api/CLAUDE_CONTEXT.md
+1. DOCS_CONTEXT.md
+2. back-api/DOCS_CONTEXT.md
 3. back-api/features/user-subscription/feature.yaml
 4. back-api/features/user-subscription/domain.py
 ```
@@ -839,8 +839,8 @@ If your conversation context is getting too large:
 
 ### Essential Files for Any Conversation
 
-1. `CLAUDE_CONTEXT.md` (this file)
-2. `<service>/CLAUDE_CONTEXT.md` (service constraints)
+1. `DOCS_CONTEXT.md` (this file)
+2. `<service>/DOCS_CONTEXT.md` (service constraints)
 3. `<feature>/feature.yaml` (feature contract)
 
 ### Feature Locations
@@ -900,20 +900,20 @@ docker compose -f docker-compose.dev.yml down --volumes --remove-orphans
 
 ### Maximum Efficiency Checklist
 
-- [ ] Load only CLAUDE_CONTEXT.md + service CLAUDE_CONTEXT.md + feature.yaml initially
+- [ ] Load only DOCS_CONTEXT.md + service DOCS_CONTEXT.md + feature.yaml initially
 - [ ] Target specific files by path (avoid directory scanning)
 - [ ] Limit scope to single feature when possible
 - [ ] Document cross-service requirements instead of implementing directly
 - [ ] Use feature.yaml dependencies to track relationships
 - [ ] Version bump on breaking changes
-- [ ] Update CLAUDE_CONTEXT.md when adding new architectural patterns
+- [ ] Update DOCS_CONTEXT.md when adding new architectural patterns
 
 ### Context Budget Guidelines
 
 **Minimal** (Best for single-file changes):
 
-- CLAUDE_CONTEXT.md
-- service/CLAUDE_CONTEXT.md
+- DOCS_CONTEXT.md
+- service/DOCS_CONTEXT.md
 - feature/feature.yaml
 - 1-2 implementation files
 - ~2000 tokens
@@ -949,8 +949,8 @@ Service: <service-name>
 Location: <full-path-to-feature>
 
 Context files to read:
-1. CLAUDE_CONTEXT.md
-2. <service>/CLAUDE_CONTEXT.md
+1. DOCS_CONTEXT.md
+2. <service>/DOCS_CONTEXT.md
 3. <feature-path>/feature.yaml
 
 Goal: [One sentence describing the change]
