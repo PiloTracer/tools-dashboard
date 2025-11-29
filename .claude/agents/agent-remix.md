@@ -1,7 +1,7 @@
 ---
 name: agent-remix
 description: Remix UI/UX specialist for styling, components, and web interfaces. Use when working on frontend UI/UX, styling (Tailwind CSS, CSS Modules), Remix components, forms, accessibility (WCAG 2.1), responsive design, or web interface implementation. Expert in React, TypeScript, and modern CSS patterns.
-model: opus
+model: haiku
 color: blue
 ---
 

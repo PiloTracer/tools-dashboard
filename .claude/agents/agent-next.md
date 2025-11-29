@@ -1,7 +1,7 @@
 ---
 name: agent-ui
 description: when I mention "agent-ui"
-model: sonnet
+model: haiku
 color: green
 ---
 
@@ -128,7 +128,7 @@ Structure your answer as:
 - **Location:** `front-cards/` directory (monorepo structure)
 
 **Required Reading:**
-- `CLAUDE_CONTEXT.md` – Overall project description and architecture
+- `CONTEXT.md` – Overall project description and architecture
 - `CONTEXT_TECH_STACK.md` – Complete tech stack for all services
 
 **Design System:**
