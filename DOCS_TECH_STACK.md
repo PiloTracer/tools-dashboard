@@ -32,7 +32,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Nginx Reverse Proxy                      │
-│           (Port 80/8082 HTTP, 443/8443 HTTPS)               │
+│           (Port 8082 HTTP, 443/8443 HTTPS — dev)              │
 └─────────────────┬──────────────────────┬────────────────────┘
                   │                      │
       ┌───────────┴──────────┐  ┌───────┴──────────┐
@@ -532,7 +532,7 @@ server -s3 -filer -dir=/data -volume.max=10
 - Bucket: `/buckets/`
 
 **Access**:
-- Public URL: `http://epicdev.com/storage/`
+- Public URL: `http://dev.aiepic.app/storage/`
 - Proxied via Nginx to Filer (port 8888)
 
 **Memory Limit**: 256MB
@@ -545,7 +545,7 @@ server -s3 -filer -dir=/data -volume.max=10
 
 **Version**: `nginx:alpine`
 **Ports**:
-- 80/8082 (HTTP)
+- 8082 (HTTP to nginx in dev; host :80 omitted to avoid conflict with system nginx)
 - 443/8443 (HTTPS)
 
 **Configuration**: `infra/nginx/default.conf`
@@ -643,7 +643,7 @@ back-api:
 
 **Environment Variables**: `.env` file
 ```env
-PUBLIC_APP_BASE_URL=http://epicdev.com/app
+PUBLIC_APP_BASE_URL=http://dev.aiepic.app/app
 BACK_AUTH_BASE_URL=http://back-auth:8001
 SESSION_COOKIE_NAME=td_session
 JWT_SECRET_KEY=your-secret-key-change-in-production-please
@@ -778,11 +778,13 @@ docker compose -f docker-compose.dev.yml down --volumes --remove-orphans
 - Debug logging
 - MailHog for email testing
 
-**Production**: `docker-compose.prod.yml` (assumed)
-- Optimized builds
-- No volume mounts
-- Production logging
-- Real SMTP service
+**Production-style**: `docker-compose.prd.yml`
+- `Dockerfile.prod` images for app services; **no** source bind-mounts
+- `back-api` builds with **repository root** context so `shared/` is copied into the image (`back-api/Dockerfile.prod`)
+- Nginx uses `infra/nginx/default.prd.conf` (public `server_name _`, `X-Forwarded-For` via `proxy_add_x_forwarded_for`)
+- MailHog omitted; configure real SMTP via `.env.prd` (see `.env.prd.example`)
+- Data services (PostgreSQL, Redis, Cassandra, SeaweedFS) are **not** published to the host by default; only `nginx-proxy` exposes **`${NGINX_HTTP_PORT:-8082}`** (host HTTP never defaults to port 80).
+- Operate the stack with **`./bin/start.sh <dev|prd> <command>`** (see `README.md`).
 
 ### Logging
 

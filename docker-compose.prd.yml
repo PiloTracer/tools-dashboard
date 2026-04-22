@@ -1,77 +1,68 @@
+# Production-oriented stack: baked images, no source bind-mounts, no MailHog,
+# internal data stores not published to the host by default.
+# Copy .env.prd.example → .env.prd, set secrets and public URLs, then:
+#   docker compose -f docker-compose.prd.yml --env-file .env.prd up -d
+
 services:
   nginx-proxy:
     image: nginx:alpine
     ports:
-      # Host :80 is often taken by system nginx; use :8082 as the dev HTTP entry.
-      - "0.0.0.0:8082:80"
-      - "0.0.0.0:8443:443"
+      # Host :80 is not used; default 8082 matches dev (set NGINX_HTTP_PORT to override).
+      - "${NGINX_HTTP_PORT:-8082}:80"
     volumes:
-      - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./infra/nginx/default.prd.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - front-admin
-      - front-public
-      - back-api
-      - back-auth
-      - back-websockets
-      - feature-registry
-    mem_limit: 128m
+      front-admin:
+        condition: service_started
+      front-public:
+        condition: service_started
+      back-api:
+        condition: service_started
+      back-auth:
+        condition: service_healthy
+      back-websockets:
+        condition: service_started
+      feature-registry:
+        condition: service_started
+    restart: unless-stopped
+    mem_limit: 256m
 
   front-admin:
     build:
       context: ./front-admin
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.prod
     environment:
-      - NODE_ENV=development
-      - BACKEND_API_URL=http://back-api:8000
-      - AUTH_API_URL=http://back-auth:8001
-      - WEBSOCKET_URL=ws://back-websockets:8010
-    volumes:
-      - ./front-admin:/app
-      - front_admin_node_modules:/app/node_modules
-    ports:
-      - "0.0.0.0:4100:3000"
-    depends_on:
-      - back-api
-      - back-auth
+      - NODE_ENV=production
+      - BACKEND_API_URL=${FRONT_INTERNAL_BACK_API_URL:-http://back-api:8000}
+      - AUTH_API_URL=${FRONT_INTERNAL_BACK_AUTH_URL:-http://back-auth:8001}
+      - WEBSOCKET_URL=${FRONT_INTERNAL_WEBSOCKET_URL:-ws://back-websockets:8010}
+    restart: unless-stopped
     mem_limit: 512m
 
   front-public:
     build:
       context: ./front-public
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.prod
     environment:
-      - NODE_ENV=development
-      - BACKEND_API_URL=http://back-api:8000
-      - AUTH_API_URL=http://back-auth:8001
-      - WEBSOCKET_URL=ws://back-websockets:8010
-      - BACK_AUTH_BASE_URL=${BACK_AUTH_BASE_URL}
-      - PUBLIC_APP_BASE_PATH=/app
-    volumes:
-      - ./front-public:/app
-      - front_public_node_modules:/app/node_modules
-    ports:
-      - "0.0.0.0:4101:3000"
-    depends_on:
-      - back-api
-      - back-auth
+      - NODE_ENV=production
+      - BACKEND_API_URL=${FRONT_INTERNAL_BACK_API_URL:-http://back-api:8000}
+      - AUTH_API_URL=${FRONT_INTERNAL_BACK_AUTH_URL:-http://back-auth:8001}
+      - WEBSOCKET_URL=${FRONT_INTERNAL_WEBSOCKET_URL:-ws://back-websockets:8010}
+      - BACK_AUTH_BASE_URL=${BACK_AUTH_BASE_URL:-http://127.0.0.1/auth}
+      - PUBLIC_APP_BASE_PATH=${PUBLIC_APP_BASE_PATH:-/app}
+    restart: unless-stopped
     mem_limit: 512m
 
   back-api:
     build:
-      context: ./back-api
-      dockerfile: Dockerfile.dev
+      context: .
+      dockerfile: back-api/Dockerfile.prod
     environment:
-      - UVICORN_RELOAD=1
-      - DATABASE_URL=postgresql://user:pass@postgresql:5432/main_db
-      - REDIS_URL=redis://redis:6379/0
-      - CASSANDRA_CONTACT_POINTS=cassandra
-      - FEATURE_REGISTRY_URL=http://feature-registry:8005
-      - AUTH_SERVICE_URL=http://back-auth:8001
-    volumes:
-      - ./back-api:/app
-      - ./shared:/app/shared
-    ports:
-      - "0.0.0.0:8100:8000"
+      - DATABASE_URL=${BACK_API_DATABASE_URL:-postgresql://user:pass@postgresql:5432/main_db}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - CASSANDRA_CONTACT_POINTS=${CASSANDRA_CONTACT_POINTS:-cassandra}
+      - FEATURE_REGISTRY_URL=${FEATURE_REGISTRY_URL:-http://feature-registry:8005}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://back-auth:8001}
     depends_on:
       postgresql:
         condition: service_healthy
@@ -79,42 +70,42 @@ services:
         condition: service_healthy
       cassandra:
         condition: service_healthy
+    restart: unless-stopped
     mem_limit: 768m
 
   back-auth:
     build:
       context: ./back-auth
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.prod
     environment:
-      - UVICORN_RELOAD=1
-      - DATABASE_URL=postgresql+asyncpg://user:pass@postgresql:5432/main_db
-      - REDIS_URL=redis://redis:6379/1
-      - PUBLIC_APP_BASE_URL=${PUBLIC_APP_BASE_URL}
+      - DATABASE_URL=${BACK_AUTH_DATABASE_URL:-postgresql+asyncpg://user:pass@postgresql:5432/main_db}
+      - REDIS_URL=${BACK_AUTH_REDIS_URL:-redis://redis:6379/1}
+      - PUBLIC_APP_BASE_URL=${PUBLIC_APP_BASE_URL:-http://127.0.0.1/app}
       - VERIFICATION_PATH=${VERIFICATION_PATH:-/features/user-registration/verify}
       - REGISTRATION_PASSWORD_MIN_LENGTH=${REGISTRATION_PASSWORD_MIN_LENGTH:-12}
-      - REGISTRATION_CSRF_COOKIE_SECURE=${REGISTRATION_CSRF_COOKIE_SECURE:-false}
+      - REGISTRATION_CSRF_COOKIE_SECURE=${REGISTRATION_CSRF_COOKIE_SECURE:-true}
       - REGISTRATION_CSRF_COOKIE_SAMESITE=${REGISTRATION_CSRF_COOKIE_SAMESITE:-Lax}
       - REGISTRATION_CSRF_COOKIE_MAX_AGE=${REGISTRATION_CSRF_COOKIE_MAX_AGE:-900}
       - REGISTRATION_CSRF_COOKIE_DOMAIN=${REGISTRATION_CSRF_COOKIE_DOMAIN:-}
       - SESSION_COOKIE_NAME=${SESSION_COOKIE_NAME:-td_session}
-      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-false}
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-true}
       - SESSION_COOKIE_SAMESITE=${SESSION_COOKIE_SAMESITE:-Lax}
       - SESSION_COOKIE_MAX_AGE=${SESSION_COOKIE_MAX_AGE:-604800}
       - SESSION_COOKIE_DOMAIN=${SESSION_COOKIE_DOMAIN:-}
       - REGISTRATION_TOKEN_TTL_MINUTES=${REGISTRATION_TOKEN_TTL_MINUTES:-15}
       - REFRESH_TOKEN_TTL_DAYS=${REFRESH_TOKEN_TTL_DAYS:-7}
-      - MAIL_HOST=${MAIL_HOST:-}
+      - MAIL_HOST=${MAIL_HOST:-localhost}
       - MAIL_PORT=${MAIL_PORT:-587}
       - MAIL_USERNAME=${MAIL_USERNAME:-}
       - MAIL_PASSWORD=${MAIL_PASSWORD:-}
-      - MAIL_SENDER=${MAIL_SENDER:-}
+      - MAIL_SENDER=${MAIL_SENDER:-no-reply@localhost}
       - MAIL_USE_TLS=${MAIL_USE_TLS:-true}
       - CASSANDRA_CONTACT_POINTS=${CASSANDRA_CONTACT_POINTS:-cassandra}
       - CASSANDRA_PORT=${CASSANDRA_PORT:-9042}
       - CASSANDRA_KEYSPACE=${CASSANDRA_KEYSPACE:-tools_dashboard}
-      - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
-      - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
-      - GOOGLE_OAUTH_REDIRECT_URI=${GOOGLE_OAUTH_REDIRECT_URI}
+      - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID:-}
+      - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      - GOOGLE_OAUTH_REDIRECT_URI=${GOOGLE_OAUTH_REDIRECT_URI:-}
       - GOOGLE_OAUTH_SCOPES=${GOOGLE_OAUTH_SCOPES:-openid email profile}
       - GOOGLE_OAUTH_ALLOWED_DOMAINS=${GOOGLE_OAUTH_ALLOWED_DOMAINS:-}
       - GOOGLE_OAUTH_BUTTON_TEXT=${GOOGLE_OAUTH_BUTTON_TEXT:-}
@@ -122,16 +113,16 @@ services:
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-Admin123!ChangeMe}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-in-production-please}
       - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
-    volumes:
-      - ./back-auth:/app
-    ports:
-      - "0.0.0.0:8101:8001"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 15s
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=5)\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
     depends_on:
       postgresql:
         condition: service_healthy
@@ -139,22 +130,19 @@ services:
         condition: service_healthy
       cassandra:
         condition: service_healthy
-      mailhog:
-        condition: service_started
+    restart: unless-stopped
     mem_limit: 512m
 
   back-websockets:
     build:
       context: ./back-websockets
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.prod
     environment:
-      - REDIS_URL=redis://redis:6379/0
-    volumes:
-      - ./back-websockets:/app
-    ports:
-      - "0.0.0.0:8102:8010"
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
     mem_limit: 256m
 
   back-workers:
@@ -162,63 +150,57 @@ services:
       context: ./back-workers
       dockerfile: Dockerfile
     environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - API_BASE_URL=http://back-api:8000
-    volumes:
-      - ./back-workers:/app
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
+      - API_BASE_URL=${API_BASE_URL:-http://back-api:8000}
     depends_on:
-      - redis
-      - back-api
+      redis:
+        condition: service_healthy
+      back-api:
+        condition: service_started
+    restart: unless-stopped
     mem_limit: 512m
 
   back-postgres-service:
     build:
       context: ./back-postgres
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.prod
     environment:
-      - DATABASE_URL=postgresql://user:pass@postgresql:5432/main_db
-    volumes:
-      - ./back-postgres:/app
+      - DATABASE_URL=${BACK_POSTGRES_SERVICE_DATABASE_URL:-postgresql://user:pass@postgresql:5432/main_db}
     depends_on:
       postgresql:
         condition: service_healthy
       back-auth:
         condition: service_healthy
+    restart: unless-stopped
     mem_limit: 256m
 
   back-cassandra:
     build:
       context: ./back-cassandra
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.prod
     environment:
-      - CASSANDRA_CONTACT_POINTS=cassandra
-    volumes:
-      - ./back-cassandra:/app
+      - CASSANDRA_CONTACT_POINTS=${CASSANDRA_CONTACT_POINTS:-cassandra}
     depends_on:
       cassandra:
         condition: service_healthy
+    restart: unless-stopped
     mem_limit: 256m
 
   feature-registry:
     build:
       context: ./feature-registry
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.prod
     environment:
-      - DATABASE_URL=postgresql://user:pass@postgresql:5432/main_db
-    volumes:
-      - ./feature-registry:/app
-    ports:
-      - "0.0.0.0:8105:8005"
+      - DATABASE_URL=${FEATURE_REGISTRY_DATABASE_URL:-postgresql://user:pass@postgresql:5432/main_db}
     depends_on:
       postgresql:
         condition: service_healthy
+    restart: unless-stopped
     mem_limit: 512m
 
   redis:
     image: redis:7-alpine
     command: redis-server /usr/local/etc/redis/redis.conf
-    ports:
-      - "0.0.0.0:6380:6379"
     volumes:
       - redis_data:/data
       - ./back-redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
@@ -227,52 +209,42 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    restart: unless-stopped
     mem_limit: 256m
 
   postgresql:
     image: postgres:15
     environment:
-      - POSTGRES_DB=main_db
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=pass
-    ports:
-      - "0.0.0.0:55432:5432"
+      POSTGRES_DB: ${POSTGRES_DB:-main_db}
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pass}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d main_db"]
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
       interval: 5s
       timeout: 5s
       retries: 5
-    mem_limit: 512m
+    restart: unless-stopped
+    mem_limit: 1024m
 
   cassandra:
     image: cassandra:4
     environment:
-      - CASSANDRA_CLUSTER_NAME=tools_cluster
-    ports:
-      - "0.0.0.0:39142:9042"
+      - CASSANDRA_CLUSTER_NAME=${CASSANDRA_CLUSTER_NAME:-tools_cluster}
     volumes:
       - cassandra_data:/var/lib/cassandra
     healthcheck:
       test: ["CMD-SHELL", "cqlsh -e 'describe cluster'"]
-      interval: 10s
+      interval: 15s
       timeout: 10s
-      retries: 10
-
-  mailhog:
-    image: mailhog/mailhog:v1.0.1
-    ports:
-      - "0.0.0.0:8026:8025"
+      retries: 15
+      start_period: 90s
     restart: unless-stopped
-    mem_limit: 128m
+    mem_limit: 2048m
 
   seaweedfs:
     image: chrislusf/seaweedfs
-    ports:
-      - "0.0.0.0:8333:8333"  # S3 API port
-      - "0.0.0.0:9333:9333"  # Master port
-      - "0.0.0.0:8888:8888"  # Filer port
     volumes:
       - seaweed-data:/data
       - ./seaweedfs-config/s3-config.json:/etc/seaweedfs/s3-config.json:ro
@@ -284,13 +256,11 @@ services:
       -s3.config=/etc/seaweedfs/s3-config.json
       -master.volumeSizeLimitMB=1024
       -master.defaultReplication=000
-      -s3.domainName=localhost
+      -s3.domainName=${SEAWEEDFS_S3_DOMAIN_NAME:-localhost}
     restart: unless-stopped
-    mem_limit: 256m
+    mem_limit: 512m
 
 volumes:
-  front_admin_node_modules:
-  front_public_node_modules:
   postgres_data:
   redis_data:
   cassandra_data:

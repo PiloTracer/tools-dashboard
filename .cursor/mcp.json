@@ -1,0 +1,40 @@
+{
+  "mcpServers": {
+    "postgres-tools-dashboard": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://user:pass@localhost:55432/main_db"
+      ]
+    },
+    "shadcn": {
+      "command": "npx",
+      "args": ["-y", "@sherifbutt/shadcn-ui-mcp-server"]
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"]
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "local-memory-mcp", "--mcp"]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/mnt/data/Projects/EPIC/tools-dashboard"
+      ]
+    },
+    "next-devtools": {
+      "command": "npx",
+      "args": ["-y", "next-devtools-mcp@latest"]
+    },
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-fetch-typescript"]
+    }
+  }
+}

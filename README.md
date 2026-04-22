@@ -60,12 +60,17 @@ tools-dashboard/
 
 1. **Start the development stack:**
    ```bash
-   ./start-dev.sh
+   ./bin/start.sh dev up
+   ```
+   Interactive menu (pick options after choosing `dev` / `prd`):
+   ```bash
+   ./bin/start.sh dev
    ```
 
 2. **Access the services:**
-   - Admin Dashboard: http://localhost:4100
-   - Public App: http://localhost:4101
+   - **Via nginx (recommended):** http://localhost:8082/app/ (public), http://localhost:8082/admin/ (admin)
+   - Admin (direct Remix): http://localhost:4100
+   - Public (direct Remix): http://localhost:4101
    - API: http://localhost:8100
    - Auth Service: http://localhost:8101
    - WebSockets: http://localhost:8102
@@ -74,20 +79,30 @@ tools-dashboard/
 
 3. **View logs:**
    ```bash
-   ./start-logs.sh
+   ./bin/start.sh dev logs
    ```
 
 4. **Stop services:**
    ```bash
-   ./stop-dev.sh
+   ./bin/start.sh dev down
    ```
 
-### Development Scripts
+### Docker helper (`bin/start.sh`)
 
-- `./start-dev.sh` - Initialize and start all services
-- `./restart-dev.sh` - Restart running services
-- `./reset-dev.sh` - Complete reset of development environment
-- `./stop-dev.sh` - Stop all services
+All stack operations go through **`./bin/start.sh`** (environment + optional command).
+
+| Goal | Command |
+|------|---------|
+| First-time / daily start (no image rebuild) | `./bin/start.sh dev up` |
+| Rebuild images and start | `./bin/start.sh dev up-build` |
+| Stop | `./bin/start.sh dev down` |
+| Follow logs | `./bin/start.sh dev logs` |
+| Rebuild stack, keep data (`build.log`) | `./bin/start.sh dev rebuild` |
+| Wipe volumes and rebuild (**destructive**) | `./bin/start.sh dev reset` |
+| Rolling restart only | `./bin/start.sh dev restart` |
+| Interactive menu | `./bin/start.sh dev` |
+
+Use `prd` instead of `dev` for the production-style compose file (see `.env.prd.example`). The HTTP edge defaults to **port 8082** on the host (same as dev); nothing binds host port **80**.
 
 ## Key Features
 
