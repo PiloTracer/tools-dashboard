@@ -137,13 +137,13 @@ export default function AppLibrary() {
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-blue-900 mb-1">
-                  About OAuth Authentication
+                  Connected apps
                 </h3>
                 <p className="text-sm text-blue-800">
-                  When you launch an application, you'll be redirected to complete a secure OAuth
-                  authentication flow. You'll be asked to authorize the application to access your profile
-                  information. Once authorized, you'll be automatically signed in without needing to enter
-                  your credentials again.
+                  Each card shows what that app may access (for example profile and subscription). Choosing
+                  <span className="font-semibold"> Launch App </span>
+                  while you are signed in here opens the app and grants only those permissions—no second
+                  confirmation page.
                 </p>
               </div>
             </div>

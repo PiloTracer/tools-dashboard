@@ -144,6 +144,9 @@ Thumbs.db
 local/
 local.*
 
+# Scratch / local dumps (not tracked)
+tmp/
+
 # README files that start with README_
 README_*
 

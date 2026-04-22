@@ -7,7 +7,7 @@ endpoints:
   # OAuth Authorization Flow (front-public)
   - method: GET
     path: /oauth/authorize
-    description: OAuth 2.0 authorization endpoint (user consent)
+    description: OAuth 2.0 authorization endpoint (silent by default; optional interactive consent via env)
     service: front-public
     authentication: session
     parameters:

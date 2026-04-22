@@ -263,6 +263,22 @@ class OAuthClientInfrastructure:
         result = await self.session.execute(query)
         return result.first() is not None
 
+    async def get_user_consent_scopes(self, user_id: int, client_id: str) -> Optional[list[str]]:
+        """Return granted scopes for this user and client, or None if no consent row exists."""
+        metadata = MetaData()
+        oauth_consents = _define_oauth_consents_table(metadata)
+
+        query = select(oauth_consents.c.scope).where(
+            oauth_consents.c.user_id == user_id,
+            oauth_consents.c.client_id == client_id,
+        )
+
+        result = await self.session.execute(query)
+        row = result.first()
+        if row is None or row[0] is None:
+            return None
+        return list(row[0])
+
     async def store_user_consent(
         self, user_id: int, client_id: str, scope: list[str]
     ) -> None:

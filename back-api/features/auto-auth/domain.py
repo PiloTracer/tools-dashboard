@@ -180,6 +180,21 @@ class OAuthClientDomain:
         """
         return await self.infra.check_user_consent(user_id, client_id)
 
+    async def get_user_consent_scopes(self, user_id: int, client_id: str) -> Optional[list[str]]:
+        """Scopes previously granted by the user for this client, if any."""
+        return await self.infra.get_user_consent_scopes(user_id, client_id)
+
+    async def consent_covers_requested_scopes(
+        self, user_id: int, client_id: str, requested: list[str]
+    ) -> bool:
+        """True if stored consent exists and includes every requested scope."""
+        stored = await self.get_user_consent_scopes(user_id, client_id)
+        if not stored:
+            return False
+        req = {s.strip() for s in requested if s and s.strip()}
+        st = {s.strip() for s in stored if s and s.strip()}
+        return req <= st
+
     async def store_user_consent(
         self, user_id: int, client_id: str, scope: list[str]
     ) -> None:

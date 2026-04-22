@@ -85,12 +85,22 @@ export async function action({ request }: ActionFunctionArgs) {
         );
       }
 
-      const { user_id, scope } = await validateResponse.json();
+      const validated = (await validateResponse.json()) as {
+        user_id: number;
+        scope: string[];
+        user_email?: string;
+        user_name?: string;
+      };
 
-      // Fetch user info for JWT claims
-      // TODO: Get actual user data from database
-      const userEmail = `user${user_id}@example.com`;
-      const userName = `User ${user_id}`;
+      const { user_id, scope } = validated;
+      const userEmail =
+        typeof validated.user_email === "string" && validated.user_email.length > 0
+          ? validated.user_email
+          : `user${user_id}@example.com`;
+      const userName =
+        typeof validated.user_name === "string" && validated.user_name.length > 0
+          ? validated.user_name
+          : `User ${user_id}`;
 
       // Issue tokens via back-auth
       const tokensResponse = await fetch(`${BACK_AUTH_URL}/internal/oauth/issue-tokens`, {

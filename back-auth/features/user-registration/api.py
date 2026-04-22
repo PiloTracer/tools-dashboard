@@ -340,7 +340,6 @@ async def google_callback(
     if not email:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Google account has no email")
 
-    email_verified = userinfo.get("email_verified", False)
     provider_account_id = userinfo.get("sub") or userinfo.get("id")
     if not provider_account_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Google profile missing subject identifier")
@@ -353,10 +352,11 @@ async def google_callback(
             user = await user_repository.create_user(session, email, password=None)
             user_id = user["id"]
 
-        if email_verified:
-            already_verified = existing["is_email_verified"] if existing else False
-            if not already_verified:
-                await user_repository.mark_email_verified(session, user_id)
+        # Completing the Google authorization code flow proves control of this Google account;
+        # do not gate on userinfo "email_verified" (often false/missing for some accounts).
+        already_verified = existing["is_email_verified"] if existing else False
+        if not already_verified:
+            await user_repository.mark_email_verified(session, user_id)
 
         await user_repository.upsert_identity(
             session,
@@ -377,7 +377,7 @@ async def google_callback(
 
     response = JSONResponse(
         content={
-            "status": "verified" if email_verified else "pending",
+            "status": "verified",
             "redirectTo": "/features/app-library",
             "email": email,
         }

@@ -66,7 +66,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
   let email = queryEmail;
   let supportUrl: string | undefined = SUPPORT_MAILTO;
 
-  if (provider === "google") {
+  // Google redirects to redirect_uri with ?code=...&state=... (no ?provider=google). Treat code+state as OAuth return.
+  const isGoogleOAuthReturn =
+    !token && (provider === "google" || (Boolean(code) && Boolean(state)));
+
+  if (isGoogleOAuthReturn) {
     if (!code || !state) {
       return json<LoaderData>(
         {

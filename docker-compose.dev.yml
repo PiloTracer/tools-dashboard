@@ -31,8 +31,10 @@ services:
     ports:
       - "0.0.0.0:4100:3000"
     depends_on:
-      - back-api
-      - back-auth
+      back-api:
+        condition: service_started
+      back-auth:
+        condition: service_healthy
     mem_limit: 512m
 
   front-public:
@@ -45,6 +47,9 @@ services:
       - AUTH_API_URL=http://back-auth:8001
       - WEBSOCKET_URL=ws://back-websockets:8010
       - BACK_AUTH_BASE_URL=${BACK_AUTH_BASE_URL}
+      - OAUTH_CONSENT_SERVICE_SECRET=${OAUTH_CONSENT_SERVICE_SECRET:-tools-dashboard-oauth-consent-dev}
+      # Set to 1/true only if you need the legacy Allow/Deny page at /oauth/authorize (default: silent authorize).
+      - OAUTH_REQUIRE_INTERACTIVE_CONSENT_UI=${OAUTH_REQUIRE_INTERACTIVE_CONSENT_UI:-}
       - PUBLIC_APP_BASE_PATH=/app
     volumes:
       - ./front-public:/app
@@ -52,8 +57,10 @@ services:
     ports:
       - "0.0.0.0:4101:3000"
     depends_on:
-      - back-api
-      - back-auth
+      back-api:
+        condition: service_started
+      back-auth:
+        condition: service_healthy
     mem_limit: 512m
 
   back-api:
@@ -67,6 +74,7 @@ services:
       - CASSANDRA_CONTACT_POINTS=cassandra
       - FEATURE_REGISTRY_URL=http://feature-registry:8005
       - AUTH_SERVICE_URL=http://back-auth:8001
+      - OAUTH_CONSENT_SERVICE_SECRET=${OAUTH_CONSENT_SERVICE_SECRET:-tools-dashboard-oauth-consent-dev}
     volumes:
       - ./back-api:/app
       - ./shared:/app/shared

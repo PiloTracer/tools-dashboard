@@ -8,8 +8,11 @@ from __future__ import annotations
 from uuid import UUID
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.cassandra import get_cassandra_session
+from core.database import get_session
+from repositories.user_repository import get_user_by_id
 from cassandra.cluster import Session as CassandraSession
 
 from .infrastructure import OAuthInfrastructure
@@ -50,6 +53,8 @@ class ValidateCodeResponse(BaseModel):
     """Response with validated code data."""
     user_id: int  # Integer user ID from users table
     scope: list[str]
+    user_email: str
+    user_name: str
 
 
 class IssueTokensRequest(BaseModel):
@@ -159,6 +164,7 @@ async def generate_authorization_code(
 async def validate_authorization_code(
     request: ValidateCodeRequest,
     domain: OAuthDomain = Depends(get_oauth_domain),
+    session: AsyncSession = Depends(get_session),
 ) -> ValidateCodeResponse:
     """Validate authorization code and PKCE.
 
@@ -172,12 +178,6 @@ async def validate_authorization_code(
     Raises:
         HTTPException 400: If code is invalid
     """
-    print(f"DEBUG: Validating authorization code")
-    print(f"DEBUG: code={request.code[:20]}...")
-    print(f"DEBUG: client_id={request.client_id}")
-    print(f"DEBUG: redirect_uri={request.redirect_uri}")
-    print(f"DEBUG: code_verifier={'present' if request.code_verifier else 'null'}")
-
     result = await domain.validate_authorization_code(
         code=request.code,
         client_id=request.client_id,
@@ -185,20 +185,27 @@ async def validate_authorization_code(
         code_verifier=request.code_verifier,
     )
 
-    print(f"DEBUG: Validation result={result is not None}")
-
     if not result:
-        print(f"DEBUG: Code validation failed!")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired authorization code",
         )
 
-    print(f"DEBUG: Code validated successfully - user_id={result['user_id']}")
+    user_row = await get_user_by_id(session, result["user_id"])
+    if not user_row:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User not found for authorization code",
+        )
+
+    email = str(user_row["email"])
+    display_name = email.split("@", 1)[0] if "@" in email else email
 
     return ValidateCodeResponse(
         user_id=result["user_id"],
         scope=result["scope"],
+        user_email=email,
+        user_name=display_name,
     )
 
 

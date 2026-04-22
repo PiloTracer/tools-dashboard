@@ -50,6 +50,8 @@ services:
       - WEBSOCKET_URL=${FRONT_INTERNAL_WEBSOCKET_URL:-ws://back-websockets:8010}
       - BACK_AUTH_BASE_URL=${BACK_AUTH_BASE_URL:-http://127.0.0.1/auth}
       - PUBLIC_APP_BASE_PATH=${PUBLIC_APP_BASE_PATH:-/app}
+      - OAUTH_CONSENT_SERVICE_SECRET=${OAUTH_CONSENT_SERVICE_SECRET:-}
+      - OAUTH_REQUIRE_INTERACTIVE_CONSENT_UI=${OAUTH_REQUIRE_INTERACTIVE_CONSENT_UI:-}
     restart: unless-stopped
     mem_limit: 512m
 
@@ -63,6 +65,7 @@ services:
       - CASSANDRA_CONTACT_POINTS=${CASSANDRA_CONTACT_POINTS:-cassandra}
       - FEATURE_REGISTRY_URL=${FEATURE_REGISTRY_URL:-http://feature-registry:8005}
       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://back-auth:8001}
+      - OAUTH_CONSENT_SERVICE_SECRET=${OAUTH_CONSENT_SERVICE_SECRET:-}
     depends_on:
       postgresql:
         condition: service_healthy

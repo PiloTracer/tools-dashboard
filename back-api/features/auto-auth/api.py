@@ -5,11 +5,13 @@ Public API endpoints for external applications and admin management.
 
 from __future__ import annotations
 
+import os
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status, Depends, Header
+from starlette.responses import Response
 from pydantic import BaseModel, Field
 
 # Import shared contracts
@@ -118,6 +120,42 @@ async def verify_admin(
         Admin user data
     """
     return {"id": 1, "role": "admin"}
+
+
+def _verify_oauth_consent_service_secret(
+    x_oauth_consent_service_secret: str | None = Header(
+        default=None,
+        alias="X-OAuth-Consent-Service-Secret",
+    ),
+) -> None:
+    """Shared secret so only trusted callers (e.g. front-public SSR) can read/write consent rows."""
+    expected = (os.environ.get("OAUTH_CONSENT_SERVICE_SECRET") or "").strip()
+    if not expected:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="OAUTH_CONSENT_SERVICE_SECRET is not configured",
+        )
+    if not x_oauth_consent_service_secret or x_oauth_consent_service_secret.strip() != expected:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid OAuth consent service secret",
+        )
+
+
+class InternalOAuthConsentCheckRequest(BaseModel):
+    user_id: int
+    client_id: str
+    scopes: list[str]
+
+
+class InternalOAuthConsentCheckResponse(BaseModel):
+    covers: bool
+
+
+class InternalOAuthConsentStoreRequest(BaseModel):
+    user_id: int
+    client_id: str
+    scopes: list[str]
 
 
 # ============================================================================
@@ -449,6 +487,37 @@ async def delete_oauth_client(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="OAuth client not found",
         )
+
+
+@router.post(
+    "/internal/oauth/consent/check",
+    response_model=InternalOAuthConsentCheckResponse,
+    summary="Check whether stored consent covers requested scopes (service-to-service)",
+)
+async def internal_check_oauth_consent(
+    body: InternalOAuthConsentCheckRequest,
+    _auth: None = Depends(_verify_oauth_consent_service_secret),
+    domain: OAuthClientDomain = Depends(get_oauth_domain),
+) -> InternalOAuthConsentCheckResponse:
+    covers = await domain.consent_covers_requested_scopes(
+        body.user_id, body.client_id, body.scopes
+    )
+    return InternalOAuthConsentCheckResponse(covers=covers)
+
+
+@router.post(
+    "/internal/oauth/consent/store",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Persist user consent after Allow (service-to-service)",
+    response_class=Response,
+)
+async def internal_store_oauth_consent(
+    body: InternalOAuthConsentStoreRequest,
+    _auth: None = Depends(_verify_oauth_consent_service_secret),
+    domain: OAuthClientDomain = Depends(get_oauth_domain),
+) -> Response:
+    await domain.store_user_consent(body.user_id, body.client_id, body.scopes)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 # ============================================================================
