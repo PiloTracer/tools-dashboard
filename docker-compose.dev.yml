@@ -8,12 +8,18 @@ services:
     volumes:
       - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - front-admin
-      - front-public
-      - back-api
-      - back-auth
-      - back-websockets
-      - feature-registry
+      front-admin:
+        condition: service_started
+      front-public:
+        condition: service_started
+      back-api:
+        condition: service_started
+      back-auth:
+        condition: service_healthy
+      back-websockets:
+        condition: service_started
+      feature-registry:
+        condition: service_started
     mem_limit: 128m
 
   front-admin:
@@ -162,7 +168,8 @@ services:
     ports:
       - "0.0.0.0:8102:8010"
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     mem_limit: 256m
 
   back-workers:
@@ -175,8 +182,10 @@ services:
     volumes:
       - ./back-workers:/app
     depends_on:
-      - redis
-      - back-api
+      redis:
+        condition: service_healthy
+      back-api:
+        condition: service_started
     mem_limit: 512m
 
   back-postgres-service:
@@ -267,6 +276,7 @@ services:
       interval: 10s
       timeout: 10s
       retries: 10
+      start_period: 45s
 
   mailhog:
     image: mailhog/mailhog:v1.0.1
