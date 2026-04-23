@@ -50,6 +50,7 @@ Read these at the start of a session when relevant:
 
 | File | Purpose |
 |------|---------|
+| `.ai/context/HANDOFF.md` | Session handoff: prod URLs, `prd` naming, commands, security checklist, what changed recently |
 | `DOCS_TECH_STACK.md` | Technology stack, services, and architecture |
 | `.claude/DIRECTORY_MAP.md` | Where generated docs and plans live |
 | `.claude/CONVENTIONS.md` | Documentation and naming conventions |
