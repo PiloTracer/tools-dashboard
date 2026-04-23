@@ -532,7 +532,7 @@ server -s3 -filer -dir=/data -volume.max=10
 - Bucket: `/buckets/`
 
 **Access**:
-- Public URL: `http://dev.aiepic.app/storage/`
+- Public URL: `https://dev.aiepic.app/storage/`
 - Proxied via Nginx to Filer (port 8888)
 
 **Memory Limit**: 256MB
@@ -643,7 +643,7 @@ back-api:
 
 **Environment Variables**: `.env` file
 ```env
-PUBLIC_APP_BASE_URL=http://dev.aiepic.app/app
+PUBLIC_APP_BASE_URL=https://dev.aiepic.app/app
 BACK_AUTH_BASE_URL=http://back-auth:8001
 SESSION_COOKIE_NAME=td_session
 JWT_SECRET_KEY=your-secret-key-change-in-production-please

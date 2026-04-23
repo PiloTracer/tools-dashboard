@@ -89,7 +89,7 @@ curl -X POST http://localhost:4101/app/change-language \
 
 ### Via domain (nginx proxy)
 ```bash
-curl -X POST http://dev.aiepic.app/app/change-language \
+curl -X POST https://dev.aiepic.app/app/change-language \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "lng=en"
 ```

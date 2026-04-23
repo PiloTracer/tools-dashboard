@@ -21,6 +21,9 @@ if ! command -v nginx >/dev/null 2>&1; then
   exit 1
 fi
 
+# Debian-style paths; some installs omit sites-available / sites-enabled
+sudo mkdir -p "$(dirname "${AVAILABLE}")" "$(dirname "${ENABLED}")"
+
 echo "Writing ${AVAILABLE}"
 sudo tee "${AVAILABLE}" >/dev/null <<EOF
 # Proxy host HTTP :80 -> Docker nginx-proxy on ${UPSTREAM}

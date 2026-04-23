@@ -69,7 +69,7 @@ tools-dashboard/
 
 2. **Access the services:**
    - **Via nginx (recommended):** http://localhost:8082/app/ (public), http://localhost:8082/admin/ (admin)
-   - **Custom host without `:8082` (e.g. `http://dev.aiepic.app/...`):** point DNS at this machine, set `PUBLIC_APP_BASE_URL` (and OAuth redirect) in `.env` to that origin, and either use **`http://dev.aiepic.app:8082`** or install the host nginx example **`infra/nginx/system-port80-to-docker-8082.example.conf`** so port **80** on the host proxies to **127.0.0.1:8082** (Docker nginx).
+   - **Custom host without `:8082` (e.g. `https://dev.aiepic.app/...`):** point DNS at this machine, set `PUBLIC_APP_BASE_URL` (and OAuth redirect) in `.env` to that origin, and either use **`https://dev.aiepic.app:8082`** or install the host nginx example **`infra/nginx/system-port80-to-docker-8082.example.conf`** so port **80** on the host proxies to **127.0.0.1:8082** (Docker nginx).
    - Admin (direct Remix): http://localhost:4100
    - Public (direct Remix): http://localhost:4101
    - API: http://localhost:8100
