@@ -6,7 +6,7 @@ import logging
 import os
 
 import bcrypt
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .database import users
@@ -35,14 +35,38 @@ async def create_default_admin(session: AsyncSession) -> None:
 
     logger.info("Checking for default admin user...")
 
-    # Check if admin user already exists
     result = await session.execute(
         select(users).where(users.c.email == admin_email)
     )
-    existing_admin = result.first()
+    row = result.mappings().first()
 
-    if existing_admin:
-        logger.info(f"Admin user already exists: {admin_email}")
+    if row:
+        if row["role"] == "admin":
+            logger.info("Admin user already exists: %s", admin_email)
+            return
+        promote = os.getenv("SEED_ADMIN_PROMOTE_TO_ADMIN", "0").strip().lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+        if promote:
+            await session.execute(
+                update(users)
+                .where(users.c.email == admin_email)
+                .values(role="admin", permissions=["*"], is_email_verified=True)
+            )
+            await session.commit()
+            logger.warning(
+                "Promoted %s to admin (SEED_ADMIN_PROMOTE_TO_ADMIN). Rotate password in production.",
+                admin_email,
+            )
+            return
+        logger.warning(
+            "User %s exists with role %r; default admin seed skipped. "
+            "Use matching credentials, set SEED_ADMIN_PROMOTE_TO_ADMIN=1 in dev, or change DEFAULT_ADMIN_EMAIL.",
+            admin_email,
+            row["role"],
+        )
         return
 
     # Hash password using bcrypt

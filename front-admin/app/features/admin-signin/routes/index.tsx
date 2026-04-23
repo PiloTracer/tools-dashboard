@@ -1,7 +1,7 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { useActionData, useLoaderData, useNavigation } from "@remix-run/react";
-import { isValidAdminCsrf, newAdminCsrf } from "../../../utils/admin-csrf.server";
+import { adminCookieSecureSuffix, isValidAdminCsrf, newAdminCsrf } from "../../../utils/admin-csrf.server";
 import { AdminSigninForm } from "../ui/AdminSigninForm";
 
 type ActionData = {
@@ -30,7 +30,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return redirect("/admin/");
   }
 
-  const { token, setCookie } = newAdminCsrf();
+  const { token, setCookie } = newAdminCsrf(request);
   return json(
     { csrfToken: token },
     { headers: { "Set-Cookie": setCookie } }
@@ -133,9 +133,10 @@ export async function action({ request }: ActionFunctionArgs) {
 
     // Redirect to admin dashboard
     // Use full path including /admin/ prefix for proper routing through nginx
+    const secure = adminCookieSecureSuffix(request);
     return redirect("/admin/", {
       headers: {
-        "Set-Cookie": `admin_session=${data.access_token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=1800`, // 30 minutes
+        "Set-Cookie": `admin_session=${data.access_token}; HttpOnly${secure}; SameSite=Lax; Path=/; Max-Age=1800`,
       },
     });
   } catch (error) {
@@ -158,14 +159,24 @@ export default function AdminSigninIndex() {
   const isSubmitting = navigation.state === "submitting";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
-        <AdminSigninForm
-          csrfToken={loaderData.csrfToken}
-          fieldErrors={actionData?.fieldErrors}
-          formError={actionData?.formError}
-          isSubmitting={isSubmitting}
-        />
+    <div className="relative min-h-screen w-full overflow-x-hidden bg-slate-950">
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,rgba(99,102,241,0.35),transparent)]"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_100%_50%,rgba(79,70,229,0.12),transparent)]"
+        aria-hidden
+      />
+      <div className="relative flex min-h-screen w-full items-center justify-center px-4 py-16 sm:px-8 lg:px-12">
+        <div className="w-full max-w-md sm:max-w-lg">
+          <AdminSigninForm
+            csrfToken={loaderData.csrfToken}
+            fieldErrors={actionData?.fieldErrors}
+            formError={actionData?.formError}
+            isSubmitting={isSubmitting}
+          />
+        </div>
       </div>
     </div>
   );

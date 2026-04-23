@@ -1,6 +1,6 @@
 ﻿import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData } from "@remix-run/react";
+import { Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData, useLocation } from "@remix-run/react";
 
 import stylesheet from "./app.css?url";
 import { AdminLayout } from "./components/layout/AdminLayout";
@@ -10,43 +10,40 @@ export const links: LinksFunction = () => [
 ];
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  // Try to decode user email from session cookie
-  const cookie = request.headers.get("Cookie");
-  console.log("📍 Root loader - Cookies:", cookie ? "present" : "none");
-
-  const adminSession = cookie?.match(/admin_session=([^;]+)/)?.[1];
-  console.log("🔑 Admin session cookie:", adminSession ? "found" : "not found");
+  const cookie = request.headers.get("Cookie") ?? "";
+  const adminSession = cookie.match(/admin_session=([^;]+)/)?.[1];
+  const hasAdminSession = Boolean(adminSession);
 
   let userEmail: string | null = null;
 
   if (adminSession) {
     try {
-      // Decode JWT token to extract user email
-      // JWT format: header.payload.signature
       const parts = adminSession.split(".");
-      console.log("🧩 JWT parts count:", parts.length);
-
       if (parts.length === 3) {
         const payload = parts[1];
-        // JWT uses base64url encoding, which needs special handling
-        const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-        const decoded = JSON.parse(Buffer.from(base64, "base64").toString());
-        console.log("✅ Decoded JWT payload:", JSON.stringify(decoded, null, 2));
-        userEmail = decoded.email || null;
-        console.log("📧 Extracted email:", userEmail);
+        const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+        const decoded = JSON.parse(Buffer.from(base64, "base64").toString()) as Record<string, unknown>;
+        const email = decoded.email;
+        const sub = decoded.sub;
+        if (typeof email === "string" && email.includes("@")) {
+          userEmail = email;
+        } else if (typeof sub === "string" && sub.includes("@")) {
+          userEmail = sub;
+        }
       }
     } catch (error) {
-      console.error("❌ Failed to decode session token:", error);
+      console.error("Failed to decode admin_session JWT:", error);
     }
-  } else {
-    console.log("⚠️  No admin_session cookie found");
   }
 
-  return json({ userEmail });
+  return json({ userEmail, hasAdminSession });
 }
 
 export default function App() {
-  const { userEmail } = useLoaderData<typeof loader>();
+  const { userEmail, hasAdminSession } = useLoaderData<typeof loader>();
+  const location = useLocation();
+  const isSignInRoute = location.pathname.includes("admin-signin");
+  const showAdminShell = hasAdminSession && !isSignInRoute;
 
   return (
     <html lang="en">
@@ -56,9 +53,8 @@ export default function App() {
         <Links />
       </head>
       <body style={{ margin: 0, padding: 0 }}>
-        {/* Only wrap in AdminLayout if user is authenticated */}
-        {userEmail ? (
-          <AdminLayout userEmail={userEmail}>
+        {showAdminShell ? (
+          <AdminLayout userEmail={userEmail ?? undefined}>
             <Outlet />
           </AdminLayout>
         ) : (

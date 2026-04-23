@@ -136,6 +136,7 @@ services:
       - GOOGLE_OAUTH_BUTTON_TEXT=${GOOGLE_OAUTH_BUTTON_TEXT:-}
       - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL:-admin@example.com}
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-Admin123!ChangeMe}
+      - SEED_ADMIN_PROMOTE_TO_ADMIN=${SEED_ADMIN_PROMOTE_TO_ADMIN:-1}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-in-production-please}
       - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
     volumes:

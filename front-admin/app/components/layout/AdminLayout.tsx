@@ -1,12 +1,22 @@
-﻿import { NavLink } from "@remix-run/react";
+﻿import { Form, NavLink } from "@remix-run/react";
 import type { ReactNode } from "react";
 
 type AdminLayoutProps = {
   children: ReactNode;
-  userEmail?: string;
+  /** From JWT when present; shell still shows without it. */
+  userEmail?: string | null;
 };
 
 const NAV_ITEMS = [
+  {
+    to: "/admin",
+    label: "Overview",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" style={{ width: 18, height: 18 }}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+      </svg>
+    ),
+  },
   {
     to: "/admin/features/app-library",
     label: "Application library",
@@ -163,8 +173,7 @@ const styles = {
 };
 
 export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
-  // Extract username from email (part before @)
-  const username = userEmail ? userEmail.split("@")[0] : null;
+  const username = userEmail?.includes("@") ? userEmail.split("@")[0] : userEmail?.trim() || null;
 
   return (
     <div style={styles.shell}>
@@ -193,36 +202,56 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
           ))}
         </nav>
         <div style={styles.footer}>
-          {username && (
-            <>
-              <div style={{
-                marginBottom: "12px",
-                paddingBottom: "12px",
-                borderBottom: "1px solid rgba(148,163,184,0.2)"
-              }}>
-                <div style={{
-                  fontSize: "11px",
-                  color: "rgba(248,250,252,0.5)",
-                  marginBottom: "4px"
-                }}>
-                  Signed in as
-                </div>
-                <div style={{
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  color: "#6366f1",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px"
-                }}>
-                  <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                  </svg>
-                  {username}
-                </div>
-              </div>
-            </>
-          )}
+          <div
+            style={{
+              marginBottom: "12px",
+              paddingBottom: "12px",
+              borderBottom: "1px solid rgba(148,163,184,0.2)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "11px",
+                color: "rgba(248,250,252,0.5)",
+                marginBottom: "4px",
+              }}
+            >
+              {username ? "Signed in as" : "Session"}
+            </div>
+            <div
+              style={{
+                fontSize: "14px",
+                fontWeight: 600,
+                color: "#6366f1",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+              </svg>
+              {username || "Authenticated"}
+            </div>
+          </div>
+          <Form method="post" action="/admin/logout" style={{ marginBottom: "14px" }}>
+            <button
+              type="submit"
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                border: "1px solid rgba(148,163,184,0.35)",
+                background: "rgba(15,23,42,0.6)",
+                color: "rgba(248,250,252,0.9)",
+                fontSize: "13px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Sign out
+            </button>
+          </Form>
           Environment: <strong style={{ color: "#fff" }}>Local development</strong>
           <br /> Connected to stack
         </div>

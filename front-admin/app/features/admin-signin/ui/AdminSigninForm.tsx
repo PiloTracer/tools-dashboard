@@ -19,104 +19,31 @@ export const AdminSigninForm: FC<Props> = ({
   disabled = false,
 }) => {
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      padding: '24px',
-      fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
-      {/* Subtle geometric background pattern */}
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        opacity: 0.1,
-        backgroundImage: `
-          radial-gradient(circle at 20% 50%, rgba(255,255,255,0.2) 0%, transparent 50%),
-          radial-gradient(circle at 80% 80%, rgba(255,255,255,0.15) 0%, transparent 50%),
-          radial-gradient(circle at 40% 20%, rgba(255,255,255,0.1) 0%, transparent 50%)
-        `
-      }} />
-
-      {/* Signin Card */}
-      <div style={{
-        position: 'relative',
-        width: '100%',
-        maxWidth: '440px',
-        background: '#ffffff',
-        borderRadius: '16px',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-        padding: '48px',
-        animation: 'slideUp 0.6s ease-out'
-      }}>
-        {/* Header */}
-        <div style={{
-          marginBottom: '32px',
-          textAlign: 'center'
-        }}>
-          <h1 style={{
-            margin: 0,
-            fontSize: '28px',
-            fontWeight: 600,
-            color: '#1e293b',
-            letterSpacing: '-0.02em',
-            marginBottom: '8px'
-          }}>
-            Welcome back
+    <div className="w-full">
+      <div className="rounded-2xl border border-white/10 bg-white/95 p-8 shadow-2xl shadow-slate-900/40 backdrop-blur-sm sm:p-10">
+        <div className="mb-8 text-center">
+          <h1 className="mb-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+            Admin sign-in
           </h1>
-          <p style={{
-            margin: 0,
-            fontSize: '15px',
-            color: '#64748b',
-            lineHeight: 1.5
-          }}>
-            Sign in to access your dashboard securely
+          <p className="text-sm text-slate-600 sm:text-base">
+            Tools Dashboard · use your admin email and password
           </p>
         </div>
 
-        {/* Error Alert */}
         {formError && (
           <div
             role="alert"
             aria-live="assertive"
-            style={{
-              marginBottom: '24px',
-              padding: '14px 16px',
-              background: '#fef2f2',
-              border: '1px solid #fecaca',
-              borderRadius: '12px',
-              color: '#991b1b',
-              fontSize: '14px',
-              lineHeight: 1.5,
-              animation: 'shake 0.4s ease-out'
-            }}
+            className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900"
           >
             {formError}
           </div>
         )}
 
-        {/* Form */}
-        <Form method="post" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Email Field */}
+        <Form method="post" className="flex flex-col gap-5">
           <div>
-            <label
-              htmlFor="admin-signin-email"
-              style={{
-                display: 'block',
-                marginBottom: '8px',
-                fontSize: '14px',
-                fontWeight: 500,
-                color: '#334155'
-              }}
-            >
-              Email address
+            <label htmlFor="admin-signin-email" className="mb-2 block text-sm font-medium text-slate-700">
+              Email
             </label>
             <input
               id="admin-signin-email"
@@ -129,71 +56,19 @@ export const AdminSigninForm: FC<Props> = ({
               disabled={disabled || isSubmitting}
               aria-invalid={Boolean(fieldErrors?.email) || undefined}
               aria-describedby={fieldErrors?.email ? "admin-signin-email-error" : undefined}
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                fontSize: '15px',
-                color: '#1e293b',
-                background: '#ffffff',
-                border: fieldErrors?.email ? '1px solid #ef4444' : '1px solid #e2e8f0',
-                borderRadius: '8px',
-                outline: 'none',
-                transition: 'all 0.2s ease',
-                fontFamily: 'inherit'
-              }}
-              onFocus={(e) => {
-                if (!fieldErrors?.email) {
-                  e.target.style.borderColor = '#2563eb';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)';
-                }
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#e2e8f0';
-                e.target.style.boxShadow = 'none';
-              }}
+              className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-slate-900 outline-none ring-indigo-500/0 transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/15 disabled:opacity-60 sm:text-[15px]"
             />
             {fieldErrors?.email && (
-              <p
-                id="admin-signin-email-error"
-                role="alert"
-                style={{
-                  marginTop: '6px',
-                  fontSize: '13px',
-                  color: '#ef4444'
-                }}
-              >
+              <p id="admin-signin-email-error" role="alert" className="mt-1.5 text-sm text-red-600">
                 {fieldErrors.email}
               </p>
             )}
           </div>
 
-          {/* Password Field */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <label
-                htmlFor="admin-signin-password"
-                style={{
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  color: '#334155'
-                }}
-              >
-                Password
-              </label>
-              <a
-                href="#"
-                style={{
-                  fontSize: '13px',
-                  color: '#475569',
-                  textDecoration: 'none',
-                  transition: 'color 0.2s ease'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#2563eb'}
-                onMouseLeave={(e) => e.currentTarget.style.color = '#475569'}
-              >
-                Forgot password?
-              </a>
-            </div>
+            <label htmlFor="admin-signin-password" className="mb-2 block text-sm font-medium text-slate-700">
+              Password
+            </label>
             <input
               id="admin-signin-password"
               name="password"
@@ -203,39 +78,10 @@ export const AdminSigninForm: FC<Props> = ({
               disabled={disabled || isSubmitting}
               aria-invalid={Boolean(fieldErrors?.password) || undefined}
               aria-describedby={fieldErrors?.password ? "admin-signin-password-error" : undefined}
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                fontSize: '15px',
-                color: '#1e293b',
-                background: '#ffffff',
-                border: fieldErrors?.password ? '1px solid #ef4444' : '1px solid #e2e8f0',
-                borderRadius: '8px',
-                outline: 'none',
-                transition: 'all 0.2s ease',
-                fontFamily: 'inherit'
-              }}
-              onFocus={(e) => {
-                if (!fieldErrors?.password) {
-                  e.target.style.borderColor = '#2563eb';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)';
-                }
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#e2e8f0';
-                e.target.style.boxShadow = 'none';
-              }}
+              className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-slate-900 outline-none ring-indigo-500/0 transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/15 disabled:opacity-60 sm:text-[15px]"
             />
             {fieldErrors?.password && (
-              <p
-                id="admin-signin-password-error"
-                role="alert"
-                style={{
-                  marginTop: '6px',
-                  fontSize: '13px',
-                  color: '#ef4444'
-                }}
-              >
+              <p id="admin-signin-password-error" role="alert" className="mt-1.5 text-sm text-red-600">
                 {fieldErrors.password}
               </p>
             )}
@@ -244,64 +90,19 @@ export const AdminSigninForm: FC<Props> = ({
           <input type="hidden" name="csrfToken" value={csrfToken} />
           <input type="hidden" name="intent" value="admin-signin" />
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={isSubmitting || disabled}
             aria-busy={isSubmitting}
-            style={{
-              marginTop: '8px',
-              width: '100%',
-              padding: '12px 24px',
-              fontSize: '15px',
-              fontWeight: 600,
-              color: '#ffffff',
-              background: isSubmitting || disabled ? '#94a3b8' : '#1e40af',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: isSubmitting || disabled ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s ease',
-              outline: 'none',
-              fontFamily: 'inherit'
-            }}
-            onMouseEnter={(e) => {
-              if (!isSubmitting && !disabled) {
-                e.currentTarget.style.background = '#1e3a8a';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(30,64,175,0.4)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isSubmitting && !disabled) {
-                e.currentTarget.style.background = '#1e40af';
-                e.currentTarget.style.boxShadow = 'none';
-              }
-            }}
+            className="mt-1 w-full rounded-lg bg-indigo-600 py-2.5 text-[15px] font-semibold text-white shadow-md shadow-indigo-900/20 transition hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:shadow-none"
           >
-            {isSubmitting ? 'Signing you in...' : 'Sign in'}
+            {isSubmitting ? "Signing in…" : "Sign in"}
           </button>
         </Form>
       </div>
-
-      {/* Animations */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          @keyframes slideUp {
-            from {
-              opacity: 0;
-              transform: translateY(30px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-8px); }
-            75% { transform: translateX(8px); }
-          }
-        `
-      }} />
+      <p className="mt-8 text-center text-xs text-slate-400">
+        Session expires after 30 minutes of inactivity.
+      </p>
     </div>
   );
 };
