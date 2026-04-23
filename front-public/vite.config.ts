@@ -2,6 +2,17 @@ import { defineConfig } from "vite";
 import { vitePlugin as remix } from "@remix-run/dev";
 import path from "path";
 
+/** Dev server absolute URL (no :8082) when the browser uses https://dev.aiepic.app via host nginx. */
+function viteDevOrigin(): string | undefined {
+  const raw = process.env.PUBLIC_APP_BASE_URL?.trim();
+  if (!raw) return undefined;
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return undefined;
+  }
+}
+
 export default defineConfig({
   resolve: {
     alias: {
@@ -16,6 +27,7 @@ export default defineConfig({
   server: {
     host: true,
     allowedHosts: true,
+    origin: viteDevOrigin(),
   },
   plugins: [
     remix({

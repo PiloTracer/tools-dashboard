@@ -13,19 +13,18 @@ set -euo pipefail
 DOMAIN="${DOMAIN:-dev.aiepic.app}"
 UPSTREAM="${UPSTREAM:-127.0.0.1:8082}"
 SITE="dev.aiepic.app"
-AVAILABLE="/etc/nginx/sites-available/${SITE}"
-ENABLED="/etc/nginx/sites-enabled/${SITE}"
+# Many nginx packages (e.g. nginx.org Linux) only include conf.d/*.conf — not sites-enabled.
+CONF_FILE="/etc/nginx/conf.d/${SITE}.conf"
 
 if ! command -v nginx >/dev/null 2>&1; then
   echo "ERROR: nginx not found. Install it first, e.g. sudo apt install nginx"
   exit 1
 fi
 
-# Debian-style paths; some installs omit sites-available / sites-enabled
-sudo mkdir -p "$(dirname "${AVAILABLE}")" "$(dirname "${ENABLED}")"
+sudo mkdir -p "$(dirname "${CONF_FILE}")"
 
-echo "Writing ${AVAILABLE}"
-sudo tee "${AVAILABLE}" >/dev/null <<EOF
+echo "Writing ${CONF_FILE}"
+sudo tee "${CONF_FILE}" >/dev/null <<EOF
 # Proxy host HTTP :80 -> Docker nginx-proxy on ${UPSTREAM}
 # (see repo: infra/nginx/system-port80-to-docker-8082.example.conf)
 
@@ -48,8 +47,8 @@ server {
 }
 EOF
 
-echo "Enabling site: ${ENABLED}"
-sudo ln -sf "${AVAILABLE}" "${ENABLED}"
+# Drop legacy sites-* copies so a future nginx.conf that loads both does not duplicate listen/server_name.
+sudo rm -f "/etc/nginx/sites-enabled/${SITE}" "/etc/nginx/sites-available/${SITE}" 2>/dev/null || true
 
 echo "Testing nginx config..."
 sudo nginx -t

@@ -38,6 +38,8 @@ type LoaderData = {
   message: string;
   supportUrl?: string;
   email?: string;
+  /** Google OAuth return on this route — do not show email magic-link guidance. */
+  flow?: "email" | "google";
 };
 
 const SUPPORT_MAILTO = "mailto:support@tools-dashboard.io";
@@ -75,6 +77,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return json<LoaderData>(
         {
           status: "error",
+          flow: "google",
           message: "Missing Google authorization parameters. Please retry signing in with Google.",
           supportUrl: SUPPORT_MAILTO,
           email,
@@ -100,6 +103,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return json<LoaderData>(
         {
           status: "error",
+          flow: "google",
           message: "We could not reach the authentication service. Please try signing in again.",
           supportUrl: SUPPORT_MAILTO,
           email,
@@ -119,6 +123,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         return json<LoaderData>(
           {
             status: "error",
+            flow: "google",
             message: "We could not confirm your Google sign-in. Please try again.",
             supportUrl: SUPPORT_MAILTO,
             email,
@@ -140,6 +145,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       }
 
       const successResponse = json<LoaderData>({
+        flow: "google",
         status: parsed.data.status === "verified" ? "verified" : "pending",
         message:
           parsed.data.message ??
@@ -160,7 +166,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const parsedError = apiErrorSchema.safeParse(await safeReadJson(response));
     return json<LoaderData>(
       {
-        status: response.status === 400 ? "pending" : "error",
+        flow: "google",
+        status: "error",
         message:
           parsedError.success && parsedError.data.message
             ? parsedError.data.message
@@ -342,39 +349,57 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export default function VerifyRoute() {
   const data = useLoaderData<typeof loader>();
   const continueHref = usePublicHref("/app/features/app-library");
+  const isGoogleFlow = data.flow === "google";
 
   return (
     <section className="mx-auto flex max-w-2xl flex-col gap-6">
       <header className="space-y-3 text-center">
-        <h1 className="text-3xl font-semibold text-slate-900">Verify your account</h1>
-        <p className="text-base text-slate-600">
-          {data.email ? (
-            <>
-              We sent a secure link to <strong className="font-semibold text-slate-900">{data.email}</strong>. Complete
-              the steps in that message to activate your access.
-            </>
-          ) : (
-            "We sent you a secure link. Complete the steps in that message to activate your access."
-          )}
-        </p>
+        {isGoogleFlow ? (
+          <>
+            <h1 className="text-3xl font-semibold text-slate-900">Google sign-in</h1>
+            <p className="text-base text-slate-600">
+              {data.status === "error"
+                ? "Something went wrong while connecting your Google account."
+                : data.status === "verified"
+                  ? "Your Google account is linked. You can continue in the app."
+                  : "Finishing sign-in with Google…"}
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-3xl font-semibold text-slate-900">Verify your account</h1>
+            <p className="text-base text-slate-600">
+              {data.email ? (
+                <>
+                  We sent a secure link to <strong className="font-semibold text-slate-900">{data.email}</strong>.
+                  Complete the steps in that message to activate your access.
+                </>
+              ) : (
+                "We sent you a secure link. Complete the steps in that message to activate your access."
+              )}
+            </p>
+          </>
+        )}
       </header>
 
       <VerificationBanner status={data.status} message={data.message} supportUrl={data.supportUrl} />
 
-      <div className="rounded-2xl border border-slate-200 bg-white/80 p-8 text-left text-sm text-slate-600 shadow-sm">
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">Need a hand?</h2>
-        <ul className="list-disc space-y-2 pl-5">
-          <li>Check your spam folder if the message does not arrive within a minute.</li>
-          <li>Verification links expire after 15 minutes for your security.</li>
-          <li>
-            Still waiting?{" "}
-            <a href={SUPPORT_MAILTO} className="font-semibold text-blue-600 underline">
-              Contact support
-            </a>{" "}
-            for a fresh link.
-          </li>
-        </ul>
-      </div>
+      {!isGoogleFlow ? (
+        <div className="rounded-2xl border border-slate-200 bg-white/80 p-8 text-left text-sm text-slate-600 shadow-sm">
+          <h2 className="mb-3 text-lg font-semibold text-slate-900">Need a hand?</h2>
+          <ul className="list-disc space-y-2 pl-5">
+            <li>Check your spam folder if the message does not arrive within a minute.</li>
+            <li>Verification links expire after 15 minutes for your security.</li>
+            <li>
+              Still waiting?{" "}
+              <a href={SUPPORT_MAILTO} className="font-semibold text-blue-600 underline">
+                Contact support
+              </a>{" "}
+              for a fresh link.
+            </li>
+          </ul>
+        </div>
+      ) : null}
 
       {data.status === "verified" ? (
         <div className="flex justify-center">

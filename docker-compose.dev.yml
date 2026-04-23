@@ -57,6 +57,8 @@ services:
       # Set to 1/true only if you need the legacy Allow/Deny page at /oauth/authorize (default: silent authorize).
       - OAUTH_REQUIRE_INTERACTIVE_CONSENT_UI=${OAUTH_REQUIRE_INTERACTIVE_CONSENT_UI:-}
       - PUBLIC_APP_BASE_PATH=/app
+      # Official browser URL for the public app (host TLS + DNS/hosts → Docker nginx :8082). Override in .env for localhost-only.
+      - PUBLIC_APP_BASE_URL=${PUBLIC_APP_BASE_URL:-https://dev.aiepic.app/app}
     volumes:
       - ./front-public:/app
       - front_public_node_modules:/app/node_modules

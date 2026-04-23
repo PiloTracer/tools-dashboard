@@ -194,6 +194,9 @@ td_read_nginx_http_port() {
   echo "8082"
 }
 
+# Official dev public app URL (browser); override via PUBLIC_APP_BASE_URL / TD_PUBLIC_BASE_URL in .env.
+TD_OFFICIAL_DEV_PUBLIC_APP_URL="https://dev.aiepic.app/app"
+
 # Optional in .env.prd: TD_PUBLIC_BASE_URL=https://tools.aiepic.app (no trailing slash)
 td_read_public_base_url() {
   local f line val
@@ -206,6 +209,51 @@ td_read_public_base_url() {
       [ -n "$val" ] && echo "$val" && return
     fi
   done
+  echo ""
+}
+
+# Reads PUBLIC_APP_BASE_URL from the same env files compose uses (optional override).
+td_read_public_app_base_url() {
+  local f line val
+  for f in "${TD_ENV_FILE:-}" "$TD_PROJECT_ROOT/.env.prd" "$TD_PROJECT_ROOT/.env.$TD_ENV" "$TD_PROJECT_ROOT/.env"; do
+    [ -n "$f" ] && [ -f "$f" ] || continue
+    line=$(grep -E '^PUBLIC_APP_BASE_URL=' "$f" 2>/dev/null | tail -1) || true
+    if [ -n "$line" ]; then
+      val=${line#PUBLIC_APP_BASE_URL=}
+      val=$(echo "$val" | tr -d '\r' | tr -d '"' | tr -d "'" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+      [ -n "$val" ] && echo "$val" && return
+    fi
+  done
+  echo ""
+}
+
+print_dev_public_url_guide() {
+  local configured
+  configured="$(td_read_public_app_base_url)"
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "  DEV URL GUIDE — public Remix app (official)"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+  echo "  Official URL (use this in OAuth redirects, emails, bookmarks):"
+  echo "    ${TD_OFFICIAL_DEV_PUBLIC_APP_URL}"
+  if [ -n "$configured" ] && [ "$configured" != "$TD_OFFICIAL_DEV_PUBLIC_APP_URL" ]; then
+    echo ""
+    echo "  Your .env sets PUBLIC_APP_BASE_URL (containers use this):"
+    echo "    ${configured}"
+  fi
+  echo ""
+  echo "  How it is wired:"
+  echo "    • In-container nginx (this compose): location /app/ → front-public:3000 (see infra/nginx/default.conf)"
+  echo "    • Docker publishes nginx HTTP as host port 8082 (http://<host>:8082/app/ …)"
+  echo "    • For https://dev.aiepic.app (no :8082): point DNS or /etc/hosts at the host, then either"
+  echo "      use infra/nginx/system-port80-to-docker-8082.example.conf (HTTP) or"
+  echo "      host TLS: infra/nginx/host-setup/03-enable-local-https-dev-domain.sh (self-signed)"
+  echo "      or 04-mkcert-https-dev-domain.sh (mkcert — use this if the browser refuses TLS entirely)."
+  echo ""
+  echo "  Related env (see .env.dev.example): PUBLIC_APP_BASE_URL, TD_PUBLIC_BASE_URL, GOOGLE_OAUTH_REDIRECT_URI"
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
 }
 
@@ -266,6 +314,7 @@ print_stack_urls() {
     echo "  docker compose -f $TD_COMPOSE_FILE exec -it postgresql psql -U user -d main_db"
     echo "  docker compose -f $TD_COMPOSE_FILE exec -it redis redis-cli"
     echo "  docker compose -f $TD_COMPOSE_FILE exec -it cassandra cqlsh"
+    print_dev_public_url_guide
   else
     local NPORT PBASE WSBASE
     NPORT="$(td_read_nginx_http_port)"
@@ -410,6 +459,9 @@ cmd_compose_build() {
     return 1
   fi
   echo "Build finished successfully."
+  if [ "$TD_ENV" = "dev" ]; then
+    print_dev_public_url_guide
+  fi
 }
 
 cmd_compose_config() {
