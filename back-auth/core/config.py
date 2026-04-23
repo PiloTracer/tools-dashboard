@@ -9,7 +9,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(extra="ignore", env_file=".env", env_file_encoding="utf-8")
+    # Env comes from the process environment (Docker Compose reads repo-root .env / .env.prd — do not rely on cwd).
+    model_config = SettingsConfigDict(extra="ignore", env_file_encoding="utf-8")
 
     database_url: str = "postgresql+asyncpg://user:pass@postgresql:5432/main_db"
     redis_url: str | None = None
