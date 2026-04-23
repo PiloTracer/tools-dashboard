@@ -111,20 +111,18 @@ export default function AppLibraryIndex() {
   const sortOrder = (searchParams.get("sort_order") || "desc") as "asc" | "desc";
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-1">
-          Application Library
+    <div className="mx-auto max-w-7xl space-y-6 px-3 py-6 sm:px-4 lg:px-6 lg:py-8">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          Application library
         </h1>
-        <p className="text-sm text-gray-600">
-          Manage OAuth 2.0 applications and integrations
+        <p className="mt-1 text-sm text-slate-600 sm:text-base">
+          Manage OAuth 2.0 clients and integrations
         </p>
       </div>
 
-      {/* Actions Bar */}
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm ring-1 ring-slate-950/5 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+        <form onSubmit={handleSearch} className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
           <select
             value={searchParams.get("status") || "all"}
             onChange={(e) => {
@@ -137,9 +135,9 @@ export default function AppLibraryIndex() {
                 return prev;
               });
             }}
-            className="px-3 py-2 text-sm border border-gray-300 rounded bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:w-48"
           >
-            <option value="all">All Applications</option>
+            <option value="all">All applications</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>
@@ -148,42 +146,39 @@ export default function AppLibraryIndex() {
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search..."
-            className="px-4 py-2 text-sm border border-gray-300 rounded text-gray-700 w-80 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Search by name…"
+            className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
           />
-        </div>
+          <button
+            type="submit"
+            className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-100 sm:shrink-0"
+          >
+            Search
+          </button>
+        </form>
 
         <Link
           to="/admin/features/app-library/new"
-          className="px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
+          className="inline-flex w-full items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
         >
-          Create Application
+          Create application
         </Link>
       </div>
 
-      {/* Stats */}
-      <div className="mb-6 grid grid-cols-3 gap-4">
-        <div className="bg-white p-5 border border-gray-200 rounded">
-          <div className="text-xs uppercase font-medium text-gray-500 mb-2">
-            Total
-          </div>
-          <div className="text-2xl font-semibold text-gray-900">
-            {data.total}
-          </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-950/5">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</div>
+          <div className="mt-1 text-2xl font-bold text-slate-900">{data.total}</div>
         </div>
-        <div className="bg-white p-5 border border-gray-200 rounded">
-          <div className="text-xs uppercase font-medium text-gray-500 mb-2">
-            Active
-          </div>
-          <div className="text-2xl font-semibold text-green-600">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-950/5">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Active</div>
+          <div className="mt-1 text-2xl font-bold text-emerald-600">
             {data.apps.filter((app) => app.is_active).length}
           </div>
         </div>
-        <div className="bg-white p-5 border border-gray-200 rounded">
-          <div className="text-xs uppercase font-medium text-gray-500 mb-2">
-            Inactive
-          </div>
-          <div className="text-2xl font-semibold text-gray-400">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-950/5">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Inactive</div>
+          <div className="mt-1 text-2xl font-bold text-slate-400">
             {data.apps.filter((app) => !app.is_active).length}
           </div>
         </div>
@@ -191,22 +186,20 @@ export default function AppLibraryIndex() {
 
       {/* Table or Empty State */}
       {data.apps.length === 0 ? (
-        <div className="bg-white p-12 border border-gray-200 rounded text-center">
-          <h3 className="mb-3 text-lg font-medium text-gray-900">
-            No applications found
-          </h3>
-          <p className="mb-6 text-sm text-gray-600">
-            Get started by creating your first OAuth 2.0 application
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 px-6 py-14 text-center ring-1 ring-slate-950/5">
+          <h3 className="text-lg font-semibold text-slate-900">No applications yet</h3>
+          <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
+            Create an OAuth client to connect first-party or partner apps to the dashboard.
           </p>
           <Link
             to="/admin/features/app-library/new"
-            className="inline-block px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
+            className="mt-6 inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
           >
-            Create Application
+            Create application
           </Link>
         </div>
       ) : (
-        <div className="bg-white border border-gray-200 rounded overflow-hidden">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-950/5">
           <AppTable
             apps={data.apps}
             onSort={handleSort}

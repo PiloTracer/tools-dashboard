@@ -1,6 +1,6 @@
 import type { ActionFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
-import { useActionData } from "@remix-run/react";
+import { Link, useActionData } from "@remix-run/react";
 import { AppForm } from "../features/app-library/ui/AppForm";
 
 type ActionData = {
@@ -106,18 +106,23 @@ export default function NewApplication() {
   const actionData = useActionData<typeof action>();
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Create New Application
-        </h1>
-        <p className="mt-2 text-sm text-gray-600">
-          Register a new OAuth 2.0 application to integrate with the platform
+    <div className="mx-auto max-w-3xl space-y-6 px-3 pb-12 pt-2 sm:px-4 lg:px-0">
+      <div>
+        <Link
+          to="/admin/features/app-library"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 transition hover:text-indigo-800"
+        >
+          <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Application library
+        </Link>
+        <h1 className="mt-5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Create application</h1>
+        <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
+          Register an OAuth 2.0 client. You will receive the client secret once; copy it before leaving the next screen.
         </p>
       </div>
 
-      {/* Form */}
       <AppForm mode="create" actionData={actionData} />
     </div>
   );

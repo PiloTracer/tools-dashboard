@@ -1,4 +1,13 @@
-﻿:root {
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Admin console — native tokens (Tailwind-first; use for consistency across routes) */
+:root {
+  --admin-accent: #4f46e5;
+  --admin-accent-hover: #4338ca;
+  --admin-surface: #ffffff;
+  --admin-muted: #64748b;
   font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   background-color: #edf1f7;
   color: #111827;
