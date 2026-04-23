@@ -71,7 +71,7 @@
      ┌────────────────────┐
      │     MailHog        │
      │   (Dev Email)      │
-     │   Port 8026        │
+     │   Port 18026       │
      └────────────────────┘
 ```
 
@@ -638,7 +638,7 @@ back-api:
 ### Development Environment
 
 **Email Testing**: MailHog v1.0.1
-**Port**: 8026 (web UI)
+**Port**: 18026 (web UI; host port avoids common 8026 clashes)
 **SMTP**: Port 1025 (internal)
 
 **Environment Variables**: `.env` file
@@ -763,7 +763,7 @@ docker compose -f docker-compose.dev.yml down --volumes --remove-orphans
 # Access services
 # Public: http://localhost:8082/app/
 # Admin: http://localhost:8082/admin/
-# MailHog: http://localhost:8026
+# MailHog: http://localhost:18026
 ```
 
 ---

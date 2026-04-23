@@ -4,7 +4,7 @@
 # Does: compose down --remove-orphans, rm -f any container still publishing those ports,
 #       optional docker network prune.
 #
-# If ports STILL busy: something is not Docker — use: sudo ss -tlnp | grep ':8026 '
+# If ports STILL busy: something is not Docker — use: sudo ss -tlnp | grep ':18026 '
 # Nuclear option (stops ALL containers on this machine): sudo systemctl restart docker
 #
 # Usage (repo root):
@@ -25,7 +25,7 @@ echo "==> docker compose down (remove orphans) — TD_ENV=$TD_ENV"
 td_docker_compose down --remove-orphans || true
 
 # Host ports published by docker-compose.dev.yml (update if compose changes)
-PORTS=(8082 8443 4100 4101 8100 8101 8102 8105 6380 54432 39142 8026 8333 9333 8888)
+PORTS=(8082 8443 4100 4101 8100 8101 8102 8105 6380 54432 39142 18026 8026 8333 9333 8888)
 
 echo "==> Removing any Docker container still publishing dev ports..."
 for p in "${PORTS[@]}"; do
@@ -41,18 +41,18 @@ done
 # Fallback: grep docker ps output (older Docker without publish filter quirks)
 while read -r line; do
   id="${line%% *}"
-  if [[ "$line" =~ :8026- ]]; then
+  if [[ "$line" =~ :18026- ]] || [[ "$line" =~ :8026- ]]; then
     echo "    (fallback) removing $id (ports: $line)"
     docker rm -f "$id" || true
   fi
-done < <(docker ps -a --format '{{.ID}} {{.Ports}}' | grep -E ':8026->' || true)
+done < <(docker ps -a --format '{{.ID}} {{.Ports}}' | grep -E ':(18026|8026)->' || true)
 
 echo "==> docker network prune (dangling)"
 docker network prune -f >/dev/null || true
 
 echo ""
 echo "Done. Check listeners:"
-for p in 8026 8082 54432; do
+for p in 18026 8026 8082 54432; do
   if ss -tlnp 2>/dev/null | grep -q ":$p "; then
     echo "  WARNING: something still listens on :$p —"
     ss -tlnp 2>/dev/null | grep ":$p " || true

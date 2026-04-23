@@ -280,8 +280,10 @@ services:
 
   mailhog:
     image: mailhog/mailhog:v1.0.1
+    # Host 8025 is Mailhog inside the container. Publish on 18026 (not 8026) — 8026 is a
+    # frequent clash with other stacks / tools; changing only the host port fixes bind errors.
     ports:
-      - "0.0.0.0:8026:8025"
+      - "0.0.0.0:18026:8025"
     restart: unless-stopped
     mem_limit: 128m
 

@@ -76,7 +76,7 @@ tools-dashboard/
    - Auth Service: http://localhost:8101
    - WebSockets: http://localhost:8102
    - Feature Registry: http://localhost:8105
-   - Email Testing (MailHog): http://localhost:8026
+   - Email Testing (MailHog): http://localhost:18026
 
 3. **View logs:**
    ```bash

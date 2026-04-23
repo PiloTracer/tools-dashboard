@@ -249,7 +249,7 @@ print_stack_urls() {
     echo "  Feature reg.:   http://${H}:8105/health"
     echo ""
     echo "— Dev tools (browser) —"
-    echo "  MailHog UI:     http://${H}:8026/"
+    echo "  MailHog UI:     http://${H}:18026/"
     echo "  SeaweedFS S3:   http://${H}:8333/       (S3 API)"
     echo "  Seaweed master: http://${H}:9333/"
     echo "  Seaweed filer:  http://${H}:8888/"
