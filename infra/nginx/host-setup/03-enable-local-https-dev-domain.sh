@@ -132,7 +132,7 @@ echo "Reloading nginx..."
 sudo systemctl reload nginx
 
 echo ""
-echo "Done. Open: https://${DOMAIN}/app"
+echo "Done. Open: https://${DOMAIN}/ (redirects to /app/) or https://${DOMAIN}/app"
 echo "If the browser warns about the certificate, that is expected for self-signed local certs."
 echo "Firewall: if needed, allow 443 — e.g. sudo ufw allow 'Nginx HTTPS' || sudo ufw allow 443/tcp"
 echo "Set app/OAuth base URLs to https://${DOMAIN}/app (no :8082) and restart the compose stack."
