@@ -5,10 +5,13 @@ This module provides endpoints for:
 - Admin: Full CRUD operations, access control, analytics
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from pydantic import BaseModel, Field, UUID4
-from typing import Any
+import os
 from datetime import datetime, date
+from typing import Any
+
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, Field, UUID4
 
 from shared.contracts.app_library import (
     AppCreate,
@@ -50,16 +53,51 @@ async def get_audit_log_repo(request: Request) -> Any:
 
 
 async def get_current_user(request: Request) -> dict[str, Any]:
-    """Get current user from session/JWT.
+    """Resolve the signed-in user from back-auth using the browser session cookie.
 
-    TODO: Implement actual authentication
-    Returns mock user for development.
+    Email/password users must be **verified** (``is_email_verified``) before they see the app library;
+    unverified sessions receive 403.
     """
-    return {
-        "id": 1,
-        "email": "admin@example.com",
-        "role": "admin",
-    }
+    base = os.environ.get("AUTH_SERVICE_URL", "http://back-auth:8001").rstrip("/")
+    cookie = request.headers.get("cookie") or ""
+    url = f"{base}/user-registration/status"
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, headers={"Cookie": cookie}, timeout=10.0)
+    except httpx.RequestError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Authentication service unavailable",
+        ) from exc
+
+    if resp.status_code != 200:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Invalid response from authentication service",
+        )
+
+    data = resp.json()
+    st = data.get("status")
+    if st == "verified":
+        user_id = data.get("userId")
+        if user_id is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
+        return {
+            "id": int(user_id),
+            "email": data.get("email") or "",
+            "role": "user",
+        }
+
+    # pending: distinguish anonymous vs signed-in but unverified
+    if data.get("userId") is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Sign in required",
+        )
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail=data.get("message") or "Please verify your email before using the application library.",
+    )
 
 
 # ========== RESPONSE MODELS ==========

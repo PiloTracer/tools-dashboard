@@ -42,17 +42,22 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const data = await response.json();
 
     // Transform backend response to user-status format
-    const userStatus = {
-      isAuthenticated: data.status === "verified",
-      user: data.status === "verified" && data.email
+    const verified = data.status === "verified";
+    const pendingWithSession =
+      data.status === "pending" && data.userId != null && data.email;
+    const user =
+      data.email && (verified || pendingWithSession)
         ? {
-            id: data.email, // TODO: Use actual user ID when available
+            id: String(data.userId ?? data.email),
             email: data.email,
-            name: data.email.split("@")[0], // TODO: Use actual name when available
-            subscriptionTier: "free", // TODO: Fetch from subscription service
+            name: data.email.split("@")[0],
+            subscriptionTier: "free",
             features: [],
           }
-        : null,
+        : null;
+    const userStatus = {
+      isAuthenticated: verified,
+      user,
       navigation: {
         currentLocation: "/app",
         nextLocation: null,

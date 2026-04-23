@@ -1,6 +1,7 @@
 import type { LoaderFunctionArgs } from '@remix-run/node';
-import { json } from '@remix-run/node';
+import { json, redirect } from '@remix-run/node';
 import { useLoaderData, useRevalidator } from '@remix-run/react';
+import { resolvePublicPath } from '../../../utils/publicPath.server';
 import type { AppConfig } from '../utils/api';
 import { AppGrid } from '../ui/AppGrid';
 import { EmptyState } from '../ui/EmptyState';
@@ -35,6 +36,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
       },
     });
 
+    if (response.status === 401) {
+      return redirect(resolvePublicPath('/features/user-registration?mode=login'));
+    }
+    if (response.status === 403) {
+      return redirect(resolvePublicPath('/features/user-registration/verify?source=email'));
+    }
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
       throw new Error(`Failed to fetch apps: ${response.status} ${errorText}`);

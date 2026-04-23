@@ -42,13 +42,23 @@ async def send_verification_email(recipient: str, verification_url: str) -> None
     use_tls = settings.mail_use_tls and settings.mail_port in {465}
     start_tls = settings.mail_use_tls and settings.mail_port in {25, 587}
 
+    # Mailhog (compose service `mailhog`, SMTP 1025) does not implement SMTP AUTH. aiosmtplib
+    # calls login() whenever username is set — leftover SendGrid MAIL_USERNAME=apikey breaks dev.
+    mailhog = (settings.mail_host or "").strip().lower() == "mailhog"
+    if mailhog:
+        mail_user: str | None = None
+        mail_pass: str | None = None
+    else:
+        mail_user = (settings.mail_username or "").strip() or None
+        mail_pass = ((settings.mail_password or "").strip() or None) if mail_user else None
+
     try:
         await aiosmtplib.send(
             message,
             hostname=settings.mail_host,
             port=settings.mail_port,
-            username=settings.mail_username,
-            password=settings.mail_password,
+            username=mail_user,
+            password=mail_pass,
             use_tls=use_tls,
             start_tls=start_tls,
         )

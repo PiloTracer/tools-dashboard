@@ -245,15 +245,8 @@ class UserStatusStore {
    */
   private loadFromStorage(): void {
     try {
-      const userDataStr = localStorage.getItem(STORAGE_KEYS.USER_STATUS);
       const navigationStr = localStorage.getItem(STORAGE_KEYS.NAVIGATION);
       const timestampStr = localStorage.getItem(STORAGE_KEYS.TIMESTAMP);
-
-      if (userDataStr) {
-        const user = JSON.parse(userDataStr) as UserMetadata;
-        this.state.user = user;
-        this.state.isAuthenticated = true;
-      }
 
       if (navigationStr) {
         this.state.navigation = JSON.parse(navigationStr) as NavigationState;

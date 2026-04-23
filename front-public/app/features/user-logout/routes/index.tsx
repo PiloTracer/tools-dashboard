@@ -2,7 +2,8 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 
 import { getBackAuthEnv } from "../../../utils/env.server";
-import { resolvePublicPath } from "../../../utils/publicPath.server";
+import { resolvePublicHomeUrl } from "../../../utils/publicPath.server";
+import { getAllSetCookieHeaders } from "../../../utils/setCookie.server";
 import { LogoutMessage } from "../ui/LogoutMessage";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -37,13 +38,12 @@ async function proxyLogout(request: Request) {
     console.error("Logout request failed", error);
   }
 
-  const redirectPath = resolvePublicPath("/");
+  const redirectPath = resolvePublicHomeUrl(request);
   const redirectResponse = redirect(redirectPath);
 
   if (response) {
-    const setCookie = response.headers.get("set-cookie");
-    if (setCookie) {
-      redirectResponse.headers.append("Set-Cookie", setCookie);
+    for (const cookie of getAllSetCookieHeaders(response)) {
+      redirectResponse.headers.append("Set-Cookie", cookie);
     }
     if (!response.ok) {
       const payload = await safeReadJson(response);

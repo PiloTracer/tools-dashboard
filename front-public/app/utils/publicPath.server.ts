@@ -81,6 +81,15 @@ export function resolvePublicPath(target: string): string {
   return joinBasePath(getPublicAppBasePath(), target);
 }
 
+/** Canonical public-app home URL with trailing slash (avoids nginx 301 from `/app` that drops `?_data=`). */
+export function resolvePublicHomeUrl(request?: Request | string | URL): string {
+  const base = getPublicAppBasePath(request);
+  if (!base || base === "/") {
+    return "/";
+  }
+  return base.endsWith("/") ? base : `${base}/`;
+}
+
 export function resolveRedirectTarget(target?: string | null): string | null {
   if (!target) {
     return null;
