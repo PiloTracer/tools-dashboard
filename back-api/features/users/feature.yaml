@@ -1,0 +1,15 @@
+name: users
+version: 1.0.0
+description: OAuth resource server — GET /users/me (Bearer access token)
+service: back-api
+
+routes:
+  - path: /users/me
+    file: api.py
+    method: GET
+    auth: Bearer
+    description: Current user + subscription snapshot; validates token via back-auth internal OAuth
+
+dependencies:
+  - back-auth (/internal/oauth/validate-token)
+  - postgresql (users, subscriptions)
