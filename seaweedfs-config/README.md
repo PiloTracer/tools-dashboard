@@ -6,9 +6,9 @@ This folder holds **static config** mounted into the `seaweedfs` container (`doc
 
 ## 1. S3 API keys — `s3-config.json`
 
-**What it is:** S3-compatible **access key + secret key** pairs and what each identity may do (`Admin`, `Read`, `Write`, and optional bucket-scoped rules per [SeaweedFS S3 credentials](https://github.com/seaweedfs/seaweedfs/wiki/S3-Credentials)).
+**What it is:** Credentials for the **S3 API (Seaweed S3 gateway)** — the process inside the `seaweedfs` container that speaks **Amazon S3–compatible HTTP** on port **8333** (mapped to **18333** on the host in dev). It is **not** the Filer web UI (8888) or Master UI (9333). Keys are **access key + secret key** pairs plus what each identity may do (`Admin`, `Read`, `Write`, and optional bucket-scoped rules per [SeaweedFS S3 credentials](https://github.com/seaweedfs/seaweedfs/wiki/S3-Credentials)).
 
-**Who uses it:** AWS CLI, boto3, `curl` with `-u`, and this repo’s services that talk to Seaweed over S3 (they read **`SEAWEED_S3_ACCESS_KEY`** / **`SEAWEED_S3_SECRET_KEY`** from `.env` — those must match **one** key pair you want the app to use).
+**Who uses it:** AWS CLI, boto3, `curl` with `-u`, and this repo’s services that talk to Seaweed over the **S3 gateway** (they read **`SEAWEED_S3_ACCESS_KEY`** / **`SEAWEED_S3_SECRET_KEY`** from `.env` — those must match **one** key pair you want the app to use).
 
 ### Mini-tutorial
 
@@ -20,13 +20,13 @@ This folder holds **static config** mounted into the `seaweedfs` container (`doc
 
 **Dev host endpoints** (ports avoid clashes on `8333` / `9333` / `8888`):
 
-| Interface   | URL from your machine        | Typical use        |
-|------------|------------------------------|--------------------|
-| S3 API     | `http://localhost:18333`     | CLI, SDKs, apps    |
-| Master UI  | `http://localhost:19333`     | Cluster / volumes  |
-| Filer UI   | `http://localhost:18888`     | File browser       |
+| Interface | URL from your machine | Typical use |
+|-----------|------------------------|-------------|
+| **S3 API (Seaweed S3 gateway)** | `http://localhost:18333` | AWS CLI, boto3, app uploads (`server -s3` in compose) |
+| Master UI | `http://localhost:19333` | Cluster / volumes |
+| Filer UI | `http://localhost:18888` | File browser |
 
-Inside Docker, services use **`http://seaweedfs:8333`** for S3.
+Inside Docker, the **S3 gateway** is **`http://seaweedfs:8333`** (same service; host **18333** is `8333` published only in dev compose).
 
 ---
 
@@ -35,7 +35,7 @@ Inside Docker, services use **`http://seaweedfs:8333`** for S3.
 **What it is for:** **Not** the S3 access/secret keys. This file configures:
 
 - **`[jwt.signing]`**, **`[jwt.filer_signing]`**, **`[jwt.master_signing]`** — shared secrets used to **sign JWTs** for Seaweed’s own auth flows (e.g. when the Master/Filer UIs or internal features issue or validate tokens). Treat these like passwords: **change them in production** and keep them out of public repos if you fork with real values.
-- **`[access] ui = true`** — require authentication for **UI** access (Master/Filer web), consistent with locking down the stack. S3 calls still authenticate with keys from **`s3-config.json`** (and signatures), not with these JWT keys directly.
+- **`[access] ui = true`** — require authentication for **UI** access (Master/Filer web), consistent with locking down the stack. Calls to the **S3 API (Seaweed S3 gateway)** still authenticate with keys from **`s3-config.json`** (and AWS SigV4-style signatures), not with these JWT keys directly.
 
 **When to touch it:** Rotate JWT keys after clone or compromise; adjust `ui` only if you understand the exposure (disabling UI auth is rarely desirable on a shared network).
 
