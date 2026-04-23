@@ -10,7 +10,7 @@
 #   ./bin/start.sh dev down
 #   ./bin/start.sh prd preflight   # requires .env.prd (copy from .env.prd.example)
 #   ./bin/start.sh prd build       # build images only (same)
-#   ./bin/start.sh prd up-build    # build + up + wait for back-auth healthy
+#   ./bin/start.sh prd up-build    # plain build log, then up + wait for back-auth healthy
 #
 # Commands: up | up-build | down | logs | status | restart | rebuild | reset |
 #           build | config | preflight | menu
@@ -30,7 +30,7 @@ EOF
   echo ""
   echo "Commands:"
   echo "  up         docker compose up -d (no image rebuild), wait for auth, print URLs"
-  echo "  up-build   docker compose up -d --build, wait for auth, print URLs"
+  echo "  up-build   plain build log → up -d (same as --build, errors stay visible)"
   echo "  down       Stop stack (down --remove-orphans)"
   echo "  logs       Follow service logs (tail 100)"
   echo "  status     Show project root, compose file, volume names"
@@ -153,6 +153,24 @@ wait_for_stack_ready() {
   echo "Timeout waiting for back-auth health." >&2
   td_docker_compose ps || true
   return 1
+}
+
+# Full, non-collapsed build logs (BuildKit + compose). Use for every image build path.
+# Override: BUILDKIT_PROGRESS=auto ./bin/start.sh dev build
+td_compose_build_plain() {
+  export BUILDKIT_PROGRESS="${BUILDKIT_PROGRESS:-plain}"
+  export DOCKER_BUILDKIT="${DOCKER_BUILDKIT:-1}"
+  local saw_progress=false
+  for a in "$@"; do
+    case "$a" in
+      --progress | --progress=*) saw_progress=true ;;
+    esac
+  done
+  if [ "$saw_progress" = true ]; then
+    td_docker_compose build "$@"
+  else
+    td_docker_compose build --progress=plain "$@"
+  fi
 }
 
 # Host for printed URLs (override if you access Docker from another machine)
@@ -316,8 +334,13 @@ cmd_up_quick() {
 }
 
 cmd_up_build() {
-  echo "Starting stack (with image rebuild)..."
-  td_docker_compose up -d --build
+  echo "Building images (full log — BUILDKIT_PROGRESS=${BUILDKIT_PROGRESS:-plain})..."
+  if ! td_compose_build_plain; then
+    echo "Build failed — fix Dockerfile/build errors above; stack not started." >&2
+    return 1
+  fi
+  echo "Starting stack (containers)..."
+  td_docker_compose up -d
   prune_anonymous_volumes
   if ! wait_for_stack_ready; then
     echo "Stack did not become healthy in time." >&2
@@ -366,7 +389,11 @@ cmd_rebuild_stack() {
     return 0
   fi
   td_docker_compose down --remove-orphans
-  td_docker_compose build 2>&1 | tee "${TD_PROJECT_ROOT}/build.log"
+  echo "Building images (full log + ${TD_PROJECT_ROOT}/build.log)..."
+  if ! td_compose_build_plain 2>&1 | tee "${TD_PROJECT_ROOT}/build.log"; then
+    echo "Build failed — see terminal and build.log" >&2
+    return 1
+  fi
   td_docker_compose up -d
   prune_anonymous_volumes
   if ! wait_for_stack_ready; then
@@ -377,8 +404,8 @@ cmd_rebuild_stack() {
 }
 
 cmd_compose_build() {
-  echo "Building images (docker compose build)..."
-  if ! td_docker_compose build "$@"; then
+  echo "Building images (docker compose build --progress=plain; full errors below)..."
+  if ! td_compose_build_plain "$@"; then
     echo "Build failed — fix errors above before deploying." >&2
     return 1
   fi
@@ -419,7 +446,11 @@ cmd_reset_stack() {
     return 0
   fi
   td_docker_compose down -v --remove-orphans
-  td_docker_compose build 2>&1 | tee "${TD_PROJECT_ROOT}/build.log"
+  echo "Building images (full log + ${TD_PROJECT_ROOT}/build.log)..."
+  if ! td_compose_build_plain 2>&1 | tee "${TD_PROJECT_ROOT}/build.log"; then
+    echo "Build failed — see terminal and build.log" >&2
+    return 1
+  fi
   td_docker_compose up -d
   prune_anonymous_volumes
   if ! wait_for_stack_ready; then
@@ -444,10 +475,10 @@ run_full_cleanup() {
 }
 
 run_force_rebuild() {
-  echo "Force rebuild (no cache)..."
+  echo "Force rebuild (no cache, plain build log)..."
   td_docker_compose down --remove-orphans
-  if ! td_docker_compose build --no-cache; then
-    echo "Build failed."
+  if ! td_compose_build_plain --no-cache; then
+    echo "Build failed — see errors above."
     return 1
   fi
   td_docker_compose up -d
@@ -490,7 +521,7 @@ while true; do
   echo " Tools Dashboard — Docker ($TD_ENV)"
   echo "========================================="
   echo " 1) Up (quick — no image rebuild)"
-  echo " 2) Up (build & start)"
+  echo " 2) Up (plain build log, then start)"
   echo " 2b) Preflight (validate compose + env)"
   echo " 2c) Build images only (no up — catches Docker build errors)"
   echo " 3) Down"
