@@ -119,12 +119,13 @@ services:
       - SESSION_COOKIE_DOMAIN=${SESSION_COOKIE_DOMAIN:-}
       - REGISTRATION_TOKEN_TTL_MINUTES=${REGISTRATION_TOKEN_TTL_MINUTES:-15}
       - REFRESH_TOKEN_TTL_DAYS=${REFRESH_TOKEN_TTL_DAYS:-7}
-      - MAIL_HOST=${MAIL_HOST:-}
-      - MAIL_PORT=${MAIL_PORT:-587}
+      # Defaults match .env.dev.example so classic signup always sends verification email via Mailhog.
+      - MAIL_HOST=${MAIL_HOST:-mailhog}
+      - MAIL_PORT=${MAIL_PORT:-1025}
       - MAIL_USERNAME=${MAIL_USERNAME:-}
       - MAIL_PASSWORD=${MAIL_PASSWORD:-}
-      - MAIL_SENDER=${MAIL_SENDER:-}
-      - MAIL_USE_TLS=${MAIL_USE_TLS:-true}
+      - MAIL_SENDER=${MAIL_SENDER:-no-reply@tools-dashboard.local}
+      - MAIL_USE_TLS=${MAIL_USE_TLS:-false}
       - CASSANDRA_CONTACT_POINTS=${CASSANDRA_CONTACT_POINTS:-cassandra}
       - CASSANDRA_PORT=${CASSANDRA_PORT:-9042}
       - CASSANDRA_KEYSPACE=${CASSANDRA_KEYSPACE:-tools_dashboard}

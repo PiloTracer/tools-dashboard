@@ -237,6 +237,10 @@ async def login_user(
                 await email_service.send_verification_email(payload.email, verification_url)
             except RuntimeError as exc:
                 logger.exception("Failed to send verification email during login for %s", payload.email)
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail=str(exc) if str(exc) else "Unable to send verification email.",
+                ) from exc
 
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,

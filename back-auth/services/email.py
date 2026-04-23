@@ -13,11 +13,13 @@ logger = logging.getLogger(__name__)
 
 
 async def send_verification_email(recipient: str, verification_url: str) -> None:
+    """Send verification mail over SMTP. Requires MAIL_HOST and MAIL_SENDER (see .env.dev.example / compose)."""
     settings = get_settings()
-    if not settings.mail_host or not settings.mail_sender:
-        logger.warning("Email delivery skipped: MAIL_HOST or MAIL_SENDER not configured.")
-        logger.info("Verification link for %s: %s", recipient, verification_url)
-        return
+    if not (settings.mail_host and settings.mail_host.strip()) or not (settings.mail_sender and settings.mail_sender.strip()):
+        raise RuntimeError(
+            "Email is not configured: set MAIL_HOST and MAIL_SENDER (e.g. Mailhog in dev: MAIL_HOST=mailhog, "
+            "MAIL_PORT=1025, MAIL_SENDER=no-reply@tools-dashboard.local). Verification links cannot be delivered until SMTP is configured."
+        )
 
     message = EmailMessage()
     message["Subject"] = "Verify your Tools Dashboard account"
