@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 
 import { joinBasePath, normalizeBasePath } from "../../utils/publicPaths";
 import { LanguageSwitcher } from "../LanguageSwitcher";
-import { StatusIndicator, UserMenu } from "../../features/user-status";
+import { UserMenu } from "../../features/user-status";
 
 type PublicLayoutProps = {
   basePath?: string;
@@ -52,7 +52,7 @@ export function PublicLayout({
                 <span>{t("header.subtitle")}</span>
               </div>
             </div>
-            <nav className="header-nav">
+            <nav className="header-nav" aria-label="Primary">
               {navigationLinks.map((item) => (
                 <NavLink
                   key={item.to}
@@ -65,12 +65,13 @@ export function PublicLayout({
               ))}
             </nav>
             <div className="header-controls">
-              <LanguageSwitcher />
-              <StatusIndicator />
-              <UserMenu basePath={normalizedBasePath} />
-              <span className="build-badge" aria-label="Public build version">
-                v0.1.0
-              </span>
+              <div className="header-toolbar" aria-label={t("header.toolbarLabel")}>
+                <div className="header-toolbar-lang">
+                  <LanguageSwitcher />
+                </div>
+                <span className="header-toolbar-divider" aria-hidden="true" />
+                <UserMenu basePath={normalizedBasePath} />
+              </div>
             </div>
           </div>
         </header>
@@ -79,14 +80,20 @@ export function PublicLayout({
         </main>
         <footer className="public-footer">
           <div className="footer-inner">
-            <p>{t("footer.copyright", { year: new Date().getFullYear() })}</p>
-            <div className="footer-actions">
+            <p className="footer-copyright">
+              {t("footer.copyright", { year: new Date().getFullYear() })}
+              <span className="footer-build" aria-label="Public build version">
+                {" "}
+                · v0.1.0
+              </span>
+            </p>
+            <nav className="footer-actions" aria-label="Footer">
               {navigationLinks.map((item) => (
-                <NavLink key={item.to} to={item.to} prefetch="intent" className="header-link">
+                <NavLink key={item.to} to={item.to} prefetch="intent" className="header-link footer-link">
                   {item.label}
                 </NavLink>
               ))}
-            </div>
+            </nav>
           </div>
         </footer>
       </div>

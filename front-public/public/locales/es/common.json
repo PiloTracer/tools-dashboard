@@ -17,7 +17,8 @@
       "signIn": "Ingresar",
       "register": "Registro",
       "logout": "Salir"
-    }
+    },
+    "toolbarLabel": "Idioma y cuenta"
   },
   "home": {
     "hero": {
