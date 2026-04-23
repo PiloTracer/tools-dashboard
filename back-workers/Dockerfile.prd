@@ -1,0 +1,28 @@
+FROM python:3.11-slim AS build
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /app
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+RUN groupadd --system celery \
+    && useradd --system --create-home --gid celery celery
+
+COPY --from=build /usr/local /usr/local
+COPY . .
+
+RUN chown -R celery:celery /app
+USER celery
+
+CMD ["celery", "-A", "main.app", "worker", "-l", "info"]

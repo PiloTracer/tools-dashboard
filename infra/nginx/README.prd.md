@@ -18,3 +18,5 @@ To terminate TLS in this container instead, add `listen 443 ssl`, certificate pa
 ## WebSockets
 
 Clients should use `wss://tools.aiepic.app/ws/` when the browser origin is HTTPS.
+
+`default.prd.conf` sets long `proxy_read_timeout` / `proxy_send_timeout` for `/ws/` and basic rate limits on `/api/` and `/auth/`. Set **Strict-Transport-Security (HSTS)** on the **TLS** front (CDN/LB) or on nginx if it terminates HTTPS; do not rely on the plain-HTTP port inside Docker for HSTS.

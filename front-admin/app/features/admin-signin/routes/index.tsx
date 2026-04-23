@@ -1,6 +1,7 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { useActionData, useLoaderData, useNavigation } from "@remix-run/react";
+import { isValidAdminCsrf, newAdminCsrf } from "../../../utils/admin-csrf.server";
 import { AdminSigninForm } from "../ui/AdminSigninForm";
 
 type ActionData = {
@@ -29,10 +30,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return redirect("/admin/");
   }
 
-  // Not authenticated, show signin form
-  return json({
-    csrfToken: "csrf-token-placeholder", // TODO: Generate real CSRF token
-  });
+  const { token, setCookie } = newAdminCsrf();
+  return json(
+    { csrfToken: token },
+    { headers: { "Set-Cookie": setCookie } }
+  );
 }
 
 /**
@@ -43,6 +45,13 @@ export async function action({ request }: ActionFunctionArgs) {
   const email = formData.get("email");
   const password = formData.get("password");
   const intent = formData.get("intent");
+
+  if (!isValidAdminCsrf(request, formData)) {
+    return json<ActionData>(
+      { formError: "Invalid or expired security token. Refresh the page and try again." },
+      { status: 403 }
+    );
+  }
 
   // Validate intent
   if (intent !== "admin-signin") {

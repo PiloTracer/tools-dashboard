@@ -1,11 +1,16 @@
 """SeaweedFS S3-compatible storage service."""
 
+import logging
+import os
+from typing import BinaryIO, Optional
+
 import boto3
 from botocore.exceptions import ClientError
-from typing import BinaryIO, Optional
-import logging
 
 logger = logging.getLogger(__name__)
+
+_DEFAULT_AK = "seaweedadmin"
+_DEFAULT_SK = "^seaweedadmin!changeme!"
 
 
 class SeaweedFSService:
@@ -16,8 +21,8 @@ class SeaweedFSService:
         endpoint_url: str = "http://seaweedfs:8333",
         filer_url: str = "http://seaweedfs:8888",
         public_url: str = "/storage",
-        access_key: str = "seaweedadmin",
-        secret_key: str = "^seaweedadmin!changeme!",
+        access_key: str | None = None,
+        secret_key: str | None = None,
         region: str = "us-east-1"
     ):
         """Initialize SeaweedFS client.
@@ -30,11 +35,13 @@ class SeaweedFSService:
             secret_key: S3 secret key
             region: AWS region (not used by SeaweedFS but required by boto3)
         """
+        ak = access_key if access_key is not None else os.environ.get("SEAWEED_S3_ACCESS_KEY", _DEFAULT_AK)
+        sk = secret_key if secret_key is not None else os.environ.get("SEAWEED_S3_SECRET_KEY", _DEFAULT_SK)
         self.s3_client = boto3.client(
-            's3',
+            "s3",
             endpoint_url=endpoint_url,
-            aws_access_key_id=access_key,
-            aws_secret_access_key=secret_key,
+            aws_access_key_id=ak,
+            aws_secret_access_key=sk,
             region_name=region
         )
         self.endpoint_url = endpoint_url

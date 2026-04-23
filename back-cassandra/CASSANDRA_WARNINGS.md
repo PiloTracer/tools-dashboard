@@ -26,7 +26,7 @@ JMX is not enabled to receive remote connections. Please see cassandra-env.sh fo
 Edit `cassandra-env.sh` or set environment variables:
 
 ```bash
-# In docker-compose.prod.yml
+# In docker-compose.prd.yml
 cassandra:
   environment:
     - LOCAL_JMX=no
@@ -120,7 +120,7 @@ sudo reboot
 
 **On Docker:**
 ```yaml
-# In docker-compose.prod.yml
+# In docker-compose.prd.yml
 cassandra:
   deploy:
     resources:
@@ -204,7 +204,7 @@ For production, you should address:
 
 ## Quick Production Setup
 
-Add to `docker-compose.prod.yml`:
+Add to `docker-compose.prd.yml`:
 
 ```yaml
 cassandra:

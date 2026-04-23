@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Initialize SeaweedFS buckets"""
 
+import os
+
 import boto3
 from botocore.exceptions import ClientError
 
-ENDPOINT_URL = 'http://seaweedfs:8333'
-ACCESS_KEY = 'seaweedadmin'
-SECRET_KEY = '^seaweedadmin!changeme!'
+ENDPOINT_URL = "http://seaweedfs:8333"
+ACCESS_KEY = os.environ.get("SEAWEED_S3_ACCESS_KEY", "seaweedadmin")
+SECRET_KEY = os.environ.get("SEAWEED_S3_SECRET_KEY", "^seaweedadmin!changeme!")
 
 def create_buckets():
     s3 = boto3.client(

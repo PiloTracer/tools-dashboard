@@ -779,8 +779,8 @@ docker compose -f docker-compose.dev.yml down --volumes --remove-orphans
 - MailHog for email testing
 
 **Production-style**: `docker-compose.prd.yml`
-- `Dockerfile.prod` images for app services; **no** source bind-mounts
-- `back-api` builds with **repository root** context so `shared/` is copied into the image (`back-api/Dockerfile.prod`)
+- `Dockerfile.prd` images for app services; **no** source bind-mounts
+- `back-api` builds with **repository root** context so `shared/` is copied into the image (`back-api/Dockerfile.prd`)
 - Nginx uses `infra/nginx/default.prd.conf` (public `server_name _`, `X-Forwarded-For` via `proxy_add_x_forwarded_for`)
 - MailHog omitted; configure real SMTP via `.env.prd` (see `.env.prd.example`)
 - Data services (PostgreSQL, Redis, Cassandra, SeaweedFS) are **not** published to the host by default; only `nginx-proxy` exposes **`${NGINX_HTTP_PORT:-8082}`** (host HTTP never defaults to port 80).

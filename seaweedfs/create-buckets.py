@@ -4,13 +4,16 @@ SeaweedFS Bucket Creation Script
 Creates required buckets using boto3 with proper AWS S3 signature authentication
 """
 
+import os
+
 import boto3
 from botocore.exceptions import ClientError
 
 # SeaweedFS S3 Configuration
-ENDPOINT_URL = 'http://localhost:8333'
-ACCESS_KEY = 'seaweedadmin'
-SECRET_KEY = '^seaweedadmin!changeme!'
+ENDPOINT_URL = "http://localhost:8333"
+
+ACCESS_KEY = os.environ.get("SEAWEED_S3_ACCESS_KEY", "seaweedadmin")
+SECRET_KEY = os.environ.get("SEAWEED_S3_SECRET_KEY", "^seaweedadmin!changeme!")
 REGION = 'us-east-1'
 
 # Buckets to create
