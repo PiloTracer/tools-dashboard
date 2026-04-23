@@ -377,7 +377,7 @@ back-api/features/<feature-name>/
 
 **Version**: 15
 **Image**: `postgres:15`
-**Port**: 5432 (internal), 55432 (external)
+**Port**: 5432 (internal), 54432 (external)
 
 **Configuration**:
 ```env

@@ -5,7 +5,7 @@
       "args": [
         "-y",
         "@modelcontextprotocol/server-postgres",
-        "postgresql://user:pass@localhost:55432/main_db"
+        "postgresql://user:pass@localhost:54432/main_db"
       ]
     },
     "shadcn": {

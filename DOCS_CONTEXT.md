@@ -417,7 +417,7 @@ Phase 5 (frontend) → Requires Phase 4 complete
 | **back-gateway**     | Kong                 | API gateway, rate limiting, routing        | 8082 (HTTP), 8443 (HTTPS) |
 | **back-api**         | FastAPI              | Business logic orchestration               | 4100                      |
 | **back-auth**        | FastAPI + Authlib    | Authentication (OAuth2, email, 2FA)        | 4101                      |
-| **back-postgres**    | PostgreSQL           | User accounts, financial data              | 55432                     |
+| **back-postgres**    | PostgreSQL           | User accounts, financial data              | 54432                     |
 | **back-cassandra**   | Cassandra            | Extended profiles, config                  | 9142                      |
 | **back-redis**       | Redis                | Cache, pub/sub, rate limiting              | 6380                      |
 | **back-websockets**  | FastAPI + WebSockets | Real-time communication                    | 4102                      |

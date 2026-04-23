@@ -253,7 +253,7 @@ services:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=pass
     ports:
-      - "0.0.0.0:55432:5432"
+      - "0.0.0.0:54432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

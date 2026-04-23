@@ -192,7 +192,7 @@ print_stack_urls() {
     echo "  Seaweed filer:  http://${H}:8888/"
     echo ""
     echo "— Databases (clients / CLI, not a normal web page) —"
-    echo "  PostgreSQL:     ${H}:55432  user=user  db=main_db"
+    echo "  PostgreSQL:     ${H}:54432  user=user  db=main_db"
     echo "  Redis:          ${H}:6380"
     echo "  Cassandra CQL:  ${H}:39142"
     echo ""
