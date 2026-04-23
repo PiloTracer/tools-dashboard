@@ -91,7 +91,7 @@ export default function HomePage() {
             Open user management →
           </Link>
           <Link to="/admin/features/task-scheduler" style={{ ...ctaStyles, padding: "10px 18px", borderRadius: "999px", border: "1px solid rgba(79,70,229,0.4)" }}>
-            Review task queue →
+            Task scheduler (planned) →
           </Link>
         </div>
         <div style={{ display: "grid", gap: "14px", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))" }}>
@@ -129,10 +129,10 @@ export default function HomePage() {
         <article style={cardStyles}>
           <h3 style={headingStyles}>Task scheduler</h3>
           <p style={paragraphStyles}>
-            Configure background jobs, review last run status, and refine retry policies quickly.
+            Reserved for Celery/Redis job visibility and controls. Not wired to workers yet — see the page for scope and status.
           </p>
           <Link to="/admin/features/task-scheduler" style={ctaStyles}>
-            Configure tasks →
+            Read scope and status →
           </Link>
         </article>
       </section>

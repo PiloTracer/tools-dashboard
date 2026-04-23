@@ -9,7 +9,7 @@ type AdminLayoutProps = {
 
 const NAV_ITEMS = [
   {
-    to: "/admin",
+    to: "/admin/",
     label: "Overview",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" style={{ width: 18, height: 18 }}>
