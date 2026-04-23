@@ -101,6 +101,9 @@ VolumeIcon.icns
 .env.development.local
 .env.test.local
 .env.production.local
+.env.dev
+.env.prd
+.env.stg
 
 # Logs
 logs

@@ -53,7 +53,8 @@ export function useUserStatus() {
         credentials: "include",
       });
       store.clearAuthentication();
-      window.location.href = "/app";
+      // Full URL + trailing slash: avoids Remix/nginx edge cases on `/app` vs `/app/` and wrong host.
+      window.location.replace(`${window.location.origin}/app/`);
     } catch (error) {
       console.error("Logout failed:", error);
     }

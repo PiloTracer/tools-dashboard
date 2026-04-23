@@ -7,9 +7,17 @@ RUN pip install --no-cache-dir -r requirements.txt
 FROM python:3.11-slim
 WORKDIR /app
 
+RUN useradd --create-home --uid 1000 appuser \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends libpq5 libssl3 \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /usr/local /usr/local
 COPY back-api/ ./
 COPY shared/ ./shared/
+
+RUN chown -R appuser:appuser /app
+USER appuser
 
 ENV PYTHONPATH=/app
 

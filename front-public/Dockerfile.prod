@@ -1,11 +1,28 @@
-﻿FROM node:20-alpine AS build
+﻿# Production: npm ci requires package-lock.json in sync with package.json (run npm install, commit lock).
+FROM node:20-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm install || npm install --legacy-peer-deps
-COPY . .
-RUN npm run build
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 
-FROM node:20-alpine
+FROM node:20-alpine AS build
 WORKDIR /app
-COPY --from=build /app /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npm run build \
+  && npm prune --omit=dev
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3000
+RUN addgroup -g 1001 -S nodejs && adduser -S remix -u 1001 -G nodejs
+
+COPY package.json package-lock.json ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/build ./build
+COPY --from=build /app/public ./public
+
+RUN chown -R remix:nodejs /app
+USER remix
+EXPOSE 3000
 CMD ["npm", "run", "start"]

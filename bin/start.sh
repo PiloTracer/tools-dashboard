@@ -8,9 +8,12 @@
 # CLI (no menu):
 #   ./bin/start.sh dev up
 #   ./bin/start.sh dev down
-#   ./bin/start.sh prd up-build
+#   ./bin/start.sh prd preflight   # requires .env.prd (copy from .env.prd.example)
+#   ./bin/start.sh prd build       # build images only (same)
+#   ./bin/start.sh prd up-build    # build + up + wait for back-auth healthy
 #
-# Commands: up | up-build | down | logs | status | restart | rebuild | reset | menu
+# Commands: up | up-build | down | logs | status | restart | rebuild | reset |
+#           build | config | preflight | menu
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -34,6 +37,9 @@ EOF
   echo "  restart    Rolling restart (compose restart)"
   echo "  rebuild    Down, build (tee build.log), up — keeps named volumes"
   echo "  reset      Down -v (deletes data), build, up — destructive"
+  echo "  build      docker compose build only (CI / catch image errors before up)"
+  echo "  config     docker compose config (validates compose + env interpolation)"
+  echo "  preflight  config + quick sanity checks for prd/stg"
   echo "  menu       Interactive menu (same as env-only)"
 }
 
@@ -58,7 +64,7 @@ if [ "${#}" -ge 2 ]; then
   export TD_ENV="$_e"
   TD_CLI_CMD="$(echo "$2" | tr '[:upper:]' '[:lower:]')"
   case "$TD_CLI_CMD" in
-    menu | up | up-build | down | logs | status | restart | rebuild | reset) ;;
+    menu | up | up-build | down | logs | status | restart | rebuild | reset | build | config | preflight) ;;
     -h | --help | help)
       usage
       exit 0
@@ -98,6 +104,26 @@ if [ ! -f "$TD_COMPOSE_PATH" ]; then
   echo "Compose file missing: $TD_COMPOSE_PATH"
   exit 1
 fi
+
+# prd/stg need a real .env file: compose uses ${VAR:?} and services expect secrets.
+require_deploy_env_file() {
+  case "$TD_ENV" in
+    prd | stg) ;;
+    *) return 0 ;;
+  esac
+  local f="$TD_PROJECT_ROOT/.env.$TD_ENV"
+  if [ ! -f "$f" ]; then
+    echo "Missing required env file: $f" >&2
+    echo "Production/staging stacks will not start without it." >&2
+    if [ -f "$TD_PROJECT_ROOT/.env.${TD_ENV}.example" ]; then
+      echo "  cp .env.${TD_ENV}.example $f" >&2
+      echo "  # Edit $f: set JWT_SECRET_KEY, POSTGRES_PASSWORD, database URLs, OAuth, mail, etc." >&2
+    fi
+    exit 1
+  fi
+}
+
+require_deploy_env_file
 
 pause() {
   read -r -n1 -s -p "Press any key..." _
@@ -150,13 +176,32 @@ td_read_nginx_http_port() {
   echo "8082"
 }
 
+# Optional in .env.prd: TD_PUBLIC_BASE_URL=https://tools.aiepic.app (no trailing slash)
+td_read_public_base_url() {
+  local f line val
+  for f in "${TD_ENV_FILE:-}" "$TD_PROJECT_ROOT/.env.prd" "$TD_PROJECT_ROOT/.env.$TD_ENV"; do
+    [ -n "$f" ] && [ -f "$f" ] || continue
+    line=$(grep -E '^TD_PUBLIC_BASE_URL=' "$f" 2>/dev/null | tail -1) || true
+    if [ -n "$line" ]; then
+      val=${line#TD_PUBLIC_BASE_URL=}
+      val=$(echo "$val" | tr -d '\r' | tr -d '"' | tr -d "'" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+      [ -n "$val" ] && echo "$val" && return
+    fi
+  done
+  echo ""
+}
+
 print_stack_urls() {
   local H="$TD_URL_HOST"
   echo ""
   echo "✅ Stack is up (TD_ENV=$TD_ENV) — open in your browser (replace $H with your host if remote)"
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "  BROWSER URLS (local)"
+  if [ "$TD_ENV" = "prd" ]; then
+    echo "  BROWSER URLS (production)"
+  else
+    echo "  BROWSER URLS (local)"
+  fi
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
   if [ "$TD_ENV" = "dev" ]; then
@@ -204,13 +249,38 @@ print_stack_urls() {
     echo "  docker compose -f $TD_COMPOSE_FILE exec -it redis redis-cli"
     echo "  docker compose -f $TD_COMPOSE_FILE exec -it cassandra cqlsh"
   else
-    local NPORT
+    local NPORT PBASE WSBASE
     NPORT="$(td_read_nginx_http_port)"
+    PBASE="$(td_read_public_base_url)"
+    WSBASE=""
+    if [ -n "$PBASE" ]; then
+      case "$PBASE" in
+        https://*) WSBASE="wss://${PBASE#https://}" ;;
+        http://*) WSBASE="ws://${PBASE#http://}" ;;
+      esac
+    fi
     echo ""
-    echo "— Primary entry: nginx (only published edge in prd compose) —"
+    if [ -n "$PBASE" ]; then
+      echo "— Canonical public URL (set TD_PUBLIC_BASE_URL in .env.prd; TLS at CDN/LB) —"
+      echo "  ${PBASE}/"
+      echo ""
+      echo "— Same paths behind HTTPS —"
+      echo "  Public app:     ${PBASE}/app/"
+      echo "  Admin app:      ${PBASE}/admin/"
+      echo "  Main API:       ${PBASE}/api/"
+      echo "  Auth API:       ${PBASE}/auth/"
+      echo "  OAuth:          ${PBASE}/oauth/"
+      echo "  Well-known:     ${PBASE}/.well-known/"
+      echo "  Public storage: ${PBASE}/storage/"
+      if [ -n "$WSBASE" ]; then
+        echo "  WebSocket:      ${WSBASE}/ws/"
+      fi
+      echo ""
+    fi
+    echo "— Docker host: nginx HTTP (published port ${NPORT}) —"
     echo "  http://${H}:${NPORT}/"
     echo ""
-    echo "— Same paths as dev, on port ${NPORT} —"
+    echo "— Same paths on host port ${NPORT} —"
     echo "  Public app:     http://${H}:${NPORT}/app/"
     echo "  Admin app:      http://${H}:${NPORT}/admin/"
     echo "  Main API:       http://${H}:${NPORT}/api/"
@@ -224,6 +294,9 @@ print_stack_urls() {
     echo "  back-api, back-auth, feature-registry, databases, SeaweedFS, workers"
     echo ""
     echo "Set NGINX_HTTP_PORT in .env.prd if not using ${NPORT}. Override print host: TD_URL_HOST=your.ip $0 $TD_ENV up"
+    if [ -z "$PBASE" ]; then
+      echo "Tip: set TD_PUBLIC_BASE_URL=https://tools.aiepic.app in .env.prd to print HTTPS URLs after up."
+    fi
     td_docker_compose ps
   fi
   echo ""
@@ -303,6 +376,41 @@ cmd_rebuild_stack() {
   print_stack_urls
 }
 
+cmd_compose_build() {
+  echo "Building images (docker compose build)..."
+  if ! td_docker_compose build "$@"; then
+    echo "Build failed — fix errors above before deploying." >&2
+    return 1
+  fi
+  echo "Build finished successfully."
+}
+
+cmd_compose_config() {
+  td_docker_compose config "$@"
+}
+
+cmd_preflight() {
+  echo "Preflight: compose config (validates YAML + required env vars)..."
+  if ! td_docker_compose config >/dev/null; then
+    echo "compose config failed — check .env.$TD_ENV and docker-compose.$TD_ENV.yml" >&2
+    return 1
+  fi
+  echo "compose config: OK"
+  if [ "$TD_ENV" = "prd" ] || [ "$TD_ENV" = "stg" ]; then
+    if ! grep -qE '^JWT_SECRET_KEY=.' "$TD_ENV_FILE" 2>/dev/null; then
+      echo "Warning: JWT_SECRET_KEY looks empty or missing in $TD_ENV_FILE" >&2
+    elif grep -qE '^JWT_SECRET_KEY=CHANGE_ME' "$TD_ENV_FILE" 2>/dev/null; then
+      echo "Warning: replace placeholder JWT_SECRET_KEY in $TD_ENV_FILE before real production traffic." >&2
+    fi
+    if ! grep -qE '^POSTGRES_PASSWORD=.' "$TD_ENV_FILE" 2>/dev/null; then
+      echo "Warning: POSTGRES_PASSWORD looks empty or missing in $TD_ENV_FILE" >&2
+    elif grep -qE '^POSTGRES_PASSWORD=CHANGE_ME' "$TD_ENV_FILE" 2>/dev/null; then
+      echo "Warning: replace placeholder POSTGRES_PASSWORD in $TD_ENV_FILE (and matching DB URLs)." >&2
+    fi
+  fi
+  echo "Preflight complete."
+}
+
 cmd_reset_stack() {
   echo "This will: down -v (DELETE ALL COMPOSE VOLUMES / DATA) → build → up."
   read -r -p "Type 'yes' to confirm destructive reset: " confirm
@@ -368,6 +476,9 @@ if [ -n "${TD_CLI_CMD:-}" ] && [ "$TD_CLI_CMD" != "menu" ]; then
     restart) cmd_restart_rolling ;;
     rebuild) cmd_rebuild_stack || exit 1 ;;
     reset) cmd_reset_stack || exit 1 ;;
+    build) cmd_compose_build "$@" || exit 1 ;;
+    config) cmd_compose_config "$@" ;;
+    preflight) cmd_preflight || exit 1 ;;
   esac
   exit 0
 fi
@@ -380,6 +491,8 @@ while true; do
   echo "========================================="
   echo " 1) Up (quick — no image rebuild)"
   echo " 2) Up (build & start)"
+  echo " 2b) Preflight (validate compose + env)"
+  echo " 2c) Build images only (no up — catches Docker build errors)"
   echo " 3) Down"
   echo " 4) Cleanup (prune containers/networks)"
   echo " 5) Force rebuild (no cache)"
@@ -392,7 +505,7 @@ while true; do
   echo "12) Status / volume check"
   echo " 0) Exit"
   echo "========================================="
-  echo "CLI: $0 $TD_ENV up | up-build | down | logs | restart | rebuild | reset"
+  echo "CLI: $0 $TD_ENV up | up-build | build | config | preflight | down | logs | restart | rebuild | reset"
   echo "========================================="
   read -r -p "Select: " opt
   case "$opt" in
@@ -402,6 +515,14 @@ while true; do
       ;;
     2)
       cmd_up_build || pause
+      pause
+      ;;
+    2b)
+      cmd_preflight || pause
+      pause
+      ;;
+    2c)
+      cmd_compose_build || pause
       pause
       ;;
     3)

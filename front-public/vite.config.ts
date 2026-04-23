@@ -24,7 +24,9 @@ export default defineConfig({
         v3_fetcherPersist: true,
         v3_relativeSplatPath: true,
         v3_throwAbortReason: true,
-        v3_singleFetch: true,
+        // Off: v3_singleFetch + subpath (/app) can request loader data outside the nginx /app/ proxy
+        // (browser "Failed to fetch"), e.g. after logout full navigation to /app.
+        v3_singleFetch: false,
         // Direct hits to deep routes (e.g. /app/features/.../verify) can 404 in dev behind a
         // reverse proxy when discovery runs on a mismatched host; manifest mode is reliable.
         v3_lazyRouteDiscovery: false,
