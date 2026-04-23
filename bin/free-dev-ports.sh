@@ -25,7 +25,7 @@ echo "==> docker compose down (remove orphans) — TD_ENV=$TD_ENV"
 td_docker_compose down --remove-orphans || true
 
 # Host ports published by docker-compose.dev.yml (update if compose changes)
-PORTS=(8082 8443 4100 4101 8100 8101 8102 8105 6380 54432 39142 18026 8026 8333 9333 8888)
+PORTS=(8082 8443 4100 4101 8100 8101 8102 8105 6380 54432 39142 18026 8026 18333 19333 18888 8333 9333 8888)
 
 echo "==> Removing any Docker container still publishing dev ports..."
 for p in "${PORTS[@]}"; do

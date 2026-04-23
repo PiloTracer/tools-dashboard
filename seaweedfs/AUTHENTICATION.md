@@ -22,7 +22,7 @@ import boto3
 
 s3 = boto3.client(
     's3',
-    endpoint_url='http://localhost:8333',
+    endpoint_url='http://localhost:18333',
     aws_access_key_id='seaweedadmin',
     aws_secret_access_key='^seaweedadmin!changeme!',
     region_name='us-east-1'
@@ -41,21 +41,21 @@ aws configure set aws_secret_access_key '^seaweedadmin!changeme!'
 aws configure set region us-east-1
 
 # List buckets
-aws --endpoint-url=http://localhost:8333 s3 ls
+aws --endpoint-url=http://localhost:18333 s3 ls
 
 # Create bucket
-aws --endpoint-url=http://localhost:8333 s3 mb s3://user-profile-pictures
+aws --endpoint-url=http://localhost:18333 s3 mb s3://user-profile-pictures
 ```
 
 ### 2. Master UI (Cluster Management)
 
-- **URL**: `http://localhost:9333`
+- **URL**: `http://localhost:19333`
 - **Authentication**: Enforced via S3 configuration
 - **Purpose**: View cluster status, volume information, topology
 
 ### 3. Filer UI (File Browser)
 
-- **URL**: `http://localhost:8888`
+- **URL**: `http://localhost:18888`
 - **Authentication**: Enforced via S3 configuration
 - **Purpose**: Browse files, manage directories
 
@@ -81,7 +81,7 @@ import boto3
 
 s3 = boto3.client(
     's3',
-    endpoint_url='http://localhost:8333',
+    endpoint_url='http://localhost:18333',
     aws_access_key_id='seaweedadmin',
     aws_secret_access_key='^seaweedadmin!changeme!',
     region_name='us-east-1'
@@ -106,7 +106,7 @@ s3.create_bucket(Bucket='user-profile-pictures')
 
 **Without credentials (should fail):**
 ```bash
-curl http://localhost:8333/
+curl http://localhost:18333/
 # Expected: AccessDenied error
 ```
 
@@ -116,7 +116,7 @@ import boto3
 
 s3 = boto3.client(
     's3',
-    endpoint_url='http://localhost:8333',
+    endpoint_url='http://localhost:18333',
     aws_access_key_id='seaweedadmin',
     aws_secret_access_key='^seaweedadmin!changeme!',
     region_name='us-east-1'
@@ -150,4 +150,4 @@ When moving to production:
 
 **Problem**: Buckets not appearing
 - **Solution**: List buckets with authenticated client to verify creation
-- **Check**: View Master UI at `http://localhost:9333` for cluster status
+- **Check**: View Master UI at `http://localhost:19333` for cluster status

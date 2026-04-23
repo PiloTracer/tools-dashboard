@@ -7,19 +7,19 @@ SeaweedFS is an AWS S3-compatible distributed object storage system used in the 
 
 **Docker Service**: `seaweedfs`
 - **Image**: `chrislusf/seaweedfs`
-- **Ports**:
-  - `8333:8333` - S3 API endpoint
-  - `9333:9333` - Master port (admin/web UI)
-  - `8888:8888` - Filer port (required for S3 API)
+- **Ports (dev — host avoids clashes)**:
+  - `18333:8333` - S3 API (browser/host → container 8333)
+  - `19333:9333` - Master UI
+  - `18888:8888` - Filer
 - **Data Volume**: `seaweed-data` (Docker named volume)
 - **Command**: `server -s3 -filer -dir=/data -volume.max=10`
 - **Restart Policy**: `unless-stopped`
 
 ## Access Points
 
-- **S3 API**: `http://localhost:8333` or `http://seaweedfs:8333` (internal)
-- **Master UI**: `http://localhost:9333` (web browser - cluster status and admin)
-- **Filer**: `http://localhost:8888` (file management interface)
+- **S3 API**: `http://localhost:18333` or `http://seaweedfs:8333` (internal)
+- **Master UI**: `http://localhost:19333` (web browser - cluster status and admin)
+- **Filer**: `http://localhost:18888` (file management interface)
 - **Internal Access**: `http://seaweedfs:8333` (from other Docker containers)
 
 ## Authentication
@@ -70,19 +70,19 @@ SeaweedFS is configured in `docker-compose.dev.yml` but **not yet integrated** w
 ### Accessing the Admin Interface
 
 **S3 API Access (Primary Interface):**
-- Endpoint: `http://localhost:8333`
+- Endpoint: `http://localhost:18333`
 - **Authentication Required**
 - Access Key: `seaweedadmin`
 - Secret Key: `^seaweedadmin!changeme!`
 - Use with boto3 or AWS CLI tools
 
 **Master UI (Cluster Management):**
-- URL: `http://localhost:9333`
+- URL: `http://localhost:19333`
 - View cluster status, volumes, and topology
 - Authentication: S3 credentials enforced via S3 config
 
 **Filer UI (File Management):**
-- URL: `http://localhost:8888`
+- URL: `http://localhost:18888`
 - Browse and manage files directly
 - Authentication: S3 credentials enforced via S3 config
 
@@ -99,11 +99,11 @@ cd seaweedfs
 #### Option 2: Using curl with authentication
 ```bash
 # Create bucket (requires authentication)
-curl -X PUT http://localhost:8333/user-profile-pictures \
+curl -X PUT http://localhost:18333/user-profile-pictures \
   -u seaweedadmin:^seaweedadmin!changeme!
 
 # List buckets
-curl -X GET http://localhost:8333/ \
+curl -X GET http://localhost:18333/ \
   -u seaweedadmin:^seaweedadmin!changeme!
 ```
 
@@ -114,7 +114,7 @@ import boto3
 # Configure boto3 to use SeaweedFS with authentication
 s3_client = boto3.client(
     's3',
-    endpoint_url='http://localhost:8333',
+    endpoint_url='http://localhost:18333',
     aws_access_key_id='seaweedadmin',
     aws_secret_access_key='^seaweedadmin!changeme!',
     region_name='us-east-1'
@@ -184,7 +184,7 @@ import boto3
 
 s3 = boto3.client(
     's3',
-    endpoint_url='http://localhost:8333',
+    endpoint_url='http://localhost:18333',
     aws_access_key_id='any',
     aws_secret_access_key='any'
 )
@@ -233,17 +233,17 @@ SEAWEEDFS_BUCKET_DOCUMENTS=user-documents
 ### Health Check
 ```bash
 # Check Master server status
-curl http://localhost:9333/cluster/status
+curl http://localhost:19333/cluster/status
 
 # Check volume status
-curl http://localhost:9333/dir/status
+curl http://localhost:19333/dir/status
 
 # List buckets (via S3 API)
-curl http://localhost:8333/
+curl http://localhost:18333/
 ```
 
 ### Web UI
-Access the SeaweedFS Master UI at `http://localhost:9333` to view:
+Access the SeaweedFS Master UI at `http://localhost:19333` to view:
 - Cluster topology
 - Volume status
 - Storage statistics

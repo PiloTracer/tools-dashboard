@@ -506,10 +506,12 @@ redis-cli ping
 **Version**: Latest
 **Image**: `chrislusf/seaweedfs`
 
-**Ports**:
-- 8333: S3 API
-- 9333: Master server
-- 8888: Filer HTTP interface
+**Ports (dev compose — host → container)**:
+- **18333** → 8333: S3 API (from your machine; avoids host clashes on 8333)
+- **19333** → 9333: Master server
+- **18888** → 8888: Filer HTTP interface
+
+Inside Docker, services still use **`http://seaweedfs:8333`** / **`:8888`** (unchanged).
 
 **Configuration**:
 ```bash
@@ -533,7 +535,7 @@ server -s3 -filer -dir=/data -volume.max=10
 
 **Access**:
 - Public URL: `https://dev.aiepic.app/storage/`
-- Proxied via Nginx to Filer (port 8888)
+- Proxied via Nginx to Filer (`seaweedfs:8888` inside the compose network)
 
 **Memory Limit**: 256MB
 

@@ -289,10 +289,11 @@ services:
 
   seaweedfs:
     image: chrislusf/seaweedfs
+    # Host ports 18333/19333/18888 avoid clashes with other tools using 8333/9333/8888 on the machine.
     ports:
-      - "0.0.0.0:8333:8333"  # S3 API port
-      - "0.0.0.0:9333:9333"  # Master port
-      - "0.0.0.0:8888:8888"  # Filer port
+      - "0.0.0.0:18333:8333"  # S3 API (container still listens on 8333)
+      - "0.0.0.0:19333:9333"  # Master UI
+      - "0.0.0.0:18888:8888"  # Filer
     volumes:
       - seaweed-data:/data
       - ./seaweedfs-config/s3-config.json:/etc/seaweedfs/s3-config.json:ro

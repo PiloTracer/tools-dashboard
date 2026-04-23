@@ -5,7 +5,7 @@
 
 set -e
 
-SEAWEED_ENDPOINT="http://localhost:8333"
+SEAWEED_ENDPOINT="http://localhost:18333"
 ACCESS_KEY="seaweedadmin"
 SECRET_KEY="^seaweedadmin!changeme!"
 
