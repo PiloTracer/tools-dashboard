@@ -6,20 +6,29 @@ import {
   useFetcher,
   Link,
   Form,
+  useNavigate,
+  useLocation,
 } from "@remix-run/react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { App } from "../features/app-library/ui/AppTable";
+import { getAdminApiAuthHeaders } from "../utils/admin-api-auth.server";
+
+export type AppLibraryTab = "overview" | "registration" | "oauth" | "access";
 
 type LoaderData = {
   app: App;
-  accessRule?: any; // Placeholder for access control rules
+  accessRule?: Record<string, unknown> | null;
   newSecret?: string; // Only populated when ?new=true&secret=xxx
+  initialTab: AppLibraryTab;
+  startEditing: boolean;
 };
 
 type ActionData = {
   error?: string;
   fieldErrors?: Record<string, string>;
   success?: boolean;
+  /** Returned only for regenerate_secret (do not pass through redirect). */
+  regeneratedClientSecret?: string;
 };
 
 /**
@@ -35,16 +44,23 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const isNew = url.searchParams.get("new") === "true";
   const secret = url.searchParams.get("secret");
+  const tabParam = url.searchParams.get("tab");
+  const editParam = url.searchParams.get("edit");
+  const validTabs: AppLibraryTab[] = ["overview", "registration", "oauth", "access"];
+  const normalizedTab =
+    tabParam === "details" ? "registration" : tabParam;
+  const initialTab: AppLibraryTab = validTabs.includes(normalizedTab as AppLibraryTab)
+    ? (normalizedTab as AppLibraryTab)
+    : "overview";
+  const startEditing = editParam === "1" || editParam === "true";
 
   const apiUrl = process.env.API_URL || "http://back-api:8000";
+  const auth = getAdminApiAuthHeaders(request);
 
   try {
     // Fetch app details
     const response = await fetch(`${apiUrl}/api/admin/app-library/${appId}`, {
-      headers: {
-        // TODO: Add Authorization header with admin JWT token
-        // "Authorization": `Bearer ${token}`,
-      },
+      headers: { ...auth },
     });
 
     if (response.status === 404) {
@@ -65,8 +81,10 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 
     return json<LoaderData>({
       app: data.app,
-      accessRule: data.access_rule || undefined,
+      accessRule: data.access_rule ?? null,
       newSecret: isNew && secret ? secret : undefined,
+      initialTab,
+      startEditing,
     });
   } catch (error) {
     console.error("Error fetching application:", error);
@@ -91,6 +109,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
   const _action = formData.get("_action")?.toString();
 
   const apiUrl = process.env.API_URL || "http://back-api:8000";
+  const auth = getAdminApiAuthHeaders(request);
 
   try {
     switch (_action) {
@@ -143,7 +162,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
-              // TODO: Add Authorization header
+              ...auth,
             },
             body: JSON.stringify({
               client_name,
@@ -177,7 +196,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              // TODO: Add Authorization header
+              ...auth,
             },
           }
         );
@@ -191,11 +210,15 @@ export async function action({ request, params }: ActionFunctionArgs) {
           });
         }
 
-        const data = await response.json();
-        // Redirect to show the new secret
-        return redirect(
-          `/admin/features/app-library/${appId}?new=true&secret=${encodeURIComponent(data.client_secret)}`
-        );
+        const data = (await response.json()) as { client_secret?: string };
+        const newSecret = data.client_secret;
+        if (!newSecret) {
+          return json<ActionData>(
+            { error: "Invalid response from server (no client secret)" },
+            { status: 502 }
+          );
+        }
+        return json<ActionData>({ regeneratedClientSecret: newSecret });
       }
 
       case "toggle_status": {
@@ -209,7 +232,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
-              // TODO: Add Authorization header
+              ...auth,
             },
             body: JSON.stringify({
               is_active: newStatus,
@@ -235,7 +258,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
           {
             method: "DELETE",
             headers: {
-              // TODO: Add Authorization header
+              ...auth,
             },
           }
         );
@@ -268,19 +291,88 @@ export async function action({ request, params }: ActionFunctionArgs) {
   }
 }
 
+function appLibrarySearch(tab: AppLibraryTab, options?: { edit?: boolean }) {
+  const p = new URLSearchParams();
+  if (tab !== "overview") p.set("tab", tab);
+  if (options?.edit) p.set("edit", "1");
+  const q = p.toString();
+  return q ? `?${q}` : "";
+}
+
 export default function AppLibraryDetail() {
-  const { app, newSecret } = useLoaderData<typeof loader>();
+  const { app, newSecret, accessRule, initialTab, startEditing } =
+    useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
-  const [activeTab, setActiveTab] = useState<
-    "overview" | "details" | "oauth" | "access"
-  >("overview");
-  const [isEditing, setIsEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState<AppLibraryTab>(initialTab);
+  const [isEditing, setIsEditing] = useState(startEditing);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+    setIsEditing(startEditing);
+  }, [app.id, initialTab, startEditing]);
+
+  useEffect(() => {
+    if (actionData?.success) {
+      setIsEditing(false);
+    }
+  }, [actionData?.success]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showRegenerateModal, setShowRegenerateModal] = useState(false);
+  const [revealFromRegen, setRevealFromRegen] = useState<string | null>(null);
+  const [regenUI, setRegenUI] = useState<
+    null | { step: "confirm" } | { step: "success"; secret: string }
+  >(null);
   const [secretCopied, setSecretCopied] = useState(false);
   const [clientIdCopied, setClientIdCopied] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
   const statusFetcher = useFetcher();
+  const regenFetcher = useFetcher<typeof action>();
+  const RegenForm = regenFetcher.Form;
+  const regenSubmitPendingRef = useRef(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const displayedNewSecret = newSecret ?? revealFromRegen;
+
+  const openRegenModal = () => {
+    regenSubmitPendingRef.current = false;
+    setRegenUI({ step: "confirm" });
+  };
+
+  const closeRegenModal = () => {
+    setRegenUI(null);
+  };
+
+  const completeRegenAndShowBanner = () => {
+    if (regenUI?.step === "success") {
+      setRevealFromRegen(regenUI.secret);
+    }
+    const p = new URLSearchParams(location.search);
+    p.delete("new");
+    p.delete("secret");
+    const q = p.toString();
+    navigate(
+      { pathname: location.pathname, search: q ? `?${q}` : "" },
+      { replace: true }
+    );
+    setRegenUI(null);
+  };
+
+  useEffect(() => {
+    setRevealFromRegen(null);
+  }, [app.id]);
+
+  useEffect(() => {
+    if (regenFetcher.state !== "idle" || !regenSubmitPendingRef.current) {
+      return;
+    }
+    const d = regenFetcher.data as ActionData | undefined;
+    regenSubmitPendingRef.current = false;
+    if (d?.error) {
+      return;
+    }
+    if (d?.regeneratedClientSecret) {
+      setRegenUI({ step: "success", secret: d.regeneratedClientSecret });
+    }
+  }, [regenFetcher.state, regenFetcher.data]);
 
   const copyToClipboard = async (text: string, type: "secret" | "clientId") => {
     try {
@@ -384,17 +476,43 @@ export default function AppLibraryDetail() {
               </p>
             </div>
           </div>
-          <span
-            className={`inline-flex w-fit shrink-0 items-center rounded-full px-3 py-1 text-xs font-semibold sm:text-sm ${
-              isActive ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700"
-            }`}
-          >
-            {isActive ? "Active" : "Inactive"}
-          </span>
+          <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:min-w-[10rem] sm:items-end">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+              <span
+                className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold sm:text-sm ${
+                  isActive ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700"
+                }`}
+              >
+                {isActive ? "Active" : "Inactive"}
+              </span>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <Link
+                to={`/admin/features/app-library/${app.id}${appLibrarySearch("overview")}`}
+                onClick={() => {
+                  setActiveTab("overview");
+                  setIsEditing(false);
+                }}
+                className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+              >
+                Overview
+              </Link>
+              <Link
+                to={`/admin/features/app-library/${app.id}${appLibrarySearch("registration", { edit: true })}`}
+                onClick={() => {
+                  setActiveTab("registration");
+                  setIsEditing(true);
+                }}
+                className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+              >
+                Edit registration
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
 
-      {newSecret && (
+      {displayedNewSecret && (
         <div
           className="rounded-2xl border border-amber-200/90 bg-amber-50/90 p-4 shadow-sm ring-1 ring-amber-900/10 sm:p-5"
           role="alert"
@@ -415,11 +533,11 @@ export default function AppLibraryDetail() {
               </h3>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-stretch">
                 <code className="block flex-1 break-all rounded-lg border border-amber-200/80 bg-white px-3 py-2 font-mono text-xs text-amber-950 sm:text-sm">
-                  {newSecret}
+                  {displayedNewSecret}
                 </code>
                 <button
                   type="button"
-                  onClick={() => copyToClipboard(newSecret, "secret")}
+                  onClick={() => copyToClipboard(displayedNewSecret, "secret")}
                   className="inline-flex shrink-0 items-center justify-center rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
                 >
                   {secretCopied ? "Copied" : "Copy"}
@@ -453,16 +571,21 @@ export default function AppLibraryDetail() {
           className="-mb-px flex gap-1 overflow-x-auto overscroll-x-contain border-b border-slate-200 px-2 pt-1 sm:gap-2 sm:px-4"
           aria-label="Application sections"
         >
-          {[
-            { id: "overview", label: "Overview" },
-            { id: "details", label: "Details" },
-            { id: "oauth", label: "OAuth" },
-            { id: "access", label: "Access" },
-          ].map((tab) => (
+          {(
+            [
+              { id: "overview" as const, label: "Overview" },
+              { id: "registration" as const, label: "Registration" },
+              { id: "oauth" as const, label: "OAuth" },
+              { id: "access" as const, label: "Access" },
+            ] as const
+          ).map((tab) => (
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id as "overview" | "details" | "oauth" | "access")}
+              onClick={() => {
+                setActiveTab(tab.id);
+                if (tab.id !== "registration") setIsEditing(false);
+              }}
               className={`shrink-0 whitespace-nowrap rounded-t-lg border-b-2 px-3 py-3 text-sm font-medium transition sm:px-4 ${
                 activeTab === tab.id
                   ? "border-indigo-600 text-indigo-600"
@@ -506,7 +629,7 @@ export default function AppLibraryDetail() {
                     </code>
                     <button
                       type="button"
-                      onClick={() => setShowRegenerateModal(true)}
+                      onClick={openRegenModal}
                       className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                     >
                       Regenerate
@@ -572,22 +695,59 @@ export default function AppLibraryDetail() {
                 )}
               </dl>
             </div>
+
+            <div className="rounded-2xl border border-indigo-200/80 bg-gradient-to-br from-indigo-50/90 to-white p-5 shadow-sm ring-1 ring-indigo-950/5 sm:p-6">
+              <h3 className="text-base font-semibold text-slate-900">Change registration settings</h3>
+              <p className="mt-1 text-sm text-slate-600">
+                Update app name, URLs, redirect URIs, OAuth scopes, logo, and active state on the
+                Registration tab.
+              </p>
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Link
+                  to={`/admin/features/app-library/${app.id}${appLibrarySearch("registration", { edit: true })}`}
+                  onClick={() => {
+                    setActiveTab("registration");
+                    setIsEditing(true);
+                  }}
+                  className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+                >
+                  Open registration editor
+                </Link>
+                <Link
+                  to={`/admin/features/app-library/${app.id}${appLibrarySearch("registration")}`}
+                  onClick={() => {
+                    setActiveTab("registration");
+                    setIsEditing(false);
+                  }}
+                  className="inline-flex items-center justify-center text-sm font-medium text-indigo-700 hover:text-indigo-900"
+                >
+                  View read-only
+                </Link>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Details Tab */}
-        {activeTab === "details" && (
+        {/* Registration tab */}
+        {activeTab === "registration" && (
           <div className={cardSurface}>
             {!isEditing ? (
               <div>
+                <div className="mb-2">
+                  <p className="text-sm text-slate-600">
+                    Name, description, logo, dev/prod URLs, redirect URIs, allowed scopes, and
+                    whether the client is active. This is the full remote OAuth client registration
+                    for this app.
+                  </p>
+                </div>
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <h3 className="text-lg font-semibold text-slate-900">Application details</h3>
+                  <h3 className="text-lg font-semibold text-slate-900">Registration</h3>
                   <button
                     type="button"
                     onClick={() => setIsEditing(true)}
-                    className="inline-flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
+                    className="inline-flex w-full items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
                   >
-                    Edit details
+                    Edit registration
                   </button>
                 </div>
                 <dl className="grid grid-cols-1 gap-6">
@@ -632,11 +792,11 @@ export default function AppLibraryDetail() {
                 </dl>
               </div>
             ) : (
-              <Form method="post" onSubmit={() => setIsEditing(false)}>
+              <Form method="post">
                 <input type="hidden" name="_action" value="update" />
                 <div className="space-y-6">
                   <h3 className="text-lg font-medium text-slate-900 mb-4">
-                    Edit Application Details
+                    Edit registration
                   </h3>
 
                   {/* Application Name */}
@@ -816,7 +976,33 @@ export default function AppLibraryDetail() {
         {/* OAuth Configuration Tab */}
         {activeTab === "oauth" && (
           <div className={cardSurface}>
-            <h3 className="mb-4 text-lg font-semibold text-slate-900">OAuth configuration</h3>
+            <h3 className="mb-2 text-lg font-semibold text-slate-900">OAuth (read-only)</h3>
+            <p className="mb-6 text-sm text-slate-600">
+              Redirect URIs and scopes are part of the client registration. To change them, use{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("registration");
+                  setIsEditing(true);
+                }}
+                className="font-semibold text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900"
+              >
+                Edit registration
+              </button>{" "}
+              on the Registration tab (or the button below).
+            </p>
+            <div className="mb-6">
+              <Link
+                to={`/admin/features/app-library/${app.id}${appLibrarySearch("registration", { edit: true })}`}
+                onClick={() => {
+                  setActiveTab("registration");
+                  setIsEditing(true);
+                }}
+                className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+              >
+                Edit redirect URIs &amp; scopes
+              </Link>
+            </div>
             <dl className="grid grid-cols-1 gap-6">
               <div>
                 <dt className="text-sm font-medium text-slate-500 mb-2">
@@ -855,28 +1041,48 @@ export default function AppLibraryDetail() {
         {/* Access Control Tab */}
         {activeTab === "access" && (
           <div className={cardSurface}>
-            <h3 className="mb-4 text-lg font-semibold text-slate-900">Access control</h3>
-            <div className="text-center py-12">
-              <svg
-                className="mx-auto h-12 w-12 text-slate-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
-              <h3 className="mt-2 text-sm font-medium text-slate-900">
-                Access Control Coming Soon
-              </h3>
-              <p className="mt-1 text-sm text-slate-500">
-                Configure who can access this application based on roles, permissions, or custom rules.
-              </p>
-            </div>
+            <h3 className="mb-2 text-lg font-semibold text-slate-900">Access control</h3>
+            <p className="mb-6 text-sm text-slate-600">
+              Who may launch or authorize this app (in addition to global OAuth client settings) is
+              defined here. Advanced editing may use the admin API; the Registration tab holds URL
+              and client metadata.
+            </p>
+            {accessRule ? (
+              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <dt className="text-sm font-medium text-slate-500">Mode</dt>
+                  <dd className="mt-1 text-sm text-slate-900">
+                    {String(accessRule.mode ?? "—")}
+                  </dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="text-sm font-medium text-slate-500">User IDs (if applicable)</dt>
+                  <dd className="mt-1 break-all font-mono text-sm text-slate-800">
+                    {Array.isArray(accessRule.user_ids) && accessRule.user_ids.length > 0
+                      ? (accessRule.user_ids as unknown[]).join(", ")
+                      : "—"}
+                  </dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="text-sm font-medium text-slate-500">Subscription tiers (if applicable)</dt>
+                  <dd className="mt-1 text-sm text-slate-900">
+                    {Array.isArray(accessRule.subscription_tiers) && accessRule.subscription_tiers.length > 0
+                      ? (accessRule.subscription_tiers as string[]).join(", ")
+                      : "—"}
+                  </dd>
+                </div>
+              </dl>
+            ) : (
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-6 text-center">
+                <p className="text-sm text-slate-600">
+                  No custom access rule is stored for this app yet. Default product behavior may
+                  still allow eligible users to connect.
+                </p>
+                <p className="mt-2 text-xs text-slate-500">
+                  To manage OAuth client fields (redirect URIs, URLs, scopes), use the Registration tab.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -974,48 +1180,117 @@ export default function AppLibraryDetail() {
         </div>
       ) : null}
 
-      {showRegenerateModal ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="regen-secret-title">
+      {regenUI ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={
+            regenUI.step === "confirm" ? "regen-secret-confirm-title" : "regen-secret-success-title"
+          }
+        >
           <button
             type="button"
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-[1px]"
             aria-label="Close dialog"
-            onClick={() => setShowRegenerateModal(false)}
+            onClick={() => {
+              if (regenUI.step === "success") {
+                completeRegenAndShowBanner();
+              } else {
+                closeRegenModal();
+              }
+            }}
           />
           <div className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl ring-1 ring-slate-950/10">
-            <div className="flex gap-4 p-5 sm:p-6">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100">
-                <svg className="h-5 w-5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 id="regen-secret-title" className="text-lg font-semibold text-slate-900">
-                  Regenerate client secret?
-                </h3>
-                <p className="mt-2 text-sm text-slate-600">
-                  The current secret stops working immediately. Update every deployment that uses this client before continuing.
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/80 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:px-6">
-              <button
-                type="button"
-                onClick={() => setShowRegenerateModal(false)}
-                className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <Form method="post">
-                <input type="hidden" name="_action" value="regenerate_secret" />
-                <button
-                  type="submit"
-                  className="w-full rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-700 sm:w-auto"
-                >
-                  Regenerate secret
-                </button>
-              </Form>
-            </div>
+            {regenUI.step === "confirm" ? (
+              <>
+                <div className="flex gap-4 p-5 sm:p-6">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100">
+                    <svg className="h-5 w-5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 id="regen-secret-confirm-title" className="text-lg font-semibold text-slate-900">
+                      Regenerate client secret?
+                    </h3>
+                    <p className="mt-2 text-sm text-slate-600">
+                      The current secret stops working immediately. Update every deployment that uses this client before continuing.
+                    </p>
+                    {regenFetcher.data && (regenFetcher.data as ActionData).error && (
+                      <p className="mt-3 text-sm text-red-700" role="alert">
+                        {(regenFetcher.data as ActionData).error}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/80 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:px-6">
+                  <button
+                    type="button"
+                    onClick={closeRegenModal}
+                    className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <RegenForm
+                    method="post"
+                    onSubmit={() => {
+                      regenSubmitPendingRef.current = true;
+                    }}
+                  >
+                    <input type="hidden" name="_action" value="regenerate_secret" />
+                    <button
+                      type="submit"
+                      disabled={regenFetcher.state !== "idle"}
+                      className="w-full min-w-[10rem] rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                    >
+                      {regenFetcher.state === "submitting" ? "Regenerating…" : "Regenerate secret"}
+                    </button>
+                  </RegenForm>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col gap-4 p-5 sm:p-6">
+                  <div className="flex gap-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+                      <svg className="h-5 w-5 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 id="regen-secret-success-title" className="text-lg font-semibold text-slate-900">
+                        New client secret
+                      </h3>
+                      <p className="mt-2 text-sm text-slate-600">
+                        Copy and store it safely. The previous secret is invalid. When you are done, close this dialog — the same secret will also appear in the warning banner for a moment.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-2">
+                    <code className="min-w-0 flex-1 break-all rounded-lg border border-emerald-200/80 bg-slate-50 px-3 py-2.5 font-mono text-sm text-slate-900">
+                      {regenUI.secret}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(regenUI.secret, "secret")}
+                      className="inline-flex shrink-0 items-center justify-center rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                    >
+                      {secretCopied ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+                </div>
+                <div className="border-t border-slate-100 bg-slate-50/80 p-4 sm:px-6 sm:py-4 sm:text-right">
+                  <button
+                    type="button"
+                    onClick={completeRegenAndShowBanner}
+                    className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 sm:w-auto"
+                  >
+                    Done
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       ) : null}

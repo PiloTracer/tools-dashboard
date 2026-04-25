@@ -150,7 +150,11 @@ export default function AppLibrary() {
                   Each card shows what that app may access (for example profile and subscription). Choosing
                   <span className="font-semibold"> Launch App </span>
                   while you are signed in here opens the app and grants only those permissions—no second
-                  confirmation page.
+                  confirmation page. The
+                  <span className="font-medium"> Available </span>
+                  pill is a quick check from your device to the app’s URL; if it shows Offline, the
+                  app may be stopped, blocked, or the environment may prevent the test (for example
+                  some mixed-content or privacy settings).
                 </p>
               </div>
             </div>

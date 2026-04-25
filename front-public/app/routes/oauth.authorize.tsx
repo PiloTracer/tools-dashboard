@@ -183,12 +183,37 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   const BACK_API_URL = process.env.BACKEND_API_URL || "http://back-api:8000";
+  const cookieHeader = request.headers.get("Cookie") || "";
 
   try {
-    const clientResponse = await fetch(`${BACK_API_URL}/api/oauth-clients/${clientId}`);
+    // Registered app metadata lives in the app library; this route requires a signed-in user
+    // session (same cookie as Application Library). Do not use /api/oauth-clients/{id} here —
+    // that back-api route is admin-only and will always 401/403 from this unauthenticated
+    // server-to-server call, which surfaced as "Invalid client_id" for a valid client_id.
+    const clientResponse = await fetch(
+      `${BACK_API_URL}/api/app-library/oauth-clients/${encodeURIComponent(clientId)}`,
+      {
+        headers: {
+          Cookie: cookieHeader,
+        },
+      }
+    );
 
-    if (!clientResponse.ok) {
-      return redirect(`${redirectUri}?error=unauthorized_client&error_description=Invalid+client_id&state=${state}`);
+    if (clientResponse.status === 401) {
+      const returnTo = encodeURIComponent(request.url);
+      return redirect(`/app/features/user-registration?return_to=${returnTo}`);
+    }
+
+    if (clientResponse.status === 403) {
+      return redirect(
+        `${redirectUri}?error=access_denied&error_description=You+do+not+have+access+to+this+application&state=${state}`
+      );
+    }
+
+    if (clientResponse.status === 404 || !clientResponse.ok) {
+      return redirect(
+        `${redirectUri}?error=unauthorized_client&error_description=Invalid+client_id&state=${state}`
+      );
     }
 
     const client = oauthClientFromApiJson(await clientResponse.json());

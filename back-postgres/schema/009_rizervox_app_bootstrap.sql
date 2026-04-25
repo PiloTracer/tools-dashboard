@@ -22,7 +22,7 @@ INSERT INTO oauth_clients (
     '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIr.Wgn7qm',
     'Rizervox',
     'CMS + SEO + agentic',
-    'https://cdn.example.com/logos/rizervox.png',
+    '/app/app-library-logos/rizervox.svg',
     'http://localhost:17513',
     'https://rizervox.com',
     ARRAY[

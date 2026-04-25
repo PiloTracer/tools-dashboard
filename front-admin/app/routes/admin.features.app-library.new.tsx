@@ -2,6 +2,7 @@ import type { ActionFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { Link, useActionData } from "@remix-run/react";
 import { AppForm } from "../features/app-library/ui/AppForm";
+import { getAdminApiAuthHeaders } from "../utils/admin-api-auth.server";
 
 type ActionData = {
   error?: string;
@@ -59,6 +60,7 @@ export async function action({ request }: ActionFunctionArgs) {
     : ["profile", "email"];
 
   const apiUrl = process.env.API_URL || "http://back-api:8000";
+  const auth = getAdminApiAuthHeaders(request);
 
   try {
     // Create application via backend API
@@ -66,8 +68,7 @@ export async function action({ request }: ActionFunctionArgs) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        // TODO: Add Authorization header
-        // "Authorization": `Bearer ${token}`,
+        ...auth,
       },
       body: JSON.stringify({
         client_name,

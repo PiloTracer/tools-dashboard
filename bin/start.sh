@@ -1,22 +1,203 @@
 #!/usr/bin/env bash
 # Docker Compose manager for Tools Dashboard (dev / prd / stg).
+# Stack identity from .env (lines ~10–12): TD_APP_CODE, TD_STACK_SUFFIX, COMPOSE_PROJECT_NAME.
+# start_cron.sh sources this file (library only). No other bin helpers required.
 #
-# Interactive menu:
-#   ./bin/start.sh
-#   ./bin/start.sh dev
-#
-# CLI (no menu):
-#   ./bin/start.sh dev up
-#   ./bin/start.sh dev down
-#   ./bin/start.sh prd preflight   # requires .env.prd (copy from .env.prd.example)
-#   ./bin/start.sh prd build       # build images only (same)
-#   ./bin/start.sh prd up-build    # plain build log, then up + wait for back-auth healthy
-#
-# Commands: up | up-build | down | logs | status | restart | rebuild | reset |
-#           build | config | preflight | menu
+# Interactive:  ./bin/start.sh    ./bin/start.sh dev
+# CLI:  ./bin/start.sh dev up | down | backup [dir] | free-ports | ...
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export TD_PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# ----- stack env: reads same .env files as compose; docker compose always uses -p "$TD_PROJ" -----
+td_read_env_key() {
+  local key="${1:-}" line val f
+  [ -n "$key" ] || return 1
+  for f in "$TD_ENV_FILE" "$TD_PROJECT_ROOT/.env" "$TD_PROJECT_ROOT/.env.$TD_ENV"; do
+    [ -n "$f" ] && [ -f "$f" ] || continue
+    line=$(grep -E "^${key}=" "$f" 2>/dev/null | head -1) || true
+    if [ -n "$line" ]; then
+      val=${line#*=}
+      val=$(printf '%s' "$val" | tr -d '\r' | tr -d '"' | tr -d "'" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+      echo "$val"
+      return 0
+    fi
+  done
+  return 1
+}
+
+td_stack_suffix_effective() {
+  local s app
+  s="$(td_read_env_key TD_STACK_SUFFIX 2>/dev/null || true)"
+  s=$(printf '%s' "$s" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+  if [ -n "$s" ]; then
+    echo "$s"
+    return
+  fi
+  app="$(td_read_env_key TD_APP_CODE 2>/dev/null || true)"
+  [ -n "$app" ] || app=tds
+  echo "_${TD_ENV}_${app}"
+}
+
+td_compose_project_name() {
+  local v base suff
+  v="$(td_read_env_key COMPOSE_PROJECT_NAME 2>/dev/null || true)"
+  v=$(printf '%s' "$v" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+  if [ -n "$v" ]; then
+    echo "$v"
+    return
+  fi
+  base="$(td_read_env_key TD_STACK_BASE 2>/dev/null || true)"
+  base=$(printf '%s' "$base" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+  [ -n "$base" ] || base=tools_dashboard
+  suff=$(td_stack_suffix_effective)
+  echo "${base}${suff}"
+}
+
+td_docker_compose() {
+  local _td_proj
+  _td_proj="$(td_compose_project_name)"
+  if [ -n "$TD_ENV_FILE" ]; then
+    docker compose -p "$_td_proj" -f "$TD_COMPOSE_PATH" --env-file "$TD_ENV_FILE" "$@"
+  else
+    docker compose -p "$_td_proj" -f "$TD_COMPOSE_PATH" "$@"
+  fi
+}
+
+td_prune_unused_volumes_for_project() {
+  local proj
+  proj="$(td_compose_project_name)"
+  echo "Pruning unused volumes for compose project ${proj} only (other stacks unchanged)..."
+  docker volume prune -f --filter "label=com.docker.compose.project=${proj}" >/dev/null 2>&1 || true
+}
+
+td_apply_stack_env() {
+  case "$TD_ENV" in
+    dev) export TD_COMPOSE_FILE="docker-compose.dev.yml" ;;
+    prd) export TD_COMPOSE_FILE="docker-compose.prd.yml" ;;
+    stg)
+      if [ -f "$TD_PROJECT_ROOT/docker-compose.stg.yml" ]; then
+        export TD_COMPOSE_FILE="docker-compose.stg.yml"
+      else
+        echo "TD_ENV=stg requires docker-compose.stg.yml in $TD_PROJECT_ROOT" >&2
+        return 1
+      fi
+      ;;
+    *)
+      echo "Invalid TD_ENV=${TD_ENV:-} (use dev, prd, or stg)" >&2
+      return 1
+      ;;
+  esac
+  export TD_COMPOSE_PATH="$TD_PROJECT_ROOT/$TD_COMPOSE_FILE"
+  if [ -f "$TD_PROJECT_ROOT/.env.$TD_ENV" ]; then
+    export TD_ENV_FILE="$TD_PROJECT_ROOT/.env.$TD_ENV"
+  elif [ -f "$TD_PROJECT_ROOT/.env" ]; then
+    export TD_ENV_FILE="$TD_PROJECT_ROOT/.env"
+  else
+    export TD_ENV_FILE=""
+  fi
+  export TD_APP_CODE
+  TD_APP_CODE="$(td_read_env_key TD_APP_CODE 2>/dev/null || true)"
+  [ -n "$TD_APP_CODE" ] || TD_APP_CODE=tds
+  export TD_STACK_SUFFIX
+  TD_STACK_SUFFIX="$(td_stack_suffix_effective)"
+  export TD_PROJ
+  TD_PROJ="$(td_compose_project_name)"
+  export TD_VOLUME_POSTGRES="${TD_PROJ}_postgres_data"
+  export TD_VOLUME_REDIS="${TD_PROJ}_redis_data"
+  export TD_VOLUME_CASSANDRA="${TD_PROJ}_cassandra_data"
+  export TD_VOLUME_SEAWEED="${TD_PROJ}_seaweed-data"
+}
+
+td_backup_archive_vol() {
+  local vol="$1" name="$2" OUT="$3" TS="$4"
+  if docker volume inspect "$vol" >/dev/null 2>&1; then
+    docker run --rm -v "${vol}:/v:ro" -v "$OUT:/out" busybox tar czf "/out/${name}_${TS}.tar.gz" -C /v .
+    echo "[backup] archived volume $vol -> ${name}_${TS}.tar.gz"
+  else
+    echo "[backup] skip missing volume: $vol"
+  fi
+}
+
+td_run_backup() {
+  local BACKUP_ROOT="${1:-}" TS OUT pg_logical_ok
+  if [ -z "$BACKUP_ROOT" ]; then
+    if [ -d "/mnt/data" ]; then
+      BACKUP_ROOT="/mnt/data/backups/${TD_PROJ}"
+    else
+      BACKUP_ROOT="/var/tmp/backups/${TD_PROJ}"
+    fi
+  fi
+  TS="$(date +%Y%m%d_%H%M%S)"
+  OUT="$BACKUP_ROOT/$TD_ENV/$TS"
+  mkdir -p "$OUT"
+  echo "[backup] TD_ENV=$TD_ENV compose=$TD_COMPOSE_FILE project=$TD_PROJ -> $OUT"
+  pg_logical_ok=0
+  if td_docker_compose ps -q postgresql 2>/dev/null | grep -q .; then
+    if td_docker_compose exec -T postgresql pg_dump -U user -d main_db -Fc >"$OUT/postgres.dump"; then
+      pg_logical_ok=1
+    else
+      echo "[backup] pg_dump failed" >&2
+      return 1
+    fi
+  else
+    echo "[backup] WARNING: postgresql not running; skipping pg_dump (volume archive fallback)" >&2
+  fi
+  if [ "$pg_logical_ok" -ne 1 ]; then
+    td_backup_archive_vol "$TD_VOLUME_POSTGRES" "postgres_data" "$OUT" "$TS"
+  fi
+  td_backup_archive_vol "$TD_VOLUME_REDIS" "redis" "$OUT" "$TS"
+  td_backup_archive_vol "$TD_VOLUME_CASSANDRA" "cassandra" "$OUT" "$TS"
+  td_backup_archive_vol "$TD_VOLUME_SEAWEED" "seaweedfs" "$OUT" "$TS"
+  ln -sfn "$OUT" "$BACKUP_ROOT/$TD_ENV/latest"
+  echo "[backup] done: $OUT"
+}
+
+td_container_project_label() {
+  docker inspect --format '{{ index .Config.Labels "com.docker.compose.project" }}' "$1" 2>/dev/null || true
+}
+
+td_free_dev_ports() {
+  local PORTS p id lbl line
+  if [ "$TD_ENV" != "dev" ]; then
+    echo "free-ports is only for TD_ENV=dev" >&2
+    return 1
+  fi
+  echo "==> compose down — project=$TD_PROJ"
+  td_docker_compose down --remove-orphans || true
+  PORTS=(8082 8443 4100 4101 8100 8101 8102 8105 6380 54432 39142 18026 8026 18333 19333 18888 8333 9333 8888)
+  echo "==> Removing only project '$TD_PROJ' containers still publishing dev ports..."
+  for p in "${PORTS[@]}"; do
+    while IFS= read -r id; do
+      [ -n "$id" ] || continue
+      lbl="$(td_container_project_label "$id")"
+      if [ "$lbl" = "$TD_PROJ" ]; then
+        echo "    port $p -> docker rm -f $id"
+        docker rm -f "$id" || true
+      elif [ -n "$lbl" ]; then
+        echo "    port $p -> skip $id (project $lbl)" >&2
+      else
+        echo "    port $p -> skip $id (no compose label)" >&2
+      fi
+    done < <(docker ps -q --filter "publish=$p" 2>/dev/null || true)
+  done
+  while read -r line; do
+    [ -n "$line" ] || continue
+    id="${line%% *}"
+    lbl="$(td_container_project_label "$id")"
+    if [ "$lbl" = "$TD_PROJ" ] && { [[ "$line" =~ :18026- ]] || [[ "$line" =~ :8026- ]]; }; then
+      echo "    (fallback) docker rm -f $id"
+      docker rm -f "$id" || true
+    fi
+  done < <(docker ps -a --format '{{.ID}} {{.Ports}}' | grep -E ':(18026|8026)->' || true)
+  echo "==> Done. If ports still busy: ss -tlnp    then: $0 dev up"
+}
+
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+  return 0
+fi
 
 set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 usage() {
   cat <<EOF
@@ -40,6 +221,8 @@ EOF
   echo "  build      docker compose build only (CI / catch image errors before up)"
   echo "  config     docker compose config (validates compose + env interpolation)"
   echo "  preflight  config + quick sanity checks for prd/stg"
+  echo "  backup [dir]  pg_dump + volume archives (default: /mnt/data/backups/\$TD_PROJ)"
+  echo "  free-ports    dev only: down + remove this project's containers on dev ports"
   echo "  menu       Interactive menu (same as env-only)"
 }
 
@@ -64,7 +247,7 @@ if [ "${#}" -ge 2 ]; then
   export TD_ENV="$_e"
   TD_CLI_CMD="$(echo "$2" | tr '[:upper:]' '[:lower:]')"
   case "$TD_CLI_CMD" in
-    menu | up | up-build | down | logs | status | restart | rebuild | reset | build | config | preflight) ;;
+    menu | up | up-build | down | logs | status | restart | rebuild | reset | build | config | preflight | backup | free-ports) ;;
     -h | --help | help)
       usage
       exit 0
@@ -97,8 +280,7 @@ elif [ -z "${TD_ENV:-}" ]; then
   esac
 fi
 
-# shellcheck source=compose-env.sh
-source "$SCRIPT_DIR/compose-env.sh"
+td_apply_stack_env || exit 1
 
 if [ ! -f "$TD_COMPOSE_PATH" ]; then
   echo "Compose file missing: $TD_COMPOSE_PATH"
@@ -539,10 +721,10 @@ run_force_rebuild() {
 }
 
 run_backup() {
-  _default_broot="/mnt/data/backups/${TD_PROJ}"
+  local _default_broot="/mnt/data/backups/${TD_PROJ}"
   read -r -p "Backup root directory [$_default_broot]: " root
   root=${root:-"$_default_broot"}
-  TD_ENV="$TD_ENV" "$SCRIPT_DIR/td-backup.sh" "$root"
+  td_run_backup "$root"
 }
 
 # ----- non-interactive CLI -----
@@ -559,6 +741,8 @@ if [ -n "${TD_CLI_CMD:-}" ] && [ "$TD_CLI_CMD" != "menu" ]; then
     build) cmd_compose_build "$@" || exit 1 ;;
     config) cmd_compose_config "$@" ;;
     preflight) cmd_preflight || exit 1 ;;
+    backup) td_run_backup "${1:-}" ;;
+    free-ports) td_free_dev_ports ;;
   esac
   exit 0
 fi
@@ -583,9 +767,10 @@ while true; do
   echo "10) Logs (follow)"
   echo "11) Full cleanup (down --rmi local)"
   echo "12) Status / volume check"
+  echo "13) Free dev host ports (this project only; TD_ENV=dev)"
   echo " 0) Exit"
   echo "========================================="
-  echo "CLI: $0 $TD_ENV up | up-build | build | config | preflight | down | logs | restart | rebuild | reset"
+  echo "CLI: $0 $TD_ENV up | backup [dir] | free-ports | build | config | preflight | down | ..."
   echo "========================================="
   read -r -p "Select: " opt
   case "$opt" in
@@ -642,6 +827,14 @@ while true; do
       ;;
     12)
       cmd_status
+      pause
+      ;;
+    13)
+      if [ "$TD_ENV" = "dev" ]; then
+        td_free_dev_ports || true
+      else
+        echo "Option 13 is dev-only (current TD_ENV=$TD_ENV)." >&2
+      fi
       pause
       ;;
     0) exit 0 ;;

@@ -3,10 +3,12 @@ import { json } from "@remix-run/node";
 import { useLoaderData, useSearchParams, Link } from "@remix-run/react";
 import { AppTable, type App } from "../features/app-library/ui/AppTable";
 import { useState } from "react";
+import { getAdminApiAuthHeaders } from "../utils/admin-api-auth.server";
 
 type LoaderData = {
   apps: App[];
   total: number;
+  loadError?: string;
 };
 
 /**
@@ -19,21 +21,34 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const sortOrder = url.searchParams.get("sort_order") || "desc";
 
   const apiUrl = process.env.API_URL || "http://back-api:8000";
+  const auth = getAdminApiAuthHeaders(request);
 
   try {
+    if (!auth.Authorization) {
+      return json<LoaderData>({
+        apps: [],
+        total: 0,
+        loadError: "Sign in to the admin console to view applications.",
+      });
+    }
+
     // Fetch apps from admin endpoint
     const response = await fetch(
       `${apiUrl}/api/admin/app-library?include_deleted=${includeDeleted}`,
       {
-        headers: {
-          // TODO: Add Authorization header with admin JWT token
-          // "Authorization": `Bearer ${token}`,
-        },
+        headers: auth,
       }
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch applications: ${response.status}`);
+      const errText = await response.text();
+      return json<LoaderData>({
+        apps: [],
+        total: 0,
+        loadError: `Could not load applications (HTTP ${response.status}). ${
+          errText.slice(0, 200) || ""
+        }`.trim(),
+      });
     }
 
     const data = await response.json();
@@ -72,6 +87,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return json<LoaderData>({
       apps: [],
       total: 0,
+      loadError:
+        error instanceof Error
+          ? error.message
+          : "Failed to load applications.",
     });
   }
 }
@@ -117,7 +136,9 @@ export default function AppLibraryIndex() {
           Application library
         </h1>
         <p className="mt-1 text-sm text-slate-600 sm:text-base">
-          Manage OAuth 2.0 clients and integrations
+          Manage OAuth 2.0 clients and integrations. In the last column, use View for the summary
+          or Edit registration to open the full client settings (URLs, redirect URIs, scopes, and
+          metadata).
         </p>
       </div>
 
@@ -165,6 +186,15 @@ export default function AppLibraryIndex() {
         </Link>
       </div>
 
+      {data.loadError && (
+        <div
+          className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          role="alert"
+        >
+          {data.loadError}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
         <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-950/5">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</div>
@@ -185,7 +215,7 @@ export default function AppLibraryIndex() {
       </div>
 
       {/* Table or Empty State */}
-      {data.apps.length === 0 ? (
+      {data.apps.length === 0 && !data.loadError ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 px-6 py-14 text-center ring-1 ring-slate-950/5">
           <h3 className="text-lg font-semibold text-slate-900">No applications yet</h3>
           <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
@@ -198,7 +228,7 @@ export default function AppLibraryIndex() {
             Create application
           </Link>
         </div>
-      ) : (
+      ) : data.apps.length > 0 ? (
         <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-950/5">
           <AppTable
             apps={data.apps}
@@ -207,7 +237,7 @@ export default function AppLibraryIndex() {
             sortOrder={sortOrder}
           />
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

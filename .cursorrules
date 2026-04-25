@@ -103,7 +103,7 @@ Multi-container workflows, ports, and operational notes are documented under `.c
 
 ### Prefer Compose for Node and Python
 - This repo runs **Remix** apps (`front-admin`, `front-public`), **FastAPI** services (`back-api`, `back-auth`, `back-websockets`, `feature-registry`), workers, and data stores via **Docker Compose**.
-- Use **`TD_ENV`** (`dev` or `prd`), **`./bin/start.sh`**, and **`bin/compose-env.sh`** for stack operations (`dev` → `docker-compose.dev.yml`, `prd` → `docker-compose.prd.yml` + `.env.prd` when present).
+- Use **`TD_ENV`** (`dev` or `prd`) and **`./bin/start.sh`** for stack operations (`dev` → `docker-compose.dev.yml`, `prd` → `docker-compose.prd.yml` + `.env.prd` when present). Stack env (`COMPOSE_PROJECT_NAME`, `TD_APP_CODE`, `TD_STACK_SUFFIX`) is read inside `start.sh`.
 
 ### Service Reference (compose stack)
 

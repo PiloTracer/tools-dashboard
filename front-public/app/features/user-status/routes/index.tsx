@@ -6,6 +6,7 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { getBackAuthEnv } from "../../../utils/env.server";
+import { fetchWithTransientRetry } from "../../../utils/http.server";
 
 /**
  * GET /features/user-status - Get current user status
@@ -16,12 +17,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const cookieHeader = request.headers.get("cookie");
 
   try {
-    const response = await fetch(statusUrl, {
-      headers: {
-        Accept: "application/json",
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
-    });
+    const response = await fetchWithTransientRetry(
+      statusUrl,
+      {
+        headers: {
+          Accept: "application/json",
+          ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+        },
+        cache: "no-store",
+      }
+    );
 
     if (!response.ok) {
       return json(
@@ -68,7 +73,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     return json(userStatus, { status: 200 });
   } catch (error) {
-    console.error("Failed to fetch user status:", error);
+    const brief = error instanceof Error ? error.message : String(error);
+    // One string: passing `Error` as a second arg makes Node print the full stack.
+    console.warn(
+      `User status: back-auth unavailable after retries; guest response. ${brief}`
+    );
     return json(
       {
         isAuthenticated: false,

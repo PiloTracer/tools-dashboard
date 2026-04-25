@@ -23,7 +23,7 @@ INSERT INTO oauth_clients (
     '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIr.Wgn7qm',
     'E-Card + QR-Code Batch Generator',
     'Create stunning personalized cards with dynamic QR codes, customizable templates, and intelligent name parsing. From design to deployment in minutes.',
-    'https://cdn.example.com/logos/ecards.png',
+    '/app/app-library-logos/ecards.svg',
     'http://localhost:7300',
     'https://ecards.epicstudio.com',
     ARRAY[

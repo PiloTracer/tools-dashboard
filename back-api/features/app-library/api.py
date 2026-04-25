@@ -6,8 +6,10 @@ This module provides endpoints for:
 """
 
 import os
+import re
 from datetime import datetime, date
 from typing import Any
+from urllib.parse import unquote
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -96,7 +98,61 @@ async def get_current_user(request: Request) -> dict[str, Any]:
         )
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail=data.get("message") or "Please verify your email before using the application library.",
+        detail=data.get("message")
+        or "Please verify your email before using the application library.",
+    )
+
+
+def _bearer_from_request(request: Request) -> str | None:
+    """JWT from ``Authorization: Bearer`` or the admin Remix cookie ``admin_session``."""
+    auth = request.headers.get("authorization")
+    if auth and auth.lower().startswith("bearer "):
+        return auth[7:].strip() or None
+    cookie = request.headers.get("cookie") or ""
+    m = re.search(r"admin_session=([^;]+)", cookie, flags=re.IGNORECASE)
+    if not m:
+        return None
+    return unquote(m.group(1).strip()) or None
+
+
+async def get_current_admin(request: Request) -> dict[str, Any]:
+    """Admin console user: JWT issued by back-auth (same token as ``admin_session`` in front-admin)."""
+    token = _bearer_from_request(request)
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Admin sign-in required",
+        )
+    base = os.environ.get("AUTH_SERVICE_URL", "http://back-auth:8001").rstrip("/")
+    url = f"{base}/admin/users/me/permissions"
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                url,
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=10.0,
+            )
+    except httpx.RequestError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Authentication service unavailable",
+        ) from exc
+
+    if resp.status_code == 200:
+        data = resp.json()
+        return {
+            "id": int(data["user_id"]),
+            "email": str(data.get("email") or ""),
+            "role": str(data.get("role") or ""),
+        }
+    if resp.status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN):
+        raise HTTPException(
+            status_code=resp.status_code,
+            detail="Invalid admin session or insufficient privileges",
+        )
+    raise HTTPException(
+        status_code=status.HTTP_502_BAD_GATEWAY,
+        detail="Invalid response from authentication service",
     )
 
 
@@ -260,7 +316,7 @@ async def toggle_favorite(
 async def list_all_apps(
     include_deleted: bool = False,
     app_repo: Any = Depends(get_app_repo),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_admin),
 ):
     """List all applications (admin view).
 
@@ -275,12 +331,6 @@ async def list_all_apps(
     Raises:
         HTTPException: If user is not admin
     """
-    if current_user["role"] != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
-
     apps = await app_repo.find_all_active(include_deleted=include_deleted)
 
     return {"apps": apps, "total": len(apps)}
@@ -292,7 +342,7 @@ async def create_app(
     request: Request,
     app_repo: Any = Depends(get_app_repo),
     audit_log_repo: Any = Depends(get_audit_log_repo),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_admin),
 ):
     """Create a new application.
 
@@ -309,12 +359,6 @@ async def create_app(
     Raises:
         HTTPException: If user is not admin
     """
-    if current_user["role"] != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
-
     app, client_secret = await domain.create_app(
         client_name=app_data.client_name,
         description=app_data.description,
@@ -343,7 +387,7 @@ async def get_app_admin(
     app_id: str,
     app_repo: Any = Depends(get_app_repo),
     access_rule_repo: Any = Depends(get_access_rule_repo),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_admin),
 ):
     """Get application details (admin view).
 
@@ -359,12 +403,6 @@ async def get_app_admin(
     Raises:
         HTTPException: If user is not admin or app not found
     """
-    if current_user["role"] != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
-
     app = await app_repo.find_by_id(app_id)
     if not app:
         raise HTTPException(
@@ -387,7 +425,7 @@ async def update_app(
     request: Request,
     app_repo: Any = Depends(get_app_repo),
     audit_log_repo: Any = Depends(get_audit_log_repo),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_admin),
 ):
     """Update an application.
 
@@ -405,12 +443,6 @@ async def update_app(
     Raises:
         HTTPException: If user is not admin or app not found
     """
-    if current_user["role"] != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
-
     updated_app = await domain.update_app(
         app_id=app_id,
         client_name=app_data.client_name,
@@ -443,7 +475,7 @@ async def delete_app(
     request: Request,
     app_repo: Any = Depends(get_app_repo),
     audit_log_repo: Any = Depends(get_audit_log_repo),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_admin),
 ):
     """Delete (soft delete) an application.
 
@@ -460,12 +492,6 @@ async def delete_app(
     Raises:
         HTTPException: If user is not admin or app not found
     """
-    if current_user["role"] != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
-
     deleted_app = await domain.delete_app(
         app_id=app_id,
         performed_by=current_user["id"],
@@ -491,7 +517,7 @@ async def toggle_status(
     request: Request,
     app_repo: Any = Depends(get_app_repo),
     audit_log_repo: Any = Depends(get_audit_log_repo),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_admin),
 ):
     """Toggle active/inactive status of an application.
 
@@ -509,12 +535,6 @@ async def toggle_status(
     Raises:
         HTTPException: If user is not admin or app not found
     """
-    if current_user["role"] != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
-
     is_active = status_data.get("is_active")
     if is_active is None:
         raise HTTPException(
@@ -554,7 +574,7 @@ async def regenerate_secret(
     request: Request,
     app_repo: Any = Depends(get_app_repo),
     audit_log_repo: Any = Depends(get_audit_log_repo),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_admin),
 ):
     """Regenerate client secret for an application.
 
@@ -571,12 +591,6 @@ async def regenerate_secret(
     Raises:
         HTTPException: If user is not admin or app not found
     """
-    if current_user["role"] != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
-
     result = await domain.regenerate_secret(
         app_id=app_id,
         performed_by=current_user["id"],
@@ -607,7 +621,7 @@ async def update_access_control(
     request: Request,
     access_rule_repo: Any = Depends(get_access_rule_repo),
     audit_log_repo: Any = Depends(get_audit_log_repo),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_admin),
 ):
     """Update access control rules for an application.
 
@@ -625,12 +639,6 @@ async def update_access_control(
     Raises:
         HTTPException: If user is not admin
     """
-    if current_user["role"] != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
-
     access_rule = await domain.update_access_control(
         app_id=app_id,
         mode=access_data.mode.value,
@@ -652,7 +660,7 @@ async def get_usage_stats(
     start_date: date | None = None,
     end_date: date | None = None,
     app_repo: Any = Depends(get_app_repo),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_admin),
 ):
     """Get usage statistics for an application.
 
@@ -669,12 +677,6 @@ async def get_usage_stats(
     Raises:
         HTTPException: If user is not admin or app not found
     """
-    if current_user["role"] != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
-
     app = await app_repo.find_by_id(app_id)
     if not app:
         raise HTTPException(
@@ -699,7 +701,7 @@ async def get_audit_log(
     limit: int = 50,
     offset: int = 0,
     audit_log_repo: Any = Depends(get_audit_log_repo),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_admin),
 ):
     """Get audit log for an application.
 
@@ -716,12 +718,6 @@ async def get_audit_log(
     Raises:
         HTTPException: If user is not admin
     """
-    if current_user["role"] != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
-
     logs = await audit_log_repo.find_by_app(app_id, limit=limit, offset=offset)
     total = await audit_log_repo.count_by_app(app_id)
 

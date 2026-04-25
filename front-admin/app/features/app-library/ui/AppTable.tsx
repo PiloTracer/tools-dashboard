@@ -204,12 +204,20 @@ export const AppTable: FC<Props> = ({ apps, onSort, sortBy, sortOrder }) => {
                 {formatDate(app.created_at)}
               </td>
               <td className="whitespace-nowrap px-3 py-3 text-right sm:px-5">
-                <Link
-                  to={`/admin/features/app-library/${app.id}`}
-                  className="inline-flex rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 sm:text-sm"
-                >
-                  Open
-                </Link>
+                <div className="flex flex-col items-end gap-1.5 sm:flex-row sm:justify-end sm:gap-2">
+                  <Link
+                    to={`/admin/features/app-library/${app.id}`}
+                    className="inline-flex rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:px-3 sm:text-sm"
+                  >
+                    View
+                  </Link>
+                  <Link
+                    to={`/admin/features/app-library/${app.id}?tab=registration&edit=1`}
+                    className="inline-flex rounded-lg bg-indigo-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700 sm:px-3 sm:text-sm"
+                  >
+                    Edit registration
+                  </Link>
+                </div>
               </td>
             </tr>
           ))}

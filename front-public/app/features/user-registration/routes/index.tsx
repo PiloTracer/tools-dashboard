@@ -7,6 +7,7 @@ import { z } from "zod";
 import { LoginForm } from "../ui/LoginForm";
 import { RegistrationForm } from "../ui/RegistrationForm";
 import { getBackAuthEnv } from "../../../utils/env.server";
+import { fetchWithTransientRetry } from "../../../utils/http.server";
 import { resolvePublicPath, resolveRedirectTarget } from "../../../utils/publicPath.server";
 
 const DEFAULT_PASSWORD_MIN_LENGTH = 12;
@@ -128,22 +129,29 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   let configResponse: Response;
   try {
-    configResponse = await fetch(configUrl, {
-      headers: {
-        Accept: "application/json",
-      },
-      cache: "no-store",
-    });
+    configResponse = await fetchWithTransientRetry(
+      configUrl,
+      {
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      }
+    );
   } catch (error) {
-    console.error("Failed to request registration config", error);
-    const fallback = buildFallbackData("Authentication service is currently unavailable. Please try again later.");
+    console.error("Failed to request registration config (after retries)", error);
+    const fallback = buildFallbackData(
+      "The sign-in service is not ready yet, or the network is unavailable. " +
+        "If the stack has just started, wait a few seconds and refresh, or try again in a moment."
+    );
     fallback.initialMode = initialMode;
     return json<LoaderData>(fallback);
   }
 
   if (!configResponse.ok) {
     console.error("Registration config request failed", configResponse.status, await safeReadJson(configResponse));
-    const fallback = buildFallbackData("We could not load registration settings. Please try again shortly.");
+    const fallback = buildFallbackData(
+      "We could not load registration settings. " +
+        "The service may still be starting: wait a few seconds, refresh, and try again."
+    );
     fallback.initialMode = initialMode;
     return json<LoaderData>(fallback);
   }

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install or test cron-driven backups using bin/td-backup.sh (no interactive compose menu).
+# Cron backup helper: installs a wrapper that runs ./bin/start.sh <env> backup.
 # Usage: TD_ENV=prd ./bin/start_cron.sh
 
 set -euo pipefail
@@ -12,10 +12,10 @@ if [ -z "${TD_ENV:-}" ]; then
   export TD_ENV="${e:-dev}"
 fi
 
-# shellcheck source=compose-env.sh
-source "$SCRIPT_DIR/compose-env.sh"
+# shellcheck source=start.sh
+source "$SCRIPT_DIR/start.sh"
+td_apply_stack_env || exit 1
 
-# Default: one backup folder per stack (TD_PROJ from compose-env / .env).
 _default_broot="/mnt/data/backups/${TD_PROJ}"
 if [ ! -d "/mnt/data" ]; then
   _default_broot="/var/tmp/backups/${TD_PROJ}"
@@ -34,8 +34,8 @@ set -euo pipefail
 export TD_ENV=$TD_ENV
 cd "$PROJECT_ROOT"
 exec >>"$LOG_DIR/cron.log" 2>&1
-echo "\$(date -Is) cron backup start TD_ENV=$TD_ENV"
-"$SCRIPT_DIR/td-backup.sh" "$BACKUP_ROOT"
+echo "\$(date -Is) cron backup start TD_ENV=$TD_ENV project=$TD_PROJ"
+"$SCRIPT_DIR/start.sh" "$TD_ENV" backup "$BACKUP_ROOT"
 echo "\$(date -Is) cron backup end"
 EOF
 chmod +x "$CRON_SCRIPT"
