@@ -2,7 +2,24 @@
 
 **Purpose:** Fast resume for the next chat or engineer. Read this first, then `.cursorrules` and `DOCS_TECH_STACK.md` as needed.
 
-**Last aligned:** 2026-04-22 — **Improvement sprint prep:** cross-cutting plan lives at `.claude/plans/20260422_PLAN_application-improvement-priorities.md` (Priority 1 starter checklist below). **Next session:** begin Priority 1 execution (2026-04-23 or whenever you pick up the sprint).
+**Last aligned:** 2026-04-23 — **Improvement sprint** still tracked in `.claude/plans/20260422_PLAN_application-improvement-priorities.md` when present; see **Recently landed (2026-04-23)** below for work merged into this repo this week.
+
+---
+
+## Recently landed (2026-04-23)
+
+| Area | What changed |
+|------|----------------|
+| **Public app library auth** | `back-api/features/app-library/api.py` — `get_current_user` no longer returns a mock admin. It calls **`GET {AUTH_SERVICE_URL}/user-registration/status`** with forwarded **`Cookie`**. Verified email only → list apps; no session → **401**; session but unverified → **403**. |
+| **front-public app library** | Loader redirects **401** → sign-in, **403** → email verify (`resolvePublicPath`). |
+| **User status UI** | `front-public/.../user-status/routes/index.tsx` — pending session returns `user` + `isAuthenticated: false` so header can show “pending verification”. |
+| **Client state** | `userStatusStore.ts` — do **not** rehydrate `isAuthenticated` / `user` from `localStorage` (stale “logged in” after server state changed). |
+| **Nginx / Remix** | `infra/nginx/default.conf` + `default.prd.conf` — **`location = /`** (dev) and **`location = /app`** preserve **`?$args`** on redirect to `/app/` so Remix **`?_data=`** client loads are not stripped (**fixes post-logout / navigation `TypeError: Failed to fetch`**). |
+| **Logout** | `front-public/.../user-logout/routes/index.tsx` — redirect to **`resolvePublicHomeUrl()`** (`/app/`); forward **all** `Set-Cookie` from back-auth via `getAllSetCookieHeaders` (`front-public/app/utils/setCookie.server.ts`). |
+| **back-auth email** | `back-auth/services/email.py` — no SMTP **AUTH** to **Mailhog** (`MAIL_HOST=mailhog`); skip login when username empty; avoids `SMTPServerDisconnected` with leftover SendGrid creds in `.env`. |
+| **back-auth settings** | `back-auth/core/config.py` — **no** `env_file=".env"`; settings from **process env** (Compose injects repo-root `.env`). |
+| **Seaweed docs** | `seaweedfs-config/README.md` — mini-tutorial + S3 gateway vs `security.toml`. |
+| **`.env*`** | Four root files aligned (same keys / line layout); only root `.env*` used. |
 
 ---
 
@@ -43,7 +60,7 @@ Work in **small PRs**; keep `.env.prd` secrets out of chat. Evidence before merg
 
 | Step | Where to work |
 |------|----------------|
-| Remove debug **`print`** paths; use `logging` with **no token / PII** in log lines. | `back-api/features/users/api.py` (`GET /users/me`, Bearer → `back-auth` `/internal/oauth/validate-token`) |
+| Remove debug **`print`** paths; use `logging` with **no token / PII** in log lines. | `back-api/features/users/api.py` (`GET /users/me`, Bearer → `back-auth` `/internal/oauth/validate-token`) — **still TODO** |
 | Service-local map | `back-api/features/users/feature.yaml` |
 
 ### 1D — Edge / API URL mental model (nginx + callers)
@@ -52,6 +69,8 @@ Work in **small PRs**; keep `.env.prd` secrets out of chat. Evidence before merg
 
 1. **Browser → nginx → back-api:** `infra/nginx/default.conf` and `default.prd.conf` use `location /api/` with `proxy_pass http://back-api:8000/;` — the URI forwarded to FastAPI is **`/api`-stripped** (e.g. browser `/api/users/me` → upstream path `/users/me`). Routers with prefix **`/users`** match; verify each router against this rule.
 2. **Server-to-server (Remix loader → back-api in Docker):** code often uses `BACKEND_API_URL` / `http://back-api:8000` and may call **`/api/...`** paths directly on the container. That is valid **only** if FastAPI routes are registered with that prefix (e.g. auto-auth `APIRouter(prefix="/api")`).
+
+**Remix + `/app` redirects (2026-04-23):** `location = /` and `location = /app` must **preserve the query string** when redirecting to `/app/` (`if ($args = '') … else … /app/?$args`). A bare `return 301 /app/` **drops** `?_data=…` and breaks client loader fetches (`TypeError: Failed to fetch`).
 
 **Priority 1D deliverable:** After you verify with `curl`/browser against `dev` and `prd`, document the **canonical** external vs internal URL table in this HANDOFF (one subsection) and fix any **documented** mismatch (nginx rewrite vs router prefix — pick one strategy per environment).
 
@@ -160,6 +179,8 @@ Newer keys include `REDIS_PASSWORD`, `SEAWEED_S3_ACCESS_KEY`, `SEAWEED_S3_SECRET
 - `docker-compose.prd.yml`: healthchecks, `depends_on` with `service_healthy`, Redis optional `requirepass` via `REDIS_PASSWORD`, structured logging anchor (`x-logging`).
 - Admin sign-in: double-submit CSRF — `front-admin/app/utils/admin-csrf.server.ts` + route integration.
 - Seaweed credentials read from env in Python init paths (`back-api` scripts/service, `seaweedfs/create-buckets.py`).
+- **Seaweed access:** `seaweedfs-config/README.md` (S3 gateway vs `security.toml`); dev S3 host port **18333** (not 8333 on host).
+- **Classic signup email:** dev uses **Mailhog** — messages appear in Mailhog UI only, not real inboxes; `MAIL_HOST=mailhog` + empty SMTP user/pass (or code path that skips AUTH for Mailhog). See `back-auth/services/email.py`.
 - `package-lock.json` must stay in sync with `package.json` for `npm ci` in `Dockerfile.prd` builds.
 
 ---
@@ -192,7 +213,7 @@ Preflight **warns** on placeholder secrets in `.env.prd` — expected until oper
 | **Improvement roadmap (P1–P3)** | `.claude/plans/20260422_PLAN_application-improvement-priorities.md` |
 | Feature conventions | `.claude/CONVENTIONS.md`, `.claude/FEATURE_STANDARD.md` |
 | Feature index | `.claude/FEATURES_INDEX.md` |
-| Nginx / TLS / WS notes | `infra/nginx/README.prd.md`, `infra/nginx/default.prd.conf` |
+| Nginx / TLS / WS notes | `infra/nginx/README.prd.md`, `infra/nginx/default.prd.conf`, `default.conf` (dev — **query-preserving** `/` and `/app` redirects) |
 | Start script behavior | `bin/start.sh` |
 | Prod compose edits | `docker-compose.prd.yml` |
 | Public path / base URL logic | `front-public/app/utils/publicPath.server.ts` |
@@ -201,8 +222,8 @@ Preflight **warns** on placeholder secrets in `.env.prd` — expected until oper
 
 ## Open / follow-up (not blocking compose build)
 
-- **Priority 1 (active):** execute checklist above; update **API routing** subsection with verified paths after nginx vs in-cluster testing.
-- `tmp/errors.txt` audit may still list CI, digest-pinned base images, nginx `resolver`, default `location /`, Python `requirements.txt` pinning breadth — triage as needed.
+- **Priority 1 (active):** remaining 1A admin session hardening, 1B cookie audit, 1C remove `print` / logging on `back-api` users path; expand **API routing** table with measured `curl` matrix after any nginx/router change.
+- `tmp/errors.txt` audit may still list CI, digest-pinned base images, nginx `resolver`, Python `requirements.txt` pinning breadth — triage as needed.
 - Operator: real secrets, DNS, TLS cert, and external LB headers (`X-Forwarded-Proto`) for correct secure cookies and redirects.
 
 ---
