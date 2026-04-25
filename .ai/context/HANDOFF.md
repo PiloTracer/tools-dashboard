@@ -2,7 +2,21 @@
 
 **Purpose:** Fast resume for the next chat or engineer. Read this first, then `.cursorrules` and `DOCS_TECH_STACK.md` as needed.
 
-**Last aligned:** 2026-04-23 — **Improvement sprint** still tracked in `.claude/plans/20260422_PLAN_application-improvement-priorities.md` when present; see **Recently landed (2026-04-23)** below for work merged into this repo this week.
+**Last aligned:** 2026-04-24 — **Improvement sprint** still tracked in `.claude/plans/20260422_PLAN_application-improvement-priorities.md` when present; see **Recently landed** tables below.
+
+---
+
+## Recently landed (2026-04-24)
+
+| Area | What changed |
+|------|----------------|
+| **App library OAuth bootstrap (Postgres)** | `back-postgres/schema/008_ecards_app_bootstrap.sql` — idempotent upsert for **`ecards_a1b2c3d4`** (metadata + `all_users` access rule); removes legacy **`ecards_app_dev`**. `006_oauth_tables.sql` no longer inserts the old dev row (E‑Cards lives in `008` after app_library columns exist). |
+| **Rizervox CMS client** | `back-postgres/schema/009_rizervox_app_bootstrap.sql` — same pattern for **`rizervox_r1z2r3v4`** (`http://localhost:17513`, `https://rizervox.com`, `/oauth/complete` redirects). Dev bootstrap secret same convention as E‑Cards (see migration comments). |
+| **Feature metadata** | `front-public/app/features/app-library/feature.yaml` — `external_integrations` lists Rizervox; deployment checklist references bootstrap migrations. |
+| **Operator log (code-only)** | `.ai/context/IMPLEMENTATION_LOG_CMS_OAUTH_RIZERVOX.md` — OAuth contract, DB fields, A1–A7 audit vs repo; notes **`front-public/app/routes/oauth.token.tsx`** still has **TODO** for explicit **`client_secret`** verification against DB. |
+| **Dev seed** | `back-postgres/seeds/dev/007_app_library_seed.sql` — header notes automatic path is **`008`** (manual seed optional). |
+
+**Expected Rizervox product plan path (not in this checkout):** `.ai/plan/multi-tenant-headless-cms` — add to repo or paste OAuth sections so the implementation log can cite plan IDs.
 
 ---
 
@@ -35,9 +49,11 @@
 
 ---
 
-## Tomorrow: start Priority 1 (security + sessions + edge)
+## Tomorrow (2026-04-25): resume
 
-Work in **small PRs**; keep `.env.prd` secrets out of chat. Evidence before merge: targeted tests + manual smoke on `dev` then `prd` preflight.
+**Rizervox / CMS OAuth (quick):** Confirm `.ai/plan/multi-tenant-headless-cms` is present or sync plan excerpt; align `009` / `feature.yaml` if plan specifies different hosts, scopes, or callback paths. Optionally implement **`client_secret`** bcrypt check on token exchange (`oauth.token.tsx` TODO) via `back-api` or `back-auth` using existing client repo.
+
+**Priority 1 (security + sessions + edge)** — still active; work in **small PRs**; keep `.env.prd` secrets out of chat. Evidence before merge: targeted tests + manual smoke on `dev` then `prd` preflight.
 
 ### 1A — Admin session (front-admin)
 
@@ -217,12 +233,16 @@ Preflight **warns** on placeholder secrets in `.env.prd` — expected until oper
 | Start script behavior | `bin/start.sh` |
 | Prod compose edits | `docker-compose.prd.yml` |
 | Public path / base URL logic | `front-public/app/utils/publicPath.server.ts` |
+| App library OAuth clients (Postgres bootstrap) | `back-postgres/schema/008_ecards_app_bootstrap.sql`, `009_rizervox_app_bootstrap.sql` |
+| Rizervox CMS OAuth contract (code-only) | `.ai/context/IMPLEMENTATION_LOG_CMS_OAUTH_RIZERVOX.md` |
 
 ---
 
 ## Open / follow-up (not blocking compose build)
 
 - **Priority 1 (active):** remaining 1A admin session hardening, 1B cookie audit, 1C remove `print` / logging on `back-api` users path; expand **API routing** table with measured `curl` matrix after any nginx/router change.
+- **OAuth:** explicit **`client_secret`** verification at token endpoint still **TODO** in `front-public/app/routes/oauth.token.tsx`; Rizervox operator doc: `.ai/context/IMPLEMENTATION_LOG_CMS_OAUTH_RIZERVOX.md`.
+- **Rizervox plan:** add `.ai/plan/multi-tenant-headless-cms` to this repo (or link) so bootstrap checklist can match product spec.
 - `tmp/errors.txt` audit may still list CI, digest-pinned base images, nginx `resolver`, Python `requirements.txt` pinning breadth — triage as needed.
 - Operator: real secrets, DNS, TLS cert, and external LB headers (`X-Forwarded-Proto`) for correct secure cookies and redirects.
 

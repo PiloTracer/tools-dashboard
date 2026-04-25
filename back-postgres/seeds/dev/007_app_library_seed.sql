@@ -3,7 +3,7 @@
 -- ============================================================================
 -- File: back-postgres/seeds/dev/007_app_library_seed.sql
 -- Created: 2025-11-15
--- Purpose: Seed E-Cards application for development/testing
+-- Purpose: Optional manual re-seed / reference. Automatic bootstrap: schema/008_ecards_app_bootstrap.sql
 -- ============================================================================
 
 -- ============================================================================

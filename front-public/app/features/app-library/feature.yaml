@@ -70,6 +70,12 @@ external_integrations:
     client_id: ecards_a1b2c3d4
     description: E-Card + QR-Code Batch Generator
 
+  - name: Rizervox
+    url_dev: http://localhost:17513
+    url_prod: https://rizervox.com
+    client_id: rizervox_r1z2r3v4
+    description: CMS + SEO + agentic
+
 # Security configuration
 security:
   oauth:
@@ -171,7 +177,7 @@ deployment:
 
   deployment_checklist:
     - Database schema deployed
-    - Seed data loaded (E-Cards app)
+    - OAuth app bootstrap migrations applied (E-Cards, Rizervox)
     - Back-API endpoints available
     - OAuth server configured
     - Frontend build successful
@@ -200,3 +206,4 @@ changelog:
       - OAuth 2.0 with PKCE support
       - Responsive UI with Tailwind CSS
       - E-Cards integration
+      - Rizervox OAuth client (Postgres bootstrap + feature metadata)

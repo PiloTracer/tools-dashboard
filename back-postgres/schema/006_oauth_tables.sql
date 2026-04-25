@@ -122,31 +122,8 @@ COMMENT ON COLUMN oauth_usage_events.event_type IS 'Type of event (e.g., cards_g
 COMMENT ON COLUMN oauth_usage_events.quantity IS 'Quantity of resource used in this event';
 COMMENT ON COLUMN oauth_usage_events.metadata IS 'Additional event metadata (JSON)';
 
--- ============================================================================
--- Insert default OAuth client for testing (development only)
--- ============================================================================
-
--- This is a test client for E-Cards integration
--- In production, clients should be registered via admin UI
-INSERT INTO oauth_clients (
-    client_id,
-    client_secret_hash,
-    client_name,
-    description,
-    logo_url,
-    redirect_uris,
-    allowed_scopes
-) VALUES (
-    'ecards_app_dev',
-    '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIeWVVGVbS',  -- Hash of 'dev_secret_do_not_use_in_production'
-    'E-Cards Application (Development)',
-    'E-Cards system for digital business card management',
-    'http://localhost:7300/logo.png',
-    ARRAY['http://localhost:7300/oauth/complete'],
-    ARRAY['profile', 'email', 'subscription']
-) ON CONFLICT (client_id) DO NOTHING;
-
-COMMENT ON TABLE oauth_clients IS 'Development test client created by migration. Remove in production.';
+-- Default E-Cards OAuth client is upserted in 008_ecards_app_bootstrap.sql
+-- (after app_library columns and access_rules exist). Do not seed here.
 
 -- ============================================================================
 -- Grant Permissions
