@@ -15,13 +15,16 @@ fi
 # shellcheck source=compose-env.sh
 source "$SCRIPT_DIR/compose-env.sh"
 
-BACKUP_ROOT="${TD_CRON_BACKUP_ROOT:-/mnt/data/backups_tools_dashboard}"
+# Default: one backup folder per stack (TD_PROJ from compose-env / .env).
+_default_broot="/mnt/data/backups/${TD_PROJ}"
 if [ ! -d "/mnt/data" ]; then
-  BACKUP_ROOT="${TD_CRON_BACKUP_ROOT:-/var/tmp/backups_tools_dashboard}"
+  _default_broot="/var/tmp/backups/${TD_PROJ}"
 fi
+BACKUP_ROOT="${TD_CRON_BACKUP_ROOT:-$_default_broot}"
+unset _default_broot
 
-CRON_TAG="tools-dashboard-backup-${TD_ENV}"
-CRON_SCRIPT="$SCRIPT_DIR/td-backup-cron-wrap-${TD_ENV}.sh"
+CRON_TAG="tools-dashboard-backup-${TD_PROJ}"
+CRON_SCRIPT="$SCRIPT_DIR/td-backup-cron-wrap-${TD_PROJ}.sh"
 LOG_DIR="$BACKUP_ROOT/$TD_ENV"
 mkdir -p "$LOG_DIR"
 

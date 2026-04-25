@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Free host ports used by docker-compose.dev.yml so ./bin/start.sh dev up can bind again.
 #
-# Does: compose down --remove-orphans, rm -f any container still publishing those ports,
-#       optional docker network prune.
+# Only removes **this compose project's** containers (label com.docker.compose.project).
+# Other Docker stacks (other projects or non-compose containers) are never stopped.
 #
-# If ports STILL busy: something is not Docker — use: sudo ss -tlnp | grep ':18026 '
-# Nuclear option (stops ALL containers on this machine): sudo systemctl restart docker
+# If ports are still busy: something else is bound — use: ss -tlnp | grep ':18026 '
+# Do not use "restart docker" to free ports unless you intend to stop every container on the host.
 #
 # Usage (repo root):
 #   ./bin/free-dev-ports.sh
@@ -21,34 +21,45 @@ if [ "$TD_ENV" != "dev" ]; then
   exit 1
 fi
 
-echo "==> docker compose down (remove orphans) — TD_ENV=$TD_ENV"
+# Label Docker sets on containers created by compose for this project.
+td_container_project_label() {
+  docker inspect --format '{{ index .Config.Labels "com.docker.compose.project" }}' "$1" 2>/dev/null || true
+}
+
+echo "==> docker compose down (remove orphans) — TD_ENV=$TD_ENV project=$TD_PROJ"
 td_docker_compose down --remove-orphans || true
 
 # Host ports published by docker-compose.dev.yml (update if compose changes)
 PORTS=(8082 8443 4100 4101 8100 8101 8102 8105 6380 54432 39142 18026 8026 18333 19333 18888 8333 9333 8888)
 
-echo "==> Removing any Docker container still publishing dev ports..."
+echo "==> Removing only containers for project '$TD_PROJ' that still publish dev ports..."
 for p in "${PORTS[@]}"; do
-  ids="$(docker ps -aq --filter "publish=$p" 2>/dev/null || true)"
-  ids="$(echo "$ids" | tr -s '[:space:]' ' ' | xargs)"
-  if [ -n "$ids" ]; then
-    echo "    port $p -> docker rm -f $ids"
-    # shellcheck disable=SC2086
-    docker rm -f $ids || true
-  fi
+  while IFS= read -r id; do
+    [ -n "$id" ] || continue
+    lbl="$(td_container_project_label "$id")"
+    if [ "$lbl" = "$TD_PROJ" ]; then
+      echo "    port $p -> docker rm -f $id  (project $TD_PROJ)"
+      docker rm -f "$id" || true
+    elif [ -n "$lbl" ]; then
+      echo "    port $p -> skip $id  (other compose project: $lbl)" >&2
+    else
+      echo "    port $p -> skip $id  (not a compose project container — not removing)" >&2
+    fi
+  done < <(docker ps -q --filter "publish=$p" 2>/dev/null || true)
 done
 
-# Fallback: grep docker ps output (older Docker without publish filter quirks)
+# Fallback: Mailhog ports (only remove if this project)
 while read -r line; do
+  [ -n "$line" ] || continue
   id="${line%% *}"
-  if [[ "$line" =~ :18026- ]] || [[ "$line" =~ :8026- ]]; then
-    echo "    (fallback) removing $id (ports: $line)"
+  lbl="$(td_container_project_label "$id")"
+  if [ "$lbl" = "$TD_PROJ" ] && { [[ "$line" =~ :18026- ]] || [[ "$line" =~ :8026- ]]; }; then
+    echo "    (fallback) removing $id (ports: $line) project $TD_PROJ"
     docker rm -f "$id" || true
   fi
 done < <(docker ps -a --format '{{.ID}} {{.Ports}}' | grep -E ':(18026|8026)->' || true)
 
-echo "==> docker network prune (dangling)"
-docker network prune -f >/dev/null || true
+echo "==> Skipping docker network prune (global; would risk other stacks). Unused nets from this project are removed on compose down."
 
 echo ""
 echo "Done. Check listeners:"
@@ -63,4 +74,4 @@ done
 
 echo ""
 echo "Next: ./bin/start.sh dev up"
-echo "If a port is still 'already allocated' but ss shows nothing, try: sudo systemctl restart docker"
+echo "If a port is still 'already allocated' but ss shows nothing, investigate with: docker ps --format '{{.ID}} {{.Names}} {{.Ports}}'"

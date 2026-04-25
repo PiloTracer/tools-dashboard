@@ -7,12 +7,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=compose-env.sh
 source "$SCRIPT_DIR/compose-env.sh"
 
+# Default backup dir is per compose project (TD_PROJ) so multiple stacks on one host do not share archives.
 BACKUP_ROOT="${1:-}"
 if [ -z "$BACKUP_ROOT" ]; then
   if [ -d "/mnt/data" ]; then
-    BACKUP_ROOT="/mnt/data/backups_tools_dashboard"
+    BACKUP_ROOT="/mnt/data/backups/${TD_PROJ}"
   else
-    BACKUP_ROOT="/var/tmp/backups_tools_dashboard"
+    BACKUP_ROOT="/var/tmp/backups/${TD_PROJ}"
   fi
 fi
 

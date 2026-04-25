@@ -130,10 +130,6 @@ pause() {
   echo
 }
 
-prune_anonymous_volumes() {
-  echo "Pruning dangling anonymous volumes..."
-  docker volume prune -f >/dev/null || true
-}
 
 wait_for_stack_ready() {
   local max_attempts=120
@@ -310,10 +306,10 @@ print_stack_urls() {
     echo "— Stack commands —"
     echo "  $0 dev logs   |  $0 dev down   |  $0 dev rebuild   |  $0 dev reset"
     echo ""
-    echo "— CLI into DB containers —"
-    echo "  docker compose -f $TD_COMPOSE_FILE exec -it postgresql psql -U user -d main_db"
-    echo "  docker compose -f $TD_COMPOSE_FILE exec -it redis redis-cli"
-    echo "  docker compose -f $TD_COMPOSE_FILE exec -it cassandra cqlsh"
+    echo "— CLI into DB containers (from repo root; project $TD_PROJ) —"
+    echo "  docker compose -p $TD_PROJ -f $TD_COMPOSE_FILE exec -it postgresql psql -U user -d main_db"
+    echo "  docker compose -p $TD_PROJ -f $TD_COMPOSE_FILE exec -it redis redis-cli"
+    echo "  docker compose -p $TD_PROJ -f $TD_COMPOSE_FILE exec -it cassandra cqlsh"
     print_dev_public_url_guide
   else
     local NPORT PBASE WSBASE
@@ -374,7 +370,7 @@ print_stack_urls() {
 cmd_up_quick() {
   echo "Starting stack (no image rebuild)..."
   td_docker_compose up -d
-  prune_anonymous_volumes
+  td_prune_unused_volumes_for_project
   if ! wait_for_stack_ready; then
     echo "Stack did not become healthy in time." >&2
     return 1
@@ -390,7 +386,7 @@ cmd_up_build() {
   fi
   echo "Starting stack (containers)..."
   td_docker_compose up -d
-  prune_anonymous_volumes
+  td_prune_unused_volumes_for_project
   if ! wait_for_stack_ready; then
     echo "Stack did not become healthy in time." >&2
     return 1
@@ -401,7 +397,7 @@ cmd_up_build() {
 cmd_down() {
   echo "Stopping stack..."
   td_docker_compose down --remove-orphans
-  prune_anonymous_volumes
+  td_prune_unused_volumes_for_project
   echo "Stopped."
 }
 
@@ -412,6 +408,8 @@ cmd_logs() {
 cmd_status() {
   echo "Project root:     $TD_PROJECT_ROOT"
   echo "TD_ENV:           $TD_ENV"
+  echo "App code:         $TD_APP_CODE  (stack suffix: $TD_STACK_SUFFIX)"
+  echo "Compose project:  $TD_PROJ (containers / named volumes use this prefix)"
   echo "Compose file:     $TD_COMPOSE_FILE"
   echo "Env file (opt):   ${TD_ENV_FILE:-<compose default .env>}"
   echo "Volume (pg):      $TD_VOLUME_POSTGRES"
@@ -444,7 +442,7 @@ cmd_rebuild_stack() {
     return 1
   fi
   td_docker_compose up -d
-  prune_anonymous_volumes
+  td_prune_unused_volumes_for_project
   if ! wait_for_stack_ready; then
     echo "Stack did not become healthy in time." >&2
     return 1
@@ -504,7 +502,7 @@ cmd_reset_stack() {
     return 1
   fi
   td_docker_compose up -d
-  prune_anonymous_volumes
+  td_prune_unused_volumes_for_project
   if ! wait_for_stack_ready; then
     echo "Stack did not become healthy in time." >&2
     return 1
@@ -513,17 +511,15 @@ cmd_reset_stack() {
 }
 
 run_cleanup() {
-  echo "Down + container/network prune (volumes preserved)..."
+  echo "Stopping this stack only (no global docker prune — other stacks on the host are untouched)..."
   td_docker_compose down --remove-orphans
-  docker container prune -f >/dev/null || true
-  docker network prune -f >/dev/null || true
-  docker image prune -f >/dev/null || true
+  td_prune_unused_volumes_for_project
 }
 
 run_full_cleanup() {
   echo "Down and remove images built by this compose file (volumes preserved)..."
   td_docker_compose down --rmi local --remove-orphans
-  prune_anonymous_volumes
+  td_prune_unused_volumes_for_project
 }
 
 run_force_rebuild() {
@@ -534,7 +530,7 @@ run_force_rebuild() {
     return 1
   fi
   td_docker_compose up -d
-  prune_anonymous_volumes
+  td_prune_unused_volumes_for_project
   if ! wait_for_stack_ready; then
     echo "Stack did not become healthy in time." >&2
     return 1
@@ -543,8 +539,9 @@ run_force_rebuild() {
 }
 
 run_backup() {
-  read -r -p "Backup root directory [/mnt/data/backups_tools_dashboard]: " root
-  root=${root:-/mnt/data/backups_tools_dashboard}
+  _default_broot="/mnt/data/backups/${TD_PROJ}"
+  read -r -p "Backup root directory [$_default_broot]: " root
+  root=${root:-"$_default_broot"}
   TD_ENV="$TD_ENV" "$SCRIPT_DIR/td-backup.sh" "$root"
 }
 
@@ -577,7 +574,7 @@ while true; do
   echo " 2b) Preflight (validate compose + env)"
   echo " 2c) Build images only (no up — catches Docker build errors)"
   echo " 3) Down"
-  echo " 4) Cleanup (prune containers/networks)"
+  echo " 4) Cleanup (down this stack; project volume tidy only)"
   echo " 5) Force rebuild (no cache)"
   echo " 6) Restart (rolling — compose restart)"
   echo " 7) Rebuild stack (down → build → up, keeps data)"
