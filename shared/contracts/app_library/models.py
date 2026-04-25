@@ -7,8 +7,27 @@ access control, user preferences, and usage analytics.
 
 from datetime import datetime, date
 from typing import Dict, List, Optional, Any, Set
+from urllib.parse import urlparse
+
 from pydantic import BaseModel, Field, HttpUrl, validator, UUID4
 from enum import Enum
+
+
+def _oauth_callback_host_forbidden(url: str) -> bool:
+    """True if URL host is unusable for browser OAuth (Docker 0.0.0.0 / IPv6 all)."""
+    try:
+        host = (urlparse(url.strip()).hostname or "").lower()
+    except Exception:
+        return True
+    if host == "0.0.0.0":
+        return True
+    if host in ("::", "[::]", "::1"):
+        return True
+    if host.startswith("[") and host.endswith("]"):
+        inner = host[1:-1].lower()
+        if inner in ("::", "::1"):
+            return True
+    return False
 
 
 # ============================================================================
@@ -70,6 +89,11 @@ class AppCreate(BaseModel):
         for uri in v:
             if not uri.startswith(('http://', 'https://')):
                 raise ValueError(f"Invalid redirect URI: {uri}")
+            if _oauth_callback_host_forbidden(uri):
+                raise ValueError(
+                    "Redirect URI must not use host 0.0.0.0 or :: (use localhost or a real hostname): "
+                    f"{uri}"
+                )
         return v
 
     @validator('dev_url', 'prod_url')
@@ -77,6 +101,11 @@ class AppCreate(BaseModel):
         """Validate URLs are valid"""
         if v and not v.startswith(('http://', 'https://')):
             raise ValueError(f"Invalid URL: {v}")
+        if v and _oauth_callback_host_forbidden(v):
+            raise ValueError(
+                "App URL must not use host 0.0.0.0 or :: (use localhost or a real hostname): "
+                f"{v}"
+            )
         return v
 
     class Config:
@@ -115,6 +144,24 @@ class AppUpdate(BaseModel):
             for uri in v:
                 if not uri.startswith(('http://', 'https://')):
                     raise ValueError(f"Invalid redirect URI: {uri}")
+                if _oauth_callback_host_forbidden(uri):
+                    raise ValueError(
+                        "Redirect URI must not use host 0.0.0.0 or :: (use localhost or a real hostname): "
+                        f"{uri}"
+                    )
+        return v
+
+    @validator('dev_url', 'prod_url')
+    def validate_optional_urls(cls, v):
+        if not v:
+            return v
+        if not v.startswith(('http://', 'https://')):
+            raise ValueError(f"Invalid URL: {v}")
+        if _oauth_callback_host_forbidden(v):
+            raise ValueError(
+                "App URL must not use host 0.0.0.0 or :: (use localhost or a real hostname): "
+                f"{v}"
+            )
         return v
 
 

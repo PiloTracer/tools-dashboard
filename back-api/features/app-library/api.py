@@ -279,7 +279,7 @@ async def get_app(
         access_rule = await access_rule_repo.find_by_app_id(str(app["id"]))
 
     return AppDetailResponse(
-        app=app,
+        app=domain.sanitize_public_oauth_client(app),
         access_rule=access_rule,
         user_preference=user_pref,
     )

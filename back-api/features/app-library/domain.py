@@ -7,6 +7,37 @@ user preferences, and usage tracking.
 from typing import Any
 import secrets
 import string
+from urllib.parse import urlparse
+
+# OAuth callbacks bound to all-interfaces addresses are unusable from a normal browser
+# and often get saved first in ``redirect_uris``; strip them from public payloads.
+_BAD_OAUTH_CALLBACK_HOSTS = frozenset({"0.0.0.0", "::", "[::]"})
+
+
+def sanitize_public_oauth_client(app: dict[str, Any]) -> dict[str, Any]:
+    """Drop redirect URIs whose host is 0.0.0.0 / :: (Docker listen noise).
+
+    Keeps the original list if every entry would be removed so we do not return an
+    empty allow-list by accident.
+    """
+    uris = app.get("redirect_uris")
+    if not uris or not isinstance(uris, (list, tuple)):
+        return app
+    kept: list[str] = []
+    for raw in uris:
+        if not raw or not isinstance(raw, str):
+            continue
+        try:
+            host = (urlparse(raw).hostname or "").lower()
+        except Exception:
+            kept.append(raw)
+            continue
+        if host in _BAD_OAUTH_CALLBACK_HOSTS:
+            continue
+        kept.append(raw)
+    if not kept:
+        return app
+    return {**app, "redirect_uris": kept}
 
 
 def generate_client_id(app_name: str) -> str:
@@ -160,12 +191,14 @@ async def get_available_apps(
 
         # Merge with user preferences
         pref = prefs_by_client_id.get(app["client_id"], {})
-        app_with_pref = {
-            **app,
-            "is_favorite": pref.get("is_favorite", False),
-            "last_launched_at": pref.get("last_launched_at"),
-            "launch_count": pref.get("launch_count", 0),
-        }
+        app_with_pref = sanitize_public_oauth_client(
+            {
+                **app,
+                "is_favorite": pref.get("is_favorite", False),
+                "last_launched_at": pref.get("last_launched_at"),
+                "launch_count": pref.get("launch_count", 0),
+            }
+        )
 
         available_apps.append(app_with_pref)
 

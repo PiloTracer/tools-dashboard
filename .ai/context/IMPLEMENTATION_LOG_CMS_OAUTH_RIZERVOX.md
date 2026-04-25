@@ -14,26 +14,27 @@ This document is derived **only from this repository’s source** (no running st
 
 ---
 
-## Postgres: idempotent Rizervox OAuth client
+## Postgres: Rizervox OAuth client (insert-only bootstrap)
 
-**File:** `back-postgres/schema/009_rizervox_app_bootstrap.sql`
+**File:** `back-postgres/schema/009_rizervox_app_bootstrap.sql` (canonical; duplicate `seeds/dev/008_cms_app_seed.sql` **removed**).
 
-**How it runs:** `back-postgres/main.py` loads every `schema/*.sql` in sorted name order after waiting for the `users` table (`run_migrations`). So `009_*` runs after `006_oauth_tables.sql`, `007_app_library_tables.sql`, and `008_ecards_app_bootstrap.sql`.
+**How it runs:** `back-postgres/main.py` loads every `schema/*.sql` in sorted name order after waiting for the `users` table (`run_migrations`). `009_*` runs after `006_oauth_tables.sql`, `007_app_library_tables.sql`, and `008_ecards_app_bootstrap.sql`.
 
-**Behavior:**
+**Behavior (2026-04-25):**
 
-1. **`oauth_clients` upsert** on `client_id` conflict: updates metadata fields and `created_by` via `COALESCE(oauth_clients.created_by, EXCLUDED.created_by)`; **does not** update `client_secret_hash` on conflict (same pattern as `008_ecards_app_bootstrap.sql`), so a rotated secret in DB is not overwritten by re-init.
-2. **`app_access_rules` upsert** for that app’s UUID: `mode = 'all_users'`, with the same `created_by` coalesce pattern.
-3. Plaintext dev secret **documented in SQL comments only:** `dev_secret_do_not_use_in_production` (bcrypt hash in migration matches the E‑Cards bootstrap hash in `008`).
+1. **`oauth_clients`**: `INSERT … ON CONFLICT (client_id) DO NOTHING` — first provision only; **restarts do not overwrite** admin edits.
+2. **`app_access_rules`**: `INSERT … ON CONFLICT (app_id) DO NOTHING` for `all_users` when the Rizervox row exists.
+3. **`user_app_preferences`** (optional dev sample): insert-only `DO NOTHING` on `(user_id, app_client_id)` for `admin@example.com` + `rizervox_r1z2r3v4`.
+4. Plaintext dev secret **documented in SQL comments only:** `dev_secret_do_not_use_in_production` (bcrypt hash matches E‑Cards bootstrap in `008_ecards_app_bootstrap.sql`).
 
-**Row values inserted (authoritative for Rizervox env config):**
+**Row values inserted when the row is absent (authoritative defaults for new envs):**
 
 | Column | Value |
 |--------|--------|
 | `client_id` | `rizervox_r1z2r3v4` |
 | `client_name` | `Rizervox` |
 | `description` | `CMS + SEO + agentic` |
-| `logo_url` | `https://cdn.example.com/logos/rizervox.png` |
+| `logo_url` | `/app/app-library-logos/rizervox.svg` (same-origin asset via nginx `app-library-logos` mapping) |
 | `dev_url` | `http://localhost:17513` |
 | `prod_url` | `https://rizervox.com` |
 | `redirect_uris` | `http://localhost:17513/oauth/complete`, `https://rizervox.com/oauth/complete` (order: dev first) |
@@ -64,7 +65,13 @@ This is documentation for humans/operators; the **authorization server and DB** 
 
 **Token action** (`front-public/app/routes/oauth.token.tsx`): Reads `application/x-www-form-urlencoded` form fields: `grant_type`, `code`, `redirect_uri`, `client_id`, `client_secret`, optional `code_verifier`, and for refresh `refresh_token`. Rejects missing `client_id` or `client_secret`. Calls `back-auth` at `AUTH_API_URL` (default `http://back-auth:8001`) for `/internal/oauth/validate-code` and issue/refresh paths. **Code comment:** explicit verification of `client_secret` against Postgres is **TODO** (credentials required but bcrypt check not wired in this file).
 
-**App Library launch URL** (`front-public/app/features/app-library/utils/oauth.ts`): Builds authorize URL as `window.location.origin + '/oauth/authorize'`, uses **first** element of `redirect_uris` from the API as `redirect_uri` (no PKCE in that builder path).
+**App Library launch URL** (`front-public/app/features/app-library/utils/oauth.ts`): Builds authorize URL as `window.location.origin + '/oauth/authorize'`. **`redirect_uri`** is chosen by **`pickOAuthRedirectUri()`** (match `dev_url` origin, prefer `localhost`/`127.0.0.1`, deprioritize `0.0.0.0`/`::` when alternatives exist) — **not** blindly `redirect_uris[0]` (no PKCE in that builder path).
+
+**Public API responses** (`back-api/features/app-library/domain.py`): **`sanitize_public_oauth_client()`** removes `redirect_uris` entries whose host is `0.0.0.0` / `::` before JSON reaches the browser (when at least one usable URI remains).
+
+**One-shot DB cleanup** (`back-postgres/schema/011_oauth_redirect_strip_bad_hosts.sql`): Strips unusable callback hosts from existing `oauth_clients.redirect_uris` when a good URI remains (runs with other `schema/*.sql` on each `back-postgres-service` migration pass).
+
+**Create/update validation** (`shared/contracts/app_library/models.py`): **AppCreate** / **AppUpdate** reject `dev_url`, `prod_url`, and `redirect_uris` whose host is `0.0.0.0` or IPv6 all-interfaces style (`::`, etc.).
 
 **Rizervox app should configure:**
 
@@ -103,4 +110,4 @@ Mapped to **what exists in git** for Rizervox CMS OAuth seeding in tools-dashboa
 
 1. **Add** `.ai/plan/multi-tenant-headless-cms` to this repo (or paste the OAuth / tenant / redirect sections), so this log can cite plan section IDs and any deltas (e.g. extra redirect URIs, staging host, scope changes).
 2. **Confirm** Rizervox still uses `http://localhost:17513` and `https://rizervox.com` and `/oauth/complete` paths; if the plan specifies different ports or paths, `009` and `feature.yaml` must be updated together.
-3. **Decide** whether `logo_url` should remain the placeholder `cdn.example.com` or a real asset URL once branding exists.
+3. **Migration ledger:** `main.py` still executes every `schema/*.sql` each boot — add versioned migration tracking for DDL if re-running raw files becomes a problem (bootstrap **data** for seeded clients is now insert-only).

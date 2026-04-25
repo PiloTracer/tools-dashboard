@@ -3,7 +3,8 @@
 -- ============================================================================
 -- File: back-postgres/seeds/dev/007_app_library_seed.sql
 -- Created: 2025-11-15
--- Purpose: Optional manual re-seed / reference. Automatic bootstrap: schema/008_ecards_app_bootstrap.sql
+-- Purpose: Optional manual seed (insert-only). Automatic bootstrap: schema/008_ecards_app_bootstrap.sql
+-- Rizervox: schema/009_rizervox_app_bootstrap.sql (no duplicate seeds/dev/008_cms file).
 -- ============================================================================
 
 -- ============================================================================
@@ -41,16 +42,7 @@ INSERT INTO oauth_clients (
     true,
     (SELECT id FROM users WHERE email = 'admin@example.com' LIMIT 1)
 )
-ON CONFLICT (client_id) DO UPDATE SET
-    client_name = EXCLUDED.client_name,
-    description = EXCLUDED.description,
-    logo_url = EXCLUDED.logo_url,
-    dev_url = EXCLUDED.dev_url,
-    prod_url = EXCLUDED.prod_url,
-    redirect_uris = EXCLUDED.redirect_uris,
-    allowed_scopes = EXCLUDED.allowed_scopes,
-    is_active = EXCLUDED.is_active,
-    updated_at = NOW();
+ON CONFLICT (client_id) DO NOTHING;
 
 -- ============================================================================
 -- Create Default Access Rule (All Users)
@@ -64,9 +56,7 @@ SELECT
     (SELECT id FROM users WHERE email = 'admin@example.com' LIMIT 1)
 FROM oauth_clients
 WHERE client_id = 'ecards_a1b2c3d4'
-ON CONFLICT (app_id) DO UPDATE SET
-    mode = EXCLUDED.mode,
-    updated_at = NOW();
+ON CONFLICT (app_id) DO NOTHING;
 
 -- ============================================================================
 -- Seed Sample User Preferences (for testing)
@@ -82,11 +72,7 @@ SELECT
     5  -- Launched 5 times
 FROM users
 WHERE email = 'admin@example.com'
-ON CONFLICT (user_id, app_client_id) DO UPDATE SET
-    is_favorite = EXCLUDED.is_favorite,
-    last_launched_at = EXCLUDED.last_launched_at,
-    launch_count = EXCLUDED.launch_count,
-    updated_at = NOW();
+ON CONFLICT (user_id, app_client_id) DO NOTHING;
 
 -- ============================================================================
 -- Seed Cassandra Data (Sample Launch Events)

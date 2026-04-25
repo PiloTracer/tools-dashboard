@@ -4,8 +4,12 @@ import { hydrateRoot } from "react-dom/client";
 import i18next from "i18next";
 import { I18nextProvider, initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
-import Backend from "i18next-http-backend";
 import i18nOptions from "./i18n";
+
+// Bundle `common` for en/es so nav strings never depend on a separate HTTP fetch to
+// `/app/locales/...` (browser/CDN/proxy caching was serving stale JSON without new keys).
+import commonEn from "../public/locales/en/common.json";
+import commonEs from "../public/locales/es/common.json";
 
 async function hydrate() {
   // Get the language from the HTML tag set by the server
@@ -14,12 +18,12 @@ async function hydrate() {
   await i18next
     .use(initReactI18next)
     .use(LanguageDetector)
-    .use(Backend)
     .init({
       ...i18nOptions,
       lng, // Use the server-provided language
-      backend: {
-        loadPath: "/app/locales/{{lng}}/{{ns}}.json",
+      resources: {
+        en: { common: commonEn },
+        es: { common: commonEs },
       },
       detection: {
         order: ["cookie", "htmlTag", "navigator"], // Prioritize cookie for persistence

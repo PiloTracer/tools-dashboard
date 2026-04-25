@@ -126,6 +126,93 @@ export function retrieveOAuthState(appClientId: string): string | null {
   return sessionStorage.getItem(`oauth_state_${appClientId}`);
 }
 
+function safeOrigin(url: string | undefined): string | null {
+  if (!url) {
+    return null;
+  }
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === "0.0.0.0" || parsed.hostname === "::" || parsed.hostname === "[::]") {
+      return null;
+    }
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+}
+
+function isUnusableOAuthCallbackHost(uri: string): boolean {
+  try {
+    const h = new URL(uri).hostname;
+    return h === "0.0.0.0" || h === "::" || h === "[::]";
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Pick the OAuth `redirect_uri` to send on the authorize request.
+ *
+ * Postgres `redirect_uris` order is not guaranteed; admins can register multiple callbacks.
+ * Using `[0]` alone often picked `http://0.0.0.0:3000/...` (Docker bind / bad local config),
+ * which browsers resolve poorly and breaks Rizervox dev (`localhost:17513`).
+ */
+export function pickOAuthRedirectUri(app: {
+  dev_url: string;
+  prod_url?: string;
+  redirect_uris: string[];
+}): string {
+  const raw = app.redirect_uris.filter(Boolean);
+  if (!raw.length) {
+    return "";
+  }
+
+  const usable = raw.filter((u) => !isUnusableOAuthCallbackHost(u));
+  const pool = usable.length > 0 ? usable : raw;
+
+  const devOrigin = safeOrigin(app.dev_url);
+  if (devOrigin) {
+    const hit = pool.find((u) => {
+      try {
+        return new URL(u).origin === devOrigin;
+      } catch {
+        return false;
+      }
+    });
+    if (hit) {
+      return hit;
+    }
+  }
+
+  const local = pool.find((u) => {
+    try {
+      const h = new URL(u).hostname;
+      return h === "localhost" || h === "127.0.0.1";
+    } catch {
+      return false;
+    }
+  });
+  if (local) {
+    return local;
+  }
+
+  const prodOrigin = safeOrigin(app.prod_url);
+  if (prodOrigin) {
+    const hit = pool.find((u) => {
+      try {
+        return new URL(u).origin === prodOrigin;
+      } catch {
+        return false;
+      }
+    });
+    if (hit) {
+      return hit;
+    }
+  }
+
+  return pool[0] ?? raw[0];
+}
+
 /**
  * Build OAuth authorization URL for launching an app
  *
@@ -156,8 +243,10 @@ export async function buildOAuthLaunchURL(app: {
   // The remote app will receive the state in the callback but should not validate it
   // because it did not initiate the OAuth flow
 
-  // Build redirect URI (remote app's callback)
-  const redirectUri = app.redirect_uris[0]; // Use first redirect URI
+  const redirectUri = pickOAuthRedirectUri(app);
+  if (!redirectUri) {
+    throw new Error("No redirect_uri registered for this application");
+  }
 
   // Build OAuth parameters for authorization endpoint (WITHOUT PKCE)
   const oauthParams = new URLSearchParams({

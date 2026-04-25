@@ -1,9 +1,10 @@
 -- ============================================================================
--- E-Cards app library bootstrap (idempotent)
+-- E-Cards app library bootstrap (insert-only)
 -- ============================================================================
--- Runs with other schema/*.sql on every back-postgres init.
--- Replaces manual execution of seeds/dev/007_app_library_seed.sql for the core
--- oauth client + access rule. Client secret (dev only): dev_secret_do_not_use_in_production
+-- Runs with other schema/*.sql on every back-postgres-service start.
+-- Inserts the default row **only if missing** (`ON CONFLICT DO NOTHING`). Does not
+-- overwrite admin edits after the first insert. Fresh volume → row appears; existing DB → no-op.
+-- Dev client secret (dev only): dev_secret_do_not_use_in_production
 -- ============================================================================
 
 INSERT INTO oauth_clients (
@@ -34,17 +35,7 @@ INSERT INTO oauth_clients (
     true,
     (SELECT id FROM users WHERE email = 'admin@example.com' LIMIT 1)
 )
-ON CONFLICT (client_id) DO UPDATE SET
-    client_name = EXCLUDED.client_name,
-    description = EXCLUDED.description,
-    logo_url = EXCLUDED.logo_url,
-    dev_url = EXCLUDED.dev_url,
-    prod_url = EXCLUDED.prod_url,
-    redirect_uris = EXCLUDED.redirect_uris,
-    allowed_scopes = EXCLUDED.allowed_scopes,
-    is_active = EXCLUDED.is_active,
-    created_by = COALESCE(oauth_clients.created_by, EXCLUDED.created_by),
-    updated_at = NOW();
+ON CONFLICT (client_id) DO NOTHING;
 
 INSERT INTO app_access_rules (app_id, mode, created_by)
 SELECT
@@ -53,9 +44,6 @@ SELECT
     (SELECT id FROM users WHERE email = 'admin@example.com' LIMIT 1)
 FROM oauth_clients
 WHERE client_id = 'ecards_a1b2c3d4'
-ON CONFLICT (app_id) DO UPDATE SET
-    mode = EXCLUDED.mode,
-    created_by = COALESCE(app_access_rules.created_by, EXCLUDED.created_by),
-    updated_at = NOW();
+ON CONFLICT (app_id) DO NOTHING;
 
 DELETE FROM oauth_clients WHERE client_id = 'ecards_app_dev';

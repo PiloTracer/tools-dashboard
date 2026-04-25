@@ -2,7 +2,31 @@
 
 **Purpose:** Fast resume for the next chat or engineer. Read this first, then `.cursorrules` and `DOCS_TECH_STACK.md` as needed.
 
-**Last aligned:** 2026-04-24 — **Improvement sprint** still tracked in `.claude/plans/20260422_PLAN_application-improvement-priorities.md` when present; see **Recently landed** tables below.
+**Last aligned:** 2026-04-25 — **Improvement sprint** still tracked in `.claude/plans/20260422_PLAN_application-improvement-priorities.md` when present; see **Recently landed** tables below.
+
+---
+
+## Recently landed (2026-04-25)
+
+| Area | What changed |
+|------|----------------|
+| **Public i18n (no stale `/app/locales` fetch)** | `front-public/app/entry.client.tsx` — bundles `public/locales/en|es/common.json` via `resources` in `i18next.init`; removed `i18next-http-backend` on the client so nav strings are not stuck on cached JSON. `front-public/tsconfig.json` — `resolveJsonModule: true`. |
+| **Public nav + auth UX** | `PublicLayout.tsx` — **Apps** link (`header.nav.appLibrary`), `t()` in render; **hide Register** in header/footer when `useUserStatus().isAuthenticated`. `user-registration` loader — verified sessions redirect to `return_to` or **`/features/app-library`** via `getVerifiedRegistrationSession()` (`front-public/app/utils/user-registration-status.server.ts`). |
+| **Back-auth cold start** | `front-public/app/utils/http.server.ts` — `fetchWithTransientRetry`; used by user-status, user-registration config, and `user-registration-status.server.ts`. User-status final failure: one-line `console.warn`. |
+| **OAuth launch `redirect_uri`** | `front-public/app/features/app-library/utils/oauth.ts` — **`pickOAuthRedirectUri()`**: match `dev_url` origin, prefer `localhost`/`127.0.0.1`, reject `0.0.0.0`/`::` when alternatives exist; never blindly use `redirect_uris[0]`. |
+| **Public API + DB hygiene for bad OAuth hosts** | `back-api/features/app-library/domain.py` — **`sanitize_public_oauth_client()`** strips `0.0.0.0`/`::` callback URIs from list responses. `shared/contracts/app_library/models.py` — **reject** those hosts on **AppCreate** / **AppUpdate**. `back-postgres/schema/011_oauth_redirect_strip_bad_hosts.sql` — removes unusable callback URIs from existing rows when at least one good URI remains. |
+| **Bootstrap vs admin** | `008_ecards_app_bootstrap.sql` / `009_rizervox_app_bootstrap.sql` use **`ON CONFLICT DO NOTHING`** for `oauth_clients`, `app_access_rules`, and (Rizervox) sample `user_app_preferences` — **insert-only**: first provision on empty DB; **restarts do not overwrite** admin edits. Duplicate **`seeds/dev/008_cms_app_seed.sql`** removed; Rizervox canonical SQL is **`009` only**. `back-postgres/main.py` still runs all `schema/*.sql` each service start (no ledger). |
+
+**Uncommitted / verify before merge:** ensure `user-registration-status.server.ts` is **tracked** if registration redirect ships; run `011` (or full schema replay) on existing dev DBs so old `0.0.0.0` rows are cleaned.
+
+---
+
+## Postgres / `back-postgres-service` (read before editing app library rows)
+
+- **What runs:** `back-postgres/main.py` → `run_migrations()` executes **all** `back-postgres/schema/*.sql` in **sorted filename order** on **every service start** (not “migrate once per version”).
+- **Data bootstrap (2026-04-25):** `008_ecards_app_bootstrap.sql` and `009_rizervox_app_bootstrap.sql` use **`INSERT … ON CONFLICT DO NOTHING`** for default **`ecards_a1b2c3d4`** / **`rizervox_r1z2r3v4`** rows and access rules — **no repo-driven overwrite on restart**; new rows appear only when the row did not exist (e.g. fresh volume). **`011_oauth_redirect_strip_bad_hosts.sql`** still **updates** `redirect_uris` only when unusable hosts (`0.0.0.0`, etc.) are present and a good URI remains (repair; no-op when already clean).
+- **Seeds:** `back-postgres/seeds/dev/007_app_library_seed.sql` is **optional / manual**, insert-only aligned with schema; **not** run by `main.py`.
+- **Ledger:** long-term improvement is a real migration table so schema DDL is not re-executed blindly each boot; bootstrap policy above already stops data clobber for seeded clients.
 
 ---
 
@@ -49,9 +73,13 @@
 
 ---
 
-## Tomorrow (2026-04-25): resume
+## Next session (resume from 2026-04-25)
 
-**Rizervox / CMS OAuth (quick):** Confirm `.ai/plan/multi-tenant-headless-cms` is present or sync plan excerpt; align `009` / `feature.yaml` if plan specifies different hosts, scopes, or callback paths. Optionally implement **`client_secret`** bcrypt check on token exchange (`oauth.token.tsx` TODO) via `back-api` or `back-auth` using existing client repo.
+**Commit hygiene:** Stage any still-untracked files needed for the above (e.g. `user-registration-status.server.ts`).
+
+**Postgres bootstrap:** Bootstrapped E‑Cards / Rizervox rows are **insert-only** (`DO NOTHING` on conflict) — see **Postgres / back-postgres-service**.
+
+**Rizervox / CMS OAuth:** Confirm `.ai/plan/multi-tenant-headless-cms` is present or sync plan excerpt; align `009` / `feature.yaml` if plan specifies different hosts, scopes, or callback paths. Rizervox app env must use **`http://localhost:17513`** (not `0.0.0.0:3000`) for post-callback redirects. Optionally implement **`client_secret`** bcrypt check on token exchange (`oauth.token.tsx` TODO) via `back-api` or `back-auth`.
 
 **Priority 1 (security + sessions + edge)** — still active; work in **small PRs**; keep `.env.prd` secrets out of chat. Evidence before merge: targeted tests + manual smoke on `dev` then `prd` preflight.
 
@@ -233,8 +261,12 @@ Preflight **warns** on placeholder secrets in `.env.prd` — expected until oper
 | Start script behavior | `bin/start.sh` |
 | Prod compose edits | `docker-compose.prd.yml` |
 | Public path / base URL logic | `front-public/app/utils/publicPath.server.ts` |
-| App library OAuth clients (Postgres bootstrap) | `back-postgres/schema/008_ecards_app_bootstrap.sql`, `009_rizervox_app_bootstrap.sql` |
+| App library OAuth clients (Postgres bootstrap) | `back-postgres/schema/008_ecards_app_bootstrap.sql`, `009_rizervox_app_bootstrap.sql`, **`011_oauth_redirect_strip_bad_hosts.sql`** |
 | Rizervox CMS OAuth contract (code-only) | `.ai/context/IMPLEMENTATION_LOG_CMS_OAUTH_RIZERVOX.md` |
+| Public OAuth launch / `redirect_uri` selection | `front-public/app/features/app-library/utils/oauth.ts` (`pickOAuthRedirectUri`) |
+| App library public JSON hygiene | `back-api/features/app-library/domain.py` (`sanitize_public_oauth_client`) |
+| App create/update validation (redirect / dev URL hosts) | `shared/contracts/app_library/models.py` |
+| Verified-user skip registration | `front-public/app/utils/user-registration-status.server.ts`, `user-registration/routes/index.tsx` loader |
 
 ---
 
@@ -242,6 +274,7 @@ Preflight **warns** on placeholder secrets in `.env.prd` — expected until oper
 
 - **Priority 1 (active):** remaining 1A admin session hardening, 1B cookie audit, 1C remove `print` / logging on `back-api` users path; expand **API routing** table with measured `curl` matrix after any nginx/router change.
 - **OAuth:** explicit **`client_secret`** verification at token endpoint still **TODO** in `front-public/app/routes/oauth.token.tsx`; Rizervox operator doc: `.ai/context/IMPLEMENTATION_LOG_CMS_OAUTH_RIZERVOX.md`.
+- **Postgres migrations ledger:** `main.py` still replays every `schema/*.sql` each boot — consider Flyway/Alembic-style tracking for DDL-only files; bootstrap **data** for seeded clients is now insert-only (`DO NOTHING`).
 - **Rizervox plan:** add `.ai/plan/multi-tenant-headless-cms` to this repo (or link) so bootstrap checklist can match product spec.
 - `tmp/errors.txt` audit may still list CI, digest-pinned base images, nginx `resolver`, Python `requirements.txt` pinning breadth — triage as needed.
 - Operator: real secrets, DNS, TLS cert, and external LB headers (`X-Forwarded-Proto`) for correct secure cookies and redirects.

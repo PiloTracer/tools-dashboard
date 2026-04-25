@@ -9,6 +9,7 @@ import { RegistrationForm } from "../ui/RegistrationForm";
 import { getBackAuthEnv } from "../../../utils/env.server";
 import { fetchWithTransientRetry } from "../../../utils/http.server";
 import { resolvePublicPath, resolveRedirectTarget } from "../../../utils/publicPath.server";
+import { getVerifiedRegistrationSession } from "../../../utils/user-registration-status.server";
 
 const DEFAULT_PASSWORD_MIN_LENGTH = 12;
 
@@ -123,6 +124,14 @@ type AuthMode = "register" | "login";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
+  const returnTo = url.searchParams.get("return_to");
+  const session = await getVerifiedRegistrationSession(request);
+  if (session?.verified) {
+    const next =
+      resolveRedirectTarget(returnTo) ?? resolvePublicPath("/features/app-library");
+    return redirect(next);
+  }
+
   const initialMode = parseModeParam(url.searchParams.get("mode"));
   const { backAuthBaseUrl } = getBackAuthEnv();
   const configUrl = new URL("/user-registration/config", backAuthBaseUrl);

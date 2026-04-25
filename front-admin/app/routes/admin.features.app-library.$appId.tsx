@@ -8,6 +8,7 @@ import {
   Form,
   useNavigate,
   useLocation,
+  useRevalidator,
 } from "@remix-run/react";
 import { useState, useEffect, useRef } from "react";
 import type { App } from "../features/app-library/ui/AppTable";
@@ -15,12 +16,30 @@ import { getAdminApiAuthHeaders } from "../utils/admin-api-auth.server";
 
 export type AppLibraryTab = "overview" | "registration" | "oauth" | "access";
 
+function publicOAuthOriginFromRequest(request: Request): string {
+  const td = process.env.TD_PUBLIC_BASE_URL?.replace(/\/$/, "");
+  if (td) return td;
+  const pub = process.env.PUBLIC_APP_BASE_URL?.replace(/\/$/, "");
+  if (pub?.endsWith("/app")) return pub.slice(0, -4);
+  if (pub) return pub;
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  if (forwardedHost) {
+    const host = forwardedHost.split(",")[0]?.trim();
+    const proto = forwardedProto?.split(",")[0]?.trim() || "https";
+    if (host) return `${proto}://${host}`;
+  }
+  return new URL(request.url).origin;
+}
+
 type LoaderData = {
   app: App;
   accessRule?: Record<string, unknown> | null;
   newSecret?: string; // Only populated when ?new=true&secret=xxx
   initialTab: AppLibraryTab;
   startEditing: boolean;
+  /** Browser-facing origin for OAuth (authorize/token), not the admin app origin. */
+  publicOAuthOrigin: string;
 };
 
 type ActionData = {
@@ -75,16 +94,13 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 
     const data = await response.json();
 
-    // TODO: Fetch access rules when implemented
-    // const accessRuleResponse = await fetch(`${apiUrl}/api/admin/app-library/${appId}/access-rules`);
-    // const accessRule = accessRuleResponse.ok ? await accessRuleResponse.json() : null;
-
     return json<LoaderData>({
       app: data.app,
       accessRule: data.access_rule ?? null,
       newSecret: isNew && secret ? secret : undefined,
       initialTab,
       startEditing,
+      publicOAuthOrigin: publicOAuthOriginFromRequest(request),
     });
   } catch (error) {
     console.error("Error fetching application:", error);
@@ -300,9 +316,10 @@ function appLibrarySearch(tab: AppLibraryTab, options?: { edit?: boolean }) {
 }
 
 export default function AppLibraryDetail() {
-  const { app, newSecret, accessRule, initialTab, startEditing } =
+  const { app, newSecret, accessRule, initialTab, startEditing, publicOAuthOrigin } =
     useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+  const revalidator = useRevalidator();
   const [activeTab, setActiveTab] = useState<AppLibraryTab>(initialTab);
   const [isEditing, setIsEditing] = useState(startEditing);
 
@@ -314,8 +331,15 @@ export default function AppLibraryDetail() {
   useEffect(() => {
     if (actionData?.success) {
       setIsEditing(false);
+      revalidator.revalidate();
     }
-  }, [actionData?.success]);
+  }, [actionData?.success, revalidator]);
+
+  const redirectUris = app.redirect_uris ?? [];
+  const allowedScopes = app.allowed_scopes ?? [];
+  const oauthAuthorizeUrl = `${publicOAuthOrigin}/oauth/authorize`;
+  const oauthTokenUrl = `${publicOAuthOrigin}/oauth/token`;
+  const openidConfigUrl = `${publicOAuthOrigin}/.well-known/openid-configuration`;
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [revealFromRegen, setRevealFromRegen] = useState<string | null>(null);
   const [regenUI, setRegenUI] = useState<
@@ -323,8 +347,9 @@ export default function AppLibraryDetail() {
   >(null);
   const [secretCopied, setSecretCopied] = useState(false);
   const [clientIdCopied, setClientIdCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
-  const statusFetcher = useFetcher();
+  const statusFetcher = useFetcher<typeof action>();
   const regenFetcher = useFetcher<typeof action>();
   const RegenForm = regenFetcher.Form;
   const regenSubmitPendingRef = useRef(false);
@@ -374,7 +399,15 @@ export default function AppLibraryDetail() {
     }
   }, [regenFetcher.state, regenFetcher.data]);
 
-  const copyToClipboard = async (text: string, type: "secret" | "clientId") => {
+  useEffect(() => {
+    if (statusFetcher.state !== "idle") return;
+    const d = statusFetcher.data as ActionData | undefined;
+    if (d?.success) {
+      revalidator.revalidate();
+    }
+  }, [statusFetcher.state, statusFetcher.data, revalidator]);
+
+  const copyToClipboard = async (text: string, type: "secret" | "clientId" | "link") => {
     try {
       // Check if clipboard API is available
       if (!navigator.clipboard) {
@@ -392,9 +425,12 @@ export default function AppLibraryDetail() {
           if (type === "secret") {
             setSecretCopied(true);
             setTimeout(() => setSecretCopied(false), 2000);
-          } else {
+          } else if (type === "clientId") {
             setClientIdCopied(true);
             setTimeout(() => setClientIdCopied(false), 2000);
+          } else {
+            setLinkCopied(true);
+            setTimeout(() => setLinkCopied(false), 2000);
           }
         } finally {
           document.body.removeChild(textArea);
@@ -406,9 +442,12 @@ export default function AppLibraryDetail() {
       if (type === "secret") {
         setSecretCopied(true);
         setTimeout(() => setSecretCopied(false), 2000);
-      } else {
+      } else if (type === "clientId") {
         setClientIdCopied(true);
         setTimeout(() => setClientIdCopied(false), 2000);
+      } else {
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 2000);
       }
     } catch (err) {
       console.error("Failed to copy:", err);
@@ -750,7 +789,7 @@ export default function AppLibraryDetail() {
                     Edit registration
                   </button>
                 </div>
-                <dl className="grid grid-cols-1 gap-6">
+                <dl className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <div>
                     <dt className="text-sm font-medium text-slate-500 mb-1">
                       Application Name
@@ -789,10 +828,64 @@ export default function AppLibraryDetail() {
                       {app.prod_url || "Not set"}
                     </dd>
                   </div>
+                  <div>
+                    <dt className="text-sm font-medium text-slate-500 mb-1">
+                      Active
+                    </dt>
+                    <dd>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          app.is_active
+                            ? "bg-green-100 text-green-800"
+                            : "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        {app.is_active ? "Active" : "Inactive"}
+                      </span>
+                    </dd>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <dt className="text-sm font-medium text-slate-500 mb-2">
+                      Redirect URIs
+                    </dt>
+                    <dd className="space-y-2">
+                      {redirectUris.length > 0 ? (
+                        redirectUris.map((uri, index) => (
+                          <div
+                            key={index}
+                            className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-900 break-all sm:text-sm"
+                          >
+                            {uri}
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-sm text-slate-500">None configured</span>
+                      )}
+                    </dd>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <dt className="text-sm font-medium text-slate-500 mb-2">
+                      Allowed scopes
+                    </dt>
+                    <dd className="flex flex-wrap gap-2">
+                      {allowedScopes.length > 0 ? (
+                        allowedScopes.map((scope, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-800"
+                          >
+                            {scope}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-sm text-slate-500">None (defaults apply on save if empty)</span>
+                      )}
+                    </dd>
+                  </div>
                 </dl>
               </div>
             ) : (
-              <Form method="post">
+              <Form method="post" key={`reg-${app.id}-${app.updated_at}`}>
                 <input type="hidden" name="_action" value="update" />
                 <div className="space-y-6">
                   <h3 className="text-lg font-medium text-slate-900 mb-4">
@@ -908,7 +1001,7 @@ export default function AppLibraryDetail() {
                       id="redirect_uris"
                       rows={4}
                       required
-                      defaultValue={app.redirect_uris.join("\n")}
+                      defaultValue={redirectUris.join("\n")}
                       className="mt-1 block w-full border border-slate-200 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm font-mono text-xs"
                     />
                     <p className="mt-1 text-sm text-slate-500">
@@ -928,7 +1021,7 @@ export default function AppLibraryDetail() {
                       name="allowed_scopes"
                       id="allowed_scopes"
                       rows={3}
-                      defaultValue={app.allowed_scopes.join("\n")}
+                      defaultValue={allowedScopes.join("\n")}
                       className="mt-1 block w-full border border-slate-200 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm font-mono text-xs"
                     />
                     <p className="mt-1 text-sm text-slate-500">
@@ -1003,20 +1096,63 @@ export default function AppLibraryDetail() {
                 Edit redirect URIs &amp; scopes
               </Link>
             </div>
+            <div className="mb-8 rounded-xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
+              <h4 className="text-sm font-semibold text-slate-900">Public OAuth endpoints</h4>
+              <p className="mt-1 text-xs text-slate-600">
+                Resolved from{" "}
+                <code className="rounded bg-white px-1 py-0.5 font-mono text-[11px] text-slate-800">
+                  TD_PUBLIC_BASE_URL
+                </code>
+                ,{" "}
+                <code className="rounded bg-white px-1 py-0.5 font-mono text-[11px] text-slate-800">
+                  PUBLIC_APP_BASE_URL
+                </code>
+                , or the current request origin. Use these when configuring third-party clients.
+              </p>
+              <dl className="mt-4 space-y-4">
+                {[
+                  { label: "Authorization endpoint", value: oauthAuthorizeUrl },
+                  { label: "Token endpoint", value: oauthTokenUrl },
+                  { label: "OpenID configuration", value: openidConfigUrl },
+                ].map(({ label, value }) => (
+                  <div key={label}>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      {label}
+                    </dt>
+                    <dd className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <code className="min-w-0 flex-1 break-all rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-900">
+                        {value}
+                      </code>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(value, "link")}
+                        className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+                      >
+                        {linkCopied ? "Copied" : "Copy"}
+                      </button>
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
             <dl className="grid grid-cols-1 gap-6">
               <div>
                 <dt className="text-sm font-medium text-slate-500 mb-2">
                   Redirect URIs
                 </dt>
                 <dd className="space-y-2">
-                  {app.redirect_uris.map((uri, index) => (
-                    <div
-                      key={index}
-                      className="bg-slate-50 px-4 py-2 rounded border border-slate-200 font-mono text-sm"
-                    >
-                      {uri}
-                    </div>
-                  ))}
+                  {redirectUris.length > 0 ? (
+                    redirectUris.map((uri, index) => (
+                      <div
+                        key={index}
+                        className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 font-mono text-sm"
+                      >
+                        {uri}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-slate-500">None configured</p>
+                  )}
                 </dd>
               </div>
               <div>
@@ -1024,14 +1160,18 @@ export default function AppLibraryDetail() {
                   Allowed Scopes
                 </dt>
                 <dd className="flex flex-wrap gap-2">
-                  {app.allowed_scopes.map((scope, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-800"
-                    >
-                      {scope}
-                    </span>
-                  ))}
+                  {allowedScopes.length > 0 ? (
+                    allowedScopes.map((scope, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-800"
+                      >
+                        {scope}
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-sm text-slate-500">None listed</p>
+                  )}
                 </dd>
               </div>
             </dl>

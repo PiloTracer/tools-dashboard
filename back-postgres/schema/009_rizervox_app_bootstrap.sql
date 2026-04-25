@@ -1,8 +1,10 @@
 -- ============================================================================
--- Rizervox app library bootstrap (idempotent)
+-- Rizervox app library bootstrap (insert-only)
 -- ============================================================================
--- Runs with other schema/*.sql on every back-postgres init.
--- Dev client secret (same convention as E-Cards bootstrap): dev_secret_do_not_use_in_production
+-- Runs with other schema/*.sql on every back-postgres-service start.
+-- Inserts default rows only if missing (`ON CONFLICT DO NOTHING`). Does not overwrite admin edits.
+-- Canonical Rizervox OAuth definition (duplicate `seeds/dev/008_cms_app_seed.sql` removed).
+-- Dev client secret: dev_secret_do_not_use_in_production (same bcrypt hash as E-Cards in 008).
 -- ============================================================================
 
 INSERT INTO oauth_clients (
@@ -33,17 +35,7 @@ INSERT INTO oauth_clients (
     true,
     (SELECT id FROM users WHERE email = 'admin@example.com' LIMIT 1)
 )
-ON CONFLICT (client_id) DO UPDATE SET
-    client_name = EXCLUDED.client_name,
-    description = EXCLUDED.description,
-    logo_url = EXCLUDED.logo_url,
-    dev_url = EXCLUDED.dev_url,
-    prod_url = EXCLUDED.prod_url,
-    redirect_uris = EXCLUDED.redirect_uris,
-    allowed_scopes = EXCLUDED.allowed_scopes,
-    is_active = EXCLUDED.is_active,
-    created_by = COALESCE(oauth_clients.created_by, EXCLUDED.created_by),
-    updated_at = NOW();
+ON CONFLICT (client_id) DO NOTHING;
 
 INSERT INTO app_access_rules (app_id, mode, created_by)
 SELECT
@@ -52,7 +44,16 @@ SELECT
     (SELECT id FROM users WHERE email = 'admin@example.com' LIMIT 1)
 FROM oauth_clients
 WHERE client_id = 'rizervox_r1z2r3v4'
-ON CONFLICT (app_id) DO UPDATE SET
-    mode = EXCLUDED.mode,
-    created_by = COALESCE(app_access_rules.created_by, EXCLUDED.created_by),
-    updated_at = NOW();
+ON CONFLICT (app_id) DO NOTHING;
+
+-- Optional dev sample preference (insert-only; does not overwrite favorites/launch stats)
+INSERT INTO user_app_preferences (user_id, app_client_id, is_favorite, last_launched_at, launch_count)
+SELECT
+    id,
+    'rizervox_r1z2r3v4',
+    true,
+    NOW() - INTERVAL '2 days',
+    5
+FROM users
+WHERE email = 'admin@example.com'
+ON CONFLICT (user_id, app_client_id) DO NOTHING;

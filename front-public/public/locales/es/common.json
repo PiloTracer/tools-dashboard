@@ -3,6 +3,7 @@
     "brand": "Herramientas",
     "subtitle": "Experiencia pública",
     "nav": {
+      "appLibrary": "Aplicaciones",
       "register": "Registro",
       "completeProfile": "Perfil",
       "pricing": "Precios"

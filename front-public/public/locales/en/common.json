@@ -3,6 +3,7 @@
     "brand": "Tools Dashboard",
     "subtitle": "Public experience",
     "nav": {
+      "appLibrary": "Apps",
       "register": "Register",
       "completeProfile": "Profile",
       "pricing": "Pricing"

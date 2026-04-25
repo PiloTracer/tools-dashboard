@@ -5,16 +5,18 @@ import { useTranslation } from "react-i18next";
 
 import { joinBasePath, normalizeBasePath } from "../../utils/publicPaths";
 import { LanguageSwitcher } from "../LanguageSwitcher";
-import { UserMenu } from "../../features/user-status";
+import { UserMenu, useUserStatus } from "../../features/user-status";
+
+const PRIMARY_NAV = [
+  { path: "/features/app-library", labelKey: "header.nav.appLibrary" as const },
+  { path: "/features/user-registration", labelKey: "header.nav.register" as const },
+  { path: "/features/progressive-profiling", labelKey: "header.nav.completeProfile" as const },
+  { path: "/features/user-subscription", labelKey: "header.nav.pricing" as const },
+] as const;
 
 type PublicLayoutProps = {
   basePath?: string;
   children: ReactNode;
-};
-
-type NavigationLink = {
-  to: string;
-  label: string;
 };
 
 const BasePathContext = createContext("/");
@@ -24,21 +26,15 @@ export function PublicLayout({
   children,
 }: PublicLayoutProps) {
   const { t } = useTranslation();
+  const { isAuthenticated } = useUserStatus();
   const normalizedBasePath = useMemo(() => normalizeBasePath(basePath), [basePath]);
 
-  const LINKS: NavigationLink[] = useMemo(
-    () => [
-      { to: "/features/user-registration", label: t("header.nav.register") },
-      { to: "/features/progressive-profiling", label: t("header.nav.completeProfile") },
-      { to: "/features/user-subscription", label: t("header.nav.pricing") },
-    ],
-    [t]
-  );
-
-  const navigationLinks = useMemo(
-    () => LINKS.map((link) => ({ ...link, to: joinBasePath(normalizedBasePath, link.to) })),
-    [normalizedBasePath, LINKS],
-  );
+  const navigationLinks = useMemo(() => {
+    const items = isAuthenticated
+      ? PRIMARY_NAV.filter((item) => item.path !== "/features/user-registration")
+      : [...PRIMARY_NAV];
+    return items.map((item) => ({ ...item, to: joinBasePath(normalizedBasePath, item.path) }));
+  }, [normalizedBasePath, isAuthenticated]);
 
   return (
     <BasePathContext.Provider value={normalizedBasePath}>
@@ -60,7 +56,7 @@ export function PublicLayout({
                   prefetch="intent"
                   className={({ isActive }) => ["header-link", isActive ? "is-active" : ""].join(" ").trim()}
                 >
-                  {item.label}
+                  {t(item.labelKey)}
                 </NavLink>
               ))}
             </nav>
@@ -90,7 +86,7 @@ export function PublicLayout({
             <nav className="footer-actions" aria-label="Footer">
               {navigationLinks.map((item) => (
                 <NavLink key={item.to} to={item.to} prefetch="intent" className="header-link footer-link">
-                  {item.label}
+                  {t(item.labelKey)}
                 </NavLink>
               ))}
             </nav>
