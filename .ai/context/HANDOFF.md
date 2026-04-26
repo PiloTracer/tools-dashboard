@@ -16,15 +16,17 @@
 | **OAuth launch `redirect_uri`** | `front-public/app/features/app-library/utils/oauth.ts` — **`pickOAuthRedirectUri()`**: match `dev_url` origin, prefer `localhost`/`127.0.0.1`, reject `0.0.0.0`/`::` when alternatives exist; never blindly use `redirect_uris[0]`. |
 | **Public API + DB hygiene for bad OAuth hosts** | `back-api/features/app-library/domain.py` — **`sanitize_public_oauth_client()`** strips `0.0.0.0`/`::` callback URIs from list responses. `shared/contracts/app_library/models.py` — **reject** those hosts on **AppCreate** / **AppUpdate**. `back-postgres/schema/011_oauth_redirect_strip_bad_hosts.sql` — removes unusable callback URIs from existing rows when at least one good URI remains. |
 | **Bootstrap vs admin** | `008_ecards_app_bootstrap.sql` / `009_rizervox_app_bootstrap.sql` use **`ON CONFLICT DO NOTHING`** for `oauth_clients`, `app_access_rules`, and (Rizervox) sample `user_app_preferences` — **insert-only**: first provision on empty DB; **restarts do not overwrite** admin edits. Duplicate **`seeds/dev/008_cms_app_seed.sql`** removed; Rizervox canonical SQL is **`009` only**. `back-postgres/main.py` still runs all `schema/*.sql` each service start (no ledger). |
+| **Admin app library detail** | `front-admin/app/routes/admin.features.app-library.$appId.tsx` — **Registration** read-only shows redirect URIs, scopes, active; **OAuth** tab shows public OAuth URLs + copy; **revalidate** after save/toggle; **Storage** tab: Seaweed URL docs, **per-app integration keys** (`tdsk_…`), mint/revoke via admin API, copy templates; minted key **sessionStorage** + dismiss so revalidate does not lose the secret before copy. |
+| **Storage integration API (back-api)** | `back-postgres/schema/012_app_storage_integration_keys.sql` — `app_storage_integration_keys` (fingerprint + bcrypt, per `oauth_clients.id`). `repositories/app_library_repository.py` — `AppStorageIntegrationKeyRepository`. **`GET/POST/DELETE /api/admin/app-library/{app_id}/storage-keys`** (admin). **`GET /api/integrations/app-library/storage`** + **`Authorization: Bearer <tdsk_…>`** — returns JSON only (`app` + `storage.public_files_base_url` hints); **not** full S3/object CRUD (add routes later if needed). `back-api/main.py` — `storage_key_repo` + `integrations_router`. |
 
-**Uncommitted / verify before merge:** ensure `user-registration-status.server.ts` is **tracked** if registration redirect ships; run `011` (or full schema replay) on existing dev DBs so old `0.0.0.0` rows are cleaned.
+**Uncommitted / verify before merge:** ensure `user-registration-status.server.ts` is **tracked** if registration redirect ships; run `011` (or full schema replay) on existing dev DBs so old `0.0.0.0` rows are cleaned. **New:** ensure **`012_app_storage_integration_keys.sql`** has run (Postgres service replay) before minting keys in admin.
 
 ---
 
 ## Postgres / `back-postgres-service` (read before editing app library rows)
 
 - **What runs:** `back-postgres/main.py` → `run_migrations()` executes **all** `back-postgres/schema/*.sql` in **sorted filename order** on **every service start** (not “migrate once per version”).
-- **Data bootstrap (2026-04-25):** `008_ecards_app_bootstrap.sql` and `009_rizervox_app_bootstrap.sql` use **`INSERT … ON CONFLICT DO NOTHING`** for default **`ecards_a1b2c3d4`** / **`rizervox_r1z2r3v4`** rows and access rules — **no repo-driven overwrite on restart**; new rows appear only when the row did not exist (e.g. fresh volume). **`011_oauth_redirect_strip_bad_hosts.sql`** still **updates** `redirect_uris` only when unusable hosts (`0.0.0.0`, etc.) are present and a good URI remains (repair; no-op when already clean).
+- **Data bootstrap (2026-04-25):** `008_ecards_app_bootstrap.sql` and `009_rizervox_app_bootstrap.sql` use **`INSERT … ON CONFLICT DO NOTHING`** for default **`ecards_a1b2c3d4`** / **`rizervox_r1z2r3v4`** rows and access rules — **no repo-driven overwrite on restart**; new rows appear only when the row did not exist (e.g. fresh volume). **`011_oauth_redirect_strip_bad_hosts.sql`** still **updates** `redirect_uris` only when unusable hosts (`0.0.0.0`, etc.) are present and a good URI remains (repair; no-op when already clean). **`012_app_storage_integration_keys.sql`** adds **`app_storage_integration_keys`** (hashed secrets; minted plaintext never stored).
 - **Seeds:** `back-postgres/seeds/dev/007_app_library_seed.sql` is **optional / manual**, insert-only aligned with schema; **not** run by `main.py`.
 - **Ledger:** long-term improvement is a real migration table so schema DDL is not re-executed blindly each boot; bootstrap policy above already stops data clobber for seeded clients.
 
@@ -78,6 +80,8 @@
 **Commit hygiene:** Stage any still-untracked files needed for the above (e.g. `user-registration-status.server.ts`).
 
 **Postgres bootstrap:** Bootstrapped E‑Cards / Rizervox rows are **insert-only** (`DO NOTHING` on conflict) — see **Postgres / back-postgres-service**.
+
+**App library storage integration:** Third parties use **Bearer `tdsk_…`** on **`GET {public origin}/api/integrations/app-library/storage`** for config hints only. For uploads/list/delete via Tools Dashboard, add new **`/api/integrations/app-library/...`** routes (same auth) that call `SeaweedFSService` with service credentials.
 
 **Rizervox / CMS OAuth:** Confirm `.ai/plan/multi-tenant-headless-cms` is present or sync plan excerpt; align `009` / `feature.yaml` if plan specifies different hosts, scopes, or callback paths. Rizervox app env must use **`http://localhost:17513`** (not `0.0.0.0:3000`) for post-callback redirects. Optionally implement **`client_secret`** bcrypt check on token exchange (`oauth.token.tsx` TODO) via `back-api` or `back-auth`.
 

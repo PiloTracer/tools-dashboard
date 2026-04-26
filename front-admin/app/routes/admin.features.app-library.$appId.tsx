@@ -14,7 +14,12 @@ import { useState, useEffect, useRef } from "react";
 import type { App } from "../features/app-library/ui/AppTable";
 import { getAdminApiAuthHeaders } from "../utils/admin-api-auth.server";
 
-export type AppLibraryTab = "overview" | "registration" | "oauth" | "access";
+export type AppLibraryTab =
+  | "overview"
+  | "registration"
+  | "oauth"
+  | "access"
+  | "storage";
 
 function publicOAuthOriginFromRequest(request: Request): string {
   const td = process.env.TD_PUBLIC_BASE_URL?.replace(/\/$/, "");
@@ -32,6 +37,15 @@ function publicOAuthOriginFromRequest(request: Request): string {
   return new URL(request.url).origin;
 }
 
+type StorageIntegrationKeyRow = {
+  id: string;
+  key_prefix: string;
+  label: string | null;
+  created_at: string;
+  revoked_at: string | null;
+  last_used_at: string | null;
+};
+
 type LoaderData = {
   app: App;
   accessRule?: Record<string, unknown> | null;
@@ -40,6 +54,12 @@ type LoaderData = {
   startEditing: boolean;
   /** Browser-facing origin for OAuth (authorize/token), not the admin app origin. */
   publicOAuthOrigin: string;
+  /** SeaweedFS: public file prefix + S3 domain hint (no secrets). */
+  storageHints: {
+    publicFilesBaseUrl: string;
+    s3DomainName: string | null;
+  };
+  storageIntegrationKeys: StorageIntegrationKeyRow[];
 };
 
 type ActionData = {
@@ -48,6 +68,9 @@ type ActionData = {
   success?: boolean;
   /** Returned only for regenerate_secret (do not pass through redirect). */
   regeneratedClientSecret?: string;
+  /** Plaintext integration key; shown once after mint (not registration success). */
+  newStorageIntegrationKey?: string;
+  storageKeysRevoked?: boolean;
 };
 
 /**
@@ -65,7 +88,13 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
   const secret = url.searchParams.get("secret");
   const tabParam = url.searchParams.get("tab");
   const editParam = url.searchParams.get("edit");
-  const validTabs: AppLibraryTab[] = ["overview", "registration", "oauth", "access"];
+  const validTabs: AppLibraryTab[] = [
+    "overview",
+    "registration",
+    "oauth",
+    "access",
+    "storage",
+  ];
   const normalizedTab =
     tabParam === "details" ? "registration" : tabParam;
   const initialTab: AppLibraryTab = validTabs.includes(normalizedTab as AppLibraryTab)
@@ -77,10 +106,14 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
   const auth = getAdminApiAuthHeaders(request);
 
   try {
-    // Fetch app details
-    const response = await fetch(`${apiUrl}/api/admin/app-library/${appId}`, {
+    const appPromise = fetch(`${apiUrl}/api/admin/app-library/${appId}`, {
       headers: { ...auth },
     });
+    const keysPromise = fetch(
+      `${apiUrl}/api/admin/app-library/${appId}/storage-keys`,
+      { headers: { ...auth } }
+    );
+    const [response, keysResponse] = await Promise.all([appPromise, keysPromise]);
 
     if (response.status === 404) {
       throw new Response("Application not found", { status: 404 });
@@ -93,6 +126,12 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     }
 
     const data = await response.json();
+    const publicOAuthOrigin = publicOAuthOriginFromRequest(request);
+
+    let storageIntegrationKeys: StorageIntegrationKeyRow[] = [];
+    if (keysResponse.ok) {
+      storageIntegrationKeys = (await keysResponse.json()) as StorageIntegrationKeyRow[];
+    }
 
     return json<LoaderData>({
       app: data.app,
@@ -100,7 +139,12 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
       newSecret: isNew && secret ? secret : undefined,
       initialTab,
       startEditing,
-      publicOAuthOrigin: publicOAuthOriginFromRequest(request),
+      publicOAuthOrigin,
+      storageHints: {
+        publicFilesBaseUrl: `${publicOAuthOrigin}/storage`,
+        s3DomainName: process.env.SEAWEEDFS_S3_DOMAIN_NAME || null,
+      },
+      storageIntegrationKeys,
     });
   } catch (error) {
     console.error("Error fetching application:", error);
@@ -292,6 +336,72 @@ export async function action({ request, params }: ActionFunctionArgs) {
         return redirect("/admin/features/app-library");
       }
 
+      case "create_storage_key": {
+        const labelRaw = formData.get("storage_key_label")?.toString().trim();
+        const label = labelRaw && labelRaw.length > 0 ? labelRaw : null;
+        const response = await fetch(
+          `${apiUrl}/api/admin/app-library/${appId}/storage-keys`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...auth,
+            },
+            body: JSON.stringify({ label }),
+          }
+        );
+        if (!response.ok) {
+          let detail = `Failed to create key: ${response.status}`;
+          try {
+            const err = (await response.json()) as { detail?: string };
+            if (typeof err.detail === "string") detail = err.detail;
+          } catch {
+            /* ignore */
+          }
+          return json<ActionData>({ error: detail });
+        }
+        const created = (await response.json()) as {
+          integration_key?: string;
+        };
+        if (!created.integration_key) {
+          return json<ActionData>(
+            { error: "Invalid response from server (no integration key)" },
+            { status: 502 }
+          );
+        }
+        return json<ActionData>({
+          newStorageIntegrationKey: created.integration_key,
+        });
+      }
+
+      case "revoke_storage_key": {
+        const keyId = formData.get("key_id")?.toString();
+        if (!keyId) {
+          return json<ActionData>(
+            { error: "Key id is required" },
+            { status: 400 }
+          );
+        }
+        const response = await fetch(
+          `${apiUrl}/api/admin/app-library/${appId}/storage-keys/${keyId}`,
+          {
+            method: "DELETE",
+            headers: { ...auth },
+          }
+        );
+        if (!response.ok) {
+          let detail = `Failed to revoke key: ${response.status}`;
+          try {
+            const err = (await response.json()) as { detail?: string };
+            if (typeof err.detail === "string") detail = err.detail;
+          } catch {
+            /* ignore */
+          }
+          return json<ActionData>({ error: detail });
+        }
+        return json<ActionData>({ storageKeysRevoked: true });
+      }
+
       default:
         return json<ActionData>(
           { error: "Invalid action" },
@@ -316,12 +426,24 @@ function appLibrarySearch(tab: AppLibraryTab, options?: { edit?: boolean }) {
 }
 
 export default function AppLibraryDetail() {
-  const { app, newSecret, accessRule, initialTab, startEditing, publicOAuthOrigin } =
-    useLoaderData<typeof loader>();
+  const {
+    app,
+    newSecret,
+    accessRule,
+    initialTab,
+    startEditing,
+    publicOAuthOrigin,
+    storageHints,
+    storageIntegrationKeys,
+  } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const revalidator = useRevalidator();
   const [activeTab, setActiveTab] = useState<AppLibraryTab>(initialTab);
   const [isEditing, setIsEditing] = useState(startEditing);
+  /** Last minted integration key until dismissed (sessionStorage); survives revalidate/refresh. */
+  const [sessionMintedIntegrationKey, setSessionMintedIntegrationKey] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     setActiveTab(initialTab);
@@ -340,6 +462,12 @@ export default function AppLibraryDetail() {
   const oauthAuthorizeUrl = `${publicOAuthOrigin}/oauth/authorize`;
   const oauthTokenUrl = `${publicOAuthOrigin}/oauth/token`;
   const openidConfigUrl = `${publicOAuthOrigin}/.well-known/openid-configuration`;
+  const integrationStorageUrl = `${publicOAuthOrigin}/api/integrations/app-library/storage`;
+  const integrationAuthHeaderTemplate =
+    "Authorization: Bearer YOUR_INTEGRATION_KEY";
+  const integrationCurlTemplate = `curl -sS -H "Authorization: Bearer YOUR_INTEGRATION_KEY" ${integrationStorageUrl}`;
+  const devHostS3Api = "http://localhost:18333";
+  const dockerInternalS3Api = "http://seaweedfs:8333";
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [revealFromRegen, setRevealFromRegen] = useState<string | null>(null);
   const [regenUI, setRegenUI] = useState<
@@ -349,6 +477,27 @@ export default function AppLibraryDetail() {
   const [clientIdCopied, setClientIdCopied] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setSessionMintedIntegrationKey(
+      sessionStorage.getItem(`td-app-lib-pending-sk:${app.id}`)
+    );
+  }, [app.id]);
+
+  useEffect(() => {
+    if (!actionData?.newStorageIntegrationKey) return;
+    const k = `td-app-lib-pending-sk:${app.id}`;
+    sessionStorage.setItem(k, actionData.newStorageIntegrationKey);
+    setSessionMintedIntegrationKey(actionData.newStorageIntegrationKey);
+  }, [actionData?.newStorageIntegrationKey, app.id]);
+
+  useEffect(() => {
+    if (actionData?.storageKeysRevoked) {
+      revalidator.revalidate();
+    }
+  }, [actionData?.storageKeysRevoked, revalidator]);
+
   const statusFetcher = useFetcher<typeof action>();
   const regenFetcher = useFetcher<typeof action>();
   const RegenForm = regenFetcher.Form;
@@ -356,6 +505,14 @@ export default function AppLibraryDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const displayedNewSecret = newSecret ?? revealFromRegen;
+  const displayedMintedIntegrationKey =
+    actionData?.newStorageIntegrationKey ?? sessionMintedIntegrationKey;
+
+  const dismissMintedIntegrationKey = () => {
+    sessionStorage.removeItem(`td-app-lib-pending-sk:${app.id}`);
+    setSessionMintedIntegrationKey(null);
+    revalidator.revalidate();
+  };
 
   const openRegenModal = () => {
     regenSubmitPendingRef.current = false;
@@ -605,6 +762,82 @@ export default function AppLibraryDetail() {
         </div>
       )}
 
+      {actionData?.storageKeysRevoked && (
+        <div
+          className="rounded-2xl border border-emerald-200 bg-emerald-50/90 p-4 text-sm font-medium text-emerald-900 shadow-sm ring-1 ring-emerald-900/10"
+          role="status"
+        >
+          Integration key revoked.
+        </div>
+      )}
+
+      {displayedMintedIntegrationKey && (
+        <div
+          className="rounded-2xl border border-amber-200/90 bg-amber-50/90 p-4 shadow-sm ring-1 ring-amber-900/10 sm:p-5"
+          role="alert"
+        >
+          <h3 className="text-sm font-semibold text-amber-950">
+            Integration key — copy now (kept in this browser until you dismiss)
+          </h3>
+          <p className="mt-1 text-xs text-amber-900/80">
+            The server never stores the full key. This banner stays after refresh until you click
+            dismiss below.
+          </p>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-stretch">
+            <code className="block min-w-0 flex-1 break-all rounded-lg border border-amber-200/80 bg-white px-3 py-2 font-mono text-xs text-amber-950 sm:text-sm">
+              {displayedMintedIntegrationKey}
+            </code>
+            <button
+              type="button"
+              onClick={() =>
+                copyToClipboard(displayedMintedIntegrationKey, "secret")
+              }
+              className="inline-flex shrink-0 items-center justify-center rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700"
+            >
+              {secretCopied ? "Copied" : "Copy key"}
+            </button>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                copyToClipboard(
+                  `Authorization: Bearer ${displayedMintedIntegrationKey}`,
+                  "link"
+                )
+              }
+              className="inline-flex items-center justify-center rounded-lg border border-amber-300/80 bg-white px-3 py-2 text-xs font-semibold text-amber-950 shadow-sm transition hover:bg-amber-100/80"
+            >
+              {linkCopied ? "Copied" : "Copy Authorization header"}
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                copyToClipboard(
+                  `curl -sS -H "Authorization: Bearer ${displayedMintedIntegrationKey}" ${integrationStorageUrl}`,
+                  "link"
+                )
+              }
+              className="inline-flex items-center justify-center rounded-lg border border-amber-300/80 bg-white px-3 py-2 text-xs font-semibold text-amber-950 shadow-sm transition hover:bg-amber-100/80"
+            >
+              {linkCopied ? "Copied" : "Copy verify curl"}
+            </button>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={dismissMintedIntegrationKey}
+              className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+            >
+              I’ve saved this key — hide from this browser
+            </button>
+            <span className="text-xs text-amber-900/90">
+              Until then, the key stays in session storage for this tab’s origin only.
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className={`${cardSurface} !p-0`}>
         <nav
           className="-mb-px flex gap-1 overflow-x-auto overscroll-x-contain border-b border-slate-200 px-2 pt-1 sm:gap-2 sm:px-4"
@@ -616,6 +849,7 @@ export default function AppLibraryDetail() {
               { id: "registration" as const, label: "Registration" },
               { id: "oauth" as const, label: "OAuth" },
               { id: "access" as const, label: "Access" },
+              { id: "storage" as const, label: "Storage" },
             ] as const
           ).map((tab) => (
             <button
@@ -763,6 +997,24 @@ export default function AppLibraryDetail() {
                   View read-only
                 </Link>
               </div>
+            </div>
+
+            <div className={cardSurface}>
+              <h3 className="text-base font-semibold text-slate-900">Object storage (SeaweedFS)</h3>
+              <p className="mt-1 text-sm text-slate-600">
+                Public <code className="font-mono text-xs text-slate-800">/storage/</code> base URL,
+                S3 API endpoints for clients, and steps to create or read access keys.
+              </p>
+              <Link
+                to={`/admin/features/app-library/${app.id}${appLibrarySearch("storage")}`}
+                onClick={() => {
+                  setActiveTab("storage");
+                  setIsEditing(false);
+                }}
+                className="mt-4 inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50"
+              >
+                Open Storage tab
+              </Link>
             </div>
           </div>
         )}
@@ -1223,6 +1475,336 @@ export default function AppLibraryDetail() {
                 </p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* SeaweedFS / object storage (deployment-wide) */}
+        {activeTab === "storage" && (
+          <div className="space-y-6">
+            <div className={cardSurface}>
+              <h3 className="mb-2 text-lg font-semibold text-slate-900">Object storage (SeaweedFS)</h3>
+              <p className="text-sm text-slate-600">
+                Seaweed S3 and its access keys are <strong>deployment-wide</strong>. For third-party
+                apps tied to this library entry, mint <strong>integration keys</strong> below: they
+                authenticate to Tools Dashboard APIs (Bearer), not to raw Seaweed. The API uses
+                service Seaweed credentials on your behalf.
+              </p>
+            </div>
+
+            <div className={cardSurface}>
+              <h4 className="mb-2 text-base font-semibold text-slate-900">Integration keys (this app)</h4>
+              <p className="mb-4 text-sm text-slate-600">
+                These keys are <strong>only for this OAuth client</strong>. Send a minted key to your
+                integration over a secure channel. The integration calls{" "}
+                <code className="font-mono text-xs text-slate-800">GET</code> on the URL below with{" "}
+                <code className="font-mono text-xs text-slate-800">Authorization: Bearer &lt;key&gt;</code>.
+                That proves the key and returns JSON (public storage base URL and notes)—not raw Seaweed
+                secrets.
+              </p>
+
+              <div className="mb-6 space-y-3 rounded-xl border border-slate-200 bg-slate-50/90 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Copy for integrators (templates use YOUR_INTEGRATION_KEY until you paste the real key)
+                </p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-medium text-slate-500">Integration endpoint (GET)</div>
+                    <code className="mt-0.5 block break-all rounded-md border border-slate-200 bg-white px-2 py-1.5 font-mono text-[11px] text-slate-900 sm:text-xs">
+                      {integrationStorageUrl}
+                    </code>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(integrationStorageUrl, "link")}
+                    className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                  >
+                    {linkCopied ? "Copied" : "Copy URL"}
+                  </button>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-medium text-slate-500">Authorization header (template)</div>
+                    <code className="mt-0.5 block break-all rounded-md border border-slate-200 bg-white px-2 py-1.5 font-mono text-[11px] text-slate-900 sm:text-xs">
+                      {integrationAuthHeaderTemplate}
+                    </code>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(integrationAuthHeaderTemplate, "link")}
+                    className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                  >
+                    {linkCopied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-medium text-slate-500">Example curl (template)</div>
+                    <code className="mt-0.5 block whitespace-pre-wrap break-all rounded-md border border-slate-200 bg-white px-2 py-1.5 font-mono text-[11px] text-slate-900 sm:text-xs">
+                      {integrationCurlTemplate}
+                    </code>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(integrationCurlTemplate, "link")}
+                    className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                  >
+                    {linkCopied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+              </div>
+
+              <Form method="post" className="mb-6 flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-end">
+                <input type="hidden" name="_action" value="create_storage_key" />
+                <div className="min-w-0 flex-1">
+                  <label
+                    htmlFor="storage_key_label"
+                    className="block text-xs font-medium uppercase tracking-wide text-slate-500"
+                  >
+                    Label (optional)
+                  </label>
+                  <input
+                    id="storage_key_label"
+                    name="storage_key_label"
+                    type="text"
+                    maxLength={255}
+                    placeholder="e.g. Rizervox staging"
+                    className="mt-1 block w-full rounded-md border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="inline-flex shrink-0 items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+                >
+                  Mint new key
+                </button>
+              </Form>
+
+              {storageIntegrationKeys.length === 0 ? (
+                <p className="text-sm text-slate-500">No integration keys yet.</p>
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-slate-200">
+                  <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <th className="px-4 py-3 font-semibold text-slate-700">Prefix</th>
+                        <th className="px-4 py-3 font-semibold text-slate-700">Label</th>
+                        <th className="px-4 py-3 font-semibold text-slate-700">Created</th>
+                        <th className="px-4 py-3 font-semibold text-slate-700">Last used</th>
+                        <th className="px-4 py-3 font-semibold text-slate-700">Status</th>
+                        <th className="px-4 py-3 font-semibold text-slate-700 w-28" />
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {storageIntegrationKeys.map((k) => (
+                        <tr key={k.id} className={k.revoked_at ? "opacity-60" : ""}>
+                          <td className="px-4 py-3 font-mono text-xs text-slate-900">
+                            {k.key_prefix}…
+                          </td>
+                          <td className="px-4 py-3 text-slate-700">
+                            {k.label || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-slate-600">
+                            {formatDate(k.created_at)}
+                          </td>
+                          <td className="px-4 py-3 text-slate-600">
+                            {k.last_used_at ? formatDate(k.last_used_at) : "—"}
+                          </td>
+                          <td className="px-4 py-3">
+                            {k.revoked_at ? (
+                              <span className="text-xs font-medium text-slate-500">Revoked</span>
+                            ) : (
+                              <span className="text-xs font-medium text-emerald-700">Active</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            {!k.revoked_at ? (
+                              <Form method="post" className="inline">
+                                <input type="hidden" name="_action" value="revoke_storage_key" />
+                                <input type="hidden" name="key_id" value={k.id} />
+                                <button
+                                  type="submit"
+                                  className="text-xs font-semibold text-rose-700 hover:text-rose-900"
+                                >
+                                  Revoke
+                                </button>
+                              </Form>
+                            ) : (
+                              <span className="text-xs text-slate-400">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <p className="mt-4 text-xs text-slate-500">
+                The table shows only a <strong>prefix</strong>. The full key is in the yellow banner
+                at the top of this page after mint; it stays in this browser's session storage
+                until you dismiss it there, so you can refresh and still copy. Another browser or a
+                cleared session needs a new mint (revoke the old key if unsure).
+              </p>
+            </div>
+
+            <div className={cardSurface}>
+              <h4 className="mb-3 text-base font-semibold text-slate-900">Public file URLs</h4>
+              <p className="mb-4 text-sm text-slate-600">
+                After uploads, the API often returns paths under{" "}
+                <code className="rounded bg-slate-100 px-1 font-mono text-xs">/storage/</code>. Browsers
+                load objects from this base (same host as your public Tools entry).
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <code className="min-w-0 flex-1 break-all rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-900 sm:text-sm">
+                  {storageHints.publicFilesBaseUrl}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(storageHints.publicFilesBaseUrl, "link")}
+                  className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+                >
+                  {linkCopied ? "Copied" : "Copy"}
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-slate-500">
+                Example object path:{" "}
+                <span className="font-mono text-slate-700">
+                  {storageHints.publicFilesBaseUrl}/&lt;bucket&gt;/&lt;key&gt;
+                </span>
+              </p>
+            </div>
+
+            <div className={cardSurface}>
+              <h4 className="mb-3 text-base font-semibold text-slate-900">S3 API endpoints</h4>
+              <p className="mb-4 text-sm text-slate-600">
+                Use these with AWS CLI, boto3, or any S3 client. Authenticate with the access key and
+                secret from your deployment (see below). Production compose does not expose the S3
+                port on the public hostname by default—use the internal URL from another container, or
+                add a reverse proxy if you need internet-facing S3.
+              </p>
+              <dl className="space-y-4">
+                <div>
+                  <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    From your machine (dev compose)
+                  </dt>
+                  <dd className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <code className="min-w-0 flex-1 break-all rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-900">
+                      {devHostS3Api}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(devHostS3Api, "link")}
+                      className="inline-flex shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                    >
+                      {linkCopied ? "Copied" : "Copy"}
+                    </button>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    From a service on the same Docker network
+                  </dt>
+                  <dd className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <code className="min-w-0 flex-1 break-all rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-900">
+                      {dockerInternalS3Api}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(dockerInternalS3Api, "link")}
+                      className="inline-flex shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                    >
+                      {linkCopied ? "Copied" : "Copy"}
+                    </button>
+                  </dd>
+                </div>
+                {storageHints.s3DomainName ? (
+                  <div>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      S3 virtual-host domain (Seaweed{" "}
+                      <code className="font-mono normal-case text-slate-600">-s3.domainName</code>)
+                    </dt>
+                    <dd className="mt-1 break-all font-mono text-sm text-slate-800">
+                      {storageHints.s3DomainName}
+                    </dd>
+                  </div>
+                ) : null}
+              </dl>
+            </div>
+
+            <div className={cardSurface}>
+              <h4 className="mb-3 text-base font-semibold text-slate-900">How to get credentials</h4>
+
+              <div className="space-y-5 text-sm text-slate-700">
+                <div>
+                  <h5 className="mb-2 text-sm font-semibold text-slate-900">
+                    A. Integration key (per app — recommended for third-party apps)
+                  </h5>
+                  <ol className="list-decimal space-y-2 pl-5">
+                    <li>
+                      Use the <strong>Copy URL / Copy header / Copy curl</strong> box above so
+                      integrators know the exact endpoint and header shape.
+                    </li>
+                    <li>
+                      Click <strong>Mint new key</strong>. Copy the full key from the{" "}
+                      <strong>yellow banner</strong> using <strong>Copy key</strong>, or copy the ready-made{" "}
+                      <strong>Authorization header</strong> / <strong>verify curl</strong> buttons there
+                      (they include your new key). This is the <strong>only</strong> time the full secret
+                      appears in the UI.
+                    </li>
+                    <li>
+                      The table only ever shows a short <strong>prefix</strong>. If the secret was lost,
+                      <strong> Revoke</strong> and mint again—old keys cannot be recovered from this screen.
+                    </li>
+                  </ol>
+                  <p className="mt-2 text-xs text-slate-600">
+                    These keys authenticate to Tools Dashboard (
+                    <code className="font-mono text-[11px]">GET {integrationStorageUrl}</code>
+                    ), not to raw Seaweed S3. They are tied to this application library entry.
+                  </p>
+                </div>
+
+                <div>
+                  <h5 className="mb-2 text-sm font-semibold text-slate-900">
+                    B. Raw Seaweed S3 keys (whole deployment — only if you need direct S3 / AWS CLI)
+                  </h5>
+                  <p className="mb-2 text-sm text-slate-600">
+                    Seaweed access keys are <strong>shared across the whole stack</strong>, not per app.
+                    They are <strong>not</strong> issued from this page and <strong>cannot</strong> be
+                    copied here—the admin app never receives those secrets from the server.
+                  </p>
+                  <ol className="list-decimal space-y-2 pl-5">
+                    <li>
+                      On a trusted machine with repo access, open{" "}
+                      <code className="rounded bg-slate-100 px-1 font-mono text-xs">
+                        seaweedfs-config/s3-config.json
+                      </code>
+                      . Each identity lists <code className="font-mono text-xs">accessKey</code> /{" "}
+                      <code className="font-mono text-xs">secretKey</code> pairs.
+                    </li>
+                    <li>
+                      For <code className="font-mono text-xs">back-api</code> and other in-stack
+                      services, the pair you use must match root{" "}
+                      <code className="font-mono text-xs">SEAWEED_S3_ACCESS_KEY</code> and{" "}
+                      <code className="font-mono text-xs">SEAWEED_S3_SECRET_KEY</code> in{" "}
+                      <code className="font-mono text-xs">.env</code> (see{" "}
+                      <code className="font-mono text-xs">.env.dev.example</code>).
+                    </li>
+                    <li>
+                      After editing JSON, restart the <code className="font-mono text-xs">seaweedfs</code>{" "}
+                      container so the mount is re-read. More detail:{" "}
+                      <code className="font-mono text-xs">seaweedfs-config/README.md</code> and{" "}
+                      <code className="font-mono text-xs">seaweedfs/AUTHENTICATION.md</code>.
+                    </li>
+                  </ol>
+                </div>
+              </div>
+
+              <p className="mt-4 rounded-lg border border-amber-200/80 bg-amber-50/90 p-3 text-xs text-amber-950">
+                <strong>Integration keys</strong> can be copied from this page (templates above + yellow
+                banner after mint). <strong>Seaweed S3 secrets</strong> live only in config files,{" "}
+                <code className="font-mono text-[11px]">.env</code>, or your secrets manager—never paste
+                production secrets into chat or tickets.
+              </p>
+            </div>
           </div>
         )}
       </div>

@@ -16,6 +16,7 @@ from repositories import (
     UserPreferenceRepository,
     AuditLogRepository,
 )
+from repositories.app_library_repository import AppStorageIntegrationKeyRepository
 
 
 @asynccontextmanager
@@ -36,6 +37,7 @@ async def lifespan(app: FastAPI):
     access_rule_repo = AccessRuleRepository(db_manager.pg_pool)
     user_pref_repo = UserPreferenceRepository(db_manager.pg_pool)
     audit_log_repo = AuditLogRepository(db_manager.pg_pool)
+    storage_key_repo = AppStorageIntegrationKeyRepository(db_manager.pg_pool)
 
     # Store in app state for dependency injection
     app.state.user_repo = user_repo
@@ -45,6 +47,7 @@ async def lifespan(app: FastAPI):
     app.state.access_rule_repo = access_rule_repo
     app.state.user_pref_repo = user_pref_repo
     app.state.audit_log_repo = audit_log_repo
+    app.state.storage_key_repo = storage_key_repo
 
     print("✅ Repositories initialized and ready")
 
@@ -71,6 +74,7 @@ auto_auth_router = auto_auth_module.router
 app_library_module = importlib.import_module("features.app-library.api")
 app_library_public_router = app_library_module.public_router
 app_library_admin_router = app_library_module.admin_router
+app_library_integrations_router = app_library_module.integrations_router
 
 users_module = importlib.import_module("features.users.api")
 users_router = users_module.router
@@ -93,6 +97,7 @@ app.include_router(user_management_router)
 app.include_router(auto_auth_router)
 app.include_router(app_library_public_router)
 app.include_router(app_library_admin_router)
+app.include_router(app_library_integrations_router)
 app.include_router(users_router)
 
 

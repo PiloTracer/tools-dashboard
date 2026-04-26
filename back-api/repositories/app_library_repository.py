@@ -1,10 +1,15 @@
 """Repository for app-library entities."""
 
-from typing import Any
-from datetime import datetime
-import uuid
-import bcrypt
+from __future__ import annotations
+
+import hashlib
 import json
+import secrets
+import uuid
+from datetime import datetime
+from typing import Any
+
+import bcrypt
 
 
 class AppRepository:
@@ -587,3 +592,107 @@ class AuditLogRepository:
                 uuid.UUID(app_id)
             )
             return count or 0
+
+
+class AppStorageIntegrationKeyRepository:
+    """Opaque per-app keys for storage integration (Bearer on back-api; not Seaweed S3 keys)."""
+
+    def __init__(self, pool: Any) -> None:
+        self.pool = pool
+
+    @staticmethod
+    def fingerprint_for_token(plaintext: str) -> str:
+        return hashlib.sha256(plaintext.encode("utf-8")).hexdigest()
+
+    async def create(
+        self,
+        app_id: str,
+        plaintext_key: str,
+        key_prefix: str,
+        label: str | None,
+        created_by: int | None,
+    ) -> dict[str, Any]:
+        fp = self.fingerprint_for_token(plaintext_key)
+        key_hash = bcrypt.hashpw(plaintext_key.encode("utf-8"), bcrypt.gensalt(12)).decode("utf-8")
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                INSERT INTO app_storage_integration_keys
+                    (app_id, token_fingerprint, key_hash, key_prefix, label, created_by)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                RETURNING id, app_id, key_prefix, label, created_at, revoked_at, last_used_at
+                """,
+                uuid.UUID(app_id),
+                fp,
+                key_hash,
+                key_prefix,
+                label,
+                created_by,
+            )
+            return dict(row) if row else {}
+
+    async def list_for_app(self, app_id: str) -> list[dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT id, app_id, key_prefix, label, created_at, revoked_at, last_used_at
+                FROM app_storage_integration_keys
+                WHERE app_id = $1
+                ORDER BY created_at DESC
+                """,
+                uuid.UUID(app_id),
+            )
+            return [dict(r) for r in rows]
+
+    async def revoke(self, app_id: str, key_id: str) -> bool:
+        async with self.pool.acquire() as conn:
+            result = await conn.execute(
+                """
+                UPDATE app_storage_integration_keys
+                SET revoked_at = NOW()
+                WHERE id = $1 AND app_id = $2 AND revoked_at IS NULL
+                """,
+                uuid.UUID(key_id),
+                uuid.UUID(app_id),
+            )
+            return result.split()[-1] != "0"
+
+    async def find_row_by_fingerprint(self, fingerprint: str) -> dict[str, Any] | None:
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT id, app_id, token_fingerprint, key_hash, key_prefix, label,
+                       created_at, revoked_at, last_used_at
+                FROM app_storage_integration_keys
+                WHERE token_fingerprint = $1
+                """,
+                fingerprint,
+            )
+            return dict(row) if row else None
+
+    async def touch_last_used(self, key_id: uuid.UUID) -> None:
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                """
+                UPDATE app_storage_integration_keys
+                SET last_used_at = NOW()
+                WHERE id = $1
+                """,
+                key_id,
+            )
+
+    async def validate_and_touch(self, plaintext_key: str) -> dict[str, Any] | None:
+        """Return app row subset if key is valid; update last_used_at."""
+        fp = self.fingerprint_for_token(plaintext_key)
+        row = await self.find_row_by_fingerprint(fp)
+        if not row or row.get("revoked_at") is not None:
+            return None
+        stored = row.get("key_hash") or ""
+        if not bcrypt.checkpw(plaintext_key.encode("utf-8"), stored.encode("utf-8")):
+            return None
+        await self.touch_last_used(row["id"])
+        return {
+            "key_id": row["id"],
+            "app_id": row["app_id"],
+            "key_prefix": row["key_prefix"],
+        }

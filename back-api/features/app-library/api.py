@@ -12,8 +12,9 @@ from typing import Any
 from urllib.parse import unquote
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field, UUID4
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from shared.contracts.app_library import (
     AppCreate,
@@ -30,6 +31,12 @@ from . import domain
 # Routers
 public_router = APIRouter(prefix="/api/app-library", tags=["app-library-public"])
 admin_router = APIRouter(prefix="/api/admin", tags=["app-library-admin"])
+integrations_router = APIRouter(
+    prefix="/api/integrations/app-library",
+    tags=["app-library-integrations"],
+)
+
+_integration_bearer = HTTPBearer(auto_error=False)
 
 
 # ========== DEPENDENCY INJECTION ==========
@@ -52,6 +59,11 @@ async def get_user_pref_repo(request: Request) -> Any:
 async def get_audit_log_repo(request: Request) -> Any:
     """Get AuditLogRepository from app state."""
     return request.app.state.audit_log_repo
+
+
+async def get_storage_key_repo(request: Request) -> Any:
+    """Get AppStorageIntegrationKeyRepository from app state."""
+    return request.app.state.storage_key_repo
 
 
 async def get_current_user(request: Request) -> dict[str, Any]:
@@ -183,6 +195,72 @@ class SecretRegenerateResponse(BaseModel):
 class MessageResponse(BaseModel):
     """Generic message response."""
     message: str
+
+
+class StorageIntegrationKeyPublic(BaseModel):
+    """Storage integration key metadata (no secret)."""
+
+    id: str
+    key_prefix: str
+    label: str | None = None
+    created_at: datetime
+    revoked_at: datetime | None = None
+    last_used_at: datetime | None = None
+
+
+class StorageIntegrationKeyCreateBody(BaseModel):
+    """Optional label when minting a storage integration key."""
+
+    label: str | None = Field(None, max_length=255)
+
+
+class StorageIntegrationKeyCreatedResponse(BaseModel):
+    """One-time response including plaintext key."""
+
+    id: str
+    integration_key: str
+    key_prefix: str
+    label: str | None = None
+    created_at: datetime
+    message: str = "Save this key now; it cannot be retrieved later."
+
+
+def _public_storage_base_url() -> str:
+    """Browser-reachable /storage prefix (same logic as admin Remix loaders)."""
+    td = (os.environ.get("TD_PUBLIC_BASE_URL") or "").rstrip("/")
+    if td:
+        return f"{td}/storage"
+    pub = (os.environ.get("PUBLIC_APP_BASE_URL") or "").rstrip("/")
+    if pub.endswith("/app"):
+        return f"{pub[:-4]}/storage"
+    if pub:
+        return f"{pub}/storage"
+    return "/storage"
+
+
+async def require_valid_storage_integration_key(
+    storage_key_repo: Any = Depends(get_storage_key_repo),
+    creds: HTTPAuthorizationCredentials | None = Depends(_integration_bearer),
+) -> dict[str, Any]:
+    """Validate ``tdsk_`` integration Bearer and return key context (includes ``app_id``)."""
+    if not creds or creds.scheme.lower() != "bearer":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Bearer token required",
+        )
+    token = creds.credentials.strip()
+    if not token.startswith("tdsk_"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid integration key",
+        )
+    ctx = await storage_key_repo.validate_and_touch(token)
+    if not ctx:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or revoked integration key",
+        )
+    return ctx
 
 
 # ========== PUBLIC ENDPOINTS ==========
@@ -695,6 +773,93 @@ async def get_usage_stats(
     }
 
 
+def _row_to_storage_key_public(row: dict[str, Any]) -> StorageIntegrationKeyPublic:
+    return StorageIntegrationKeyPublic(
+        id=str(row["id"]),
+        key_prefix=str(row["key_prefix"]),
+        label=row.get("label"),
+        created_at=row["created_at"],
+        revoked_at=row.get("revoked_at"),
+        last_used_at=row.get("last_used_at"),
+    )
+
+
+@admin_router.get(
+    "/app-library/{app_id}/storage-keys",
+    response_model=list[StorageIntegrationKeyPublic],
+)
+async def list_storage_integration_keys_admin(
+    app_id: str,
+    app_repo: Any = Depends(get_app_repo),
+    storage_key_repo: Any = Depends(get_storage_key_repo),
+    _admin: dict = Depends(get_current_admin),
+):
+    rows = await domain.list_storage_integration_keys(
+        app_id, app_repo, storage_key_repo
+    )
+    if rows is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found",
+        )
+    return [_row_to_storage_key_public(r) for r in rows]
+
+
+@admin_router.post(
+    "/app-library/{app_id}/storage-keys",
+    response_model=StorageIntegrationKeyCreatedResponse,
+)
+async def create_storage_integration_key_admin(
+    app_id: str,
+    app_repo: Any = Depends(get_app_repo),
+    storage_key_repo: Any = Depends(get_storage_key_repo),
+    current_user: dict = Depends(get_current_admin),
+    body: StorageIntegrationKeyCreateBody | None = Body(None),
+):
+    payload = body or StorageIntegrationKeyCreateBody()
+    row, plain = await domain.create_storage_integration_key(
+        app_id,
+        payload.label,
+        current_user["id"],
+        app_repo,
+        storage_key_repo,
+    )
+    if not plain:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found",
+        )
+    return StorageIntegrationKeyCreatedResponse(
+        id=str(row["id"]),
+        integration_key=plain,
+        key_prefix=str(row["key_prefix"]),
+        label=row.get("label"),
+        created_at=row["created_at"],
+    )
+
+
+@admin_router.delete(
+    "/app-library/{app_id}/storage-keys/{key_id}",
+    response_model=MessageResponse,
+)
+async def revoke_storage_integration_key_admin(
+    app_id: str,
+    key_id: str,
+    app_repo: Any = Depends(get_app_repo),
+    storage_key_repo: Any = Depends(get_storage_key_repo),
+    _admin: dict = Depends(get_current_admin),
+):
+    ok = await domain.revoke_storage_integration_key(
+        app_id, key_id, app_repo, storage_key_repo
+    )
+    if not ok:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Key not found or already revoked",
+        )
+    return MessageResponse(message="Integration key revoked")
+
+
 @admin_router.get("/app-library/{app_id}/audit-log")
 async def get_audit_log(
     app_id: str,
@@ -729,5 +894,33 @@ async def get_audit_log(
     }
 
 
+@integrations_router.get("/storage")
+async def storage_integration_context(
+    ctx: dict[str, Any] = Depends(require_valid_storage_integration_key),
+    app_repo: Any = Depends(get_app_repo),
+):
+    """Validate a minted integration key and return app + public storage hints."""
+    app = await app_repo.find_by_id(str(ctx["app_id"]))
+    if not app:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found",
+        )
+    base = _public_storage_base_url()
+    return {
+        "app": {
+            "id": str(app["id"]),
+            "client_id": app["client_id"],
+            "client_name": app["client_name"],
+        },
+        "storage": {
+            "public_files_base_url": base,
+            "integration_auth": "Authorization: Bearer <integration_key>",
+            "endpoint": "/api/integrations/app-library/storage",
+            "note": "Keys are issued in the admin app library Storage tab; they are not Seaweed S3 access keys.",
+        },
+    }
+
+
 # Export routers
-__all__ = ["public_router", "admin_router"]
+__all__ = ["public_router", "admin_router", "integrations_router"]

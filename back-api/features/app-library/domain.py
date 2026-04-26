@@ -549,3 +549,53 @@ async def record_launch(
         Updated user preference data
     """
     return await user_pref_repo.record_launch(user_id, app_client_id)
+
+
+def generate_storage_integration_key() -> str:
+    """Random opaque key for storage integration (Bearer on back-api)."""
+    return f"tdsk_{secrets.token_urlsafe(32)}"
+
+
+def storage_integration_key_prefix(plaintext_key: str) -> str:
+    """Short prefix stored for list views (full secret never persisted)."""
+    return plaintext_key[:14] if len(plaintext_key) >= 14 else plaintext_key
+
+
+async def create_storage_integration_key(
+    app_id: str,
+    label: str | None,
+    performed_by: int | None,
+    app_repo: Any,
+    storage_key_repo: Any,
+) -> tuple[dict[str, Any], str]:
+    """Create a new integration key; returns (row_without_secret, plaintext_once)."""
+    app = await app_repo.find_by_id(app_id)
+    if not app:
+        return {}, ""
+    raw = generate_storage_integration_key()
+    prefix = storage_integration_key_prefix(raw)
+    row = await storage_key_repo.create(
+        app_id=app_id,
+        plaintext_key=raw,
+        key_prefix=prefix,
+        label=label,
+        created_by=performed_by,
+    )
+    return row, raw
+
+
+async def list_storage_integration_keys(
+    app_id: str, app_repo: Any, storage_key_repo: Any
+) -> list[dict[str, Any]] | None:
+    """Return keys for app, or ``None`` if the application does not exist."""
+    if not await app_repo.find_by_id(app_id):
+        return None
+    return await storage_key_repo.list_for_app(app_id)
+
+
+async def revoke_storage_integration_key(
+    app_id: str, key_id: str, app_repo: Any, storage_key_repo: Any
+) -> bool:
+    if not await app_repo.find_by_id(app_id):
+        return False
+    return await storage_key_repo.revoke(app_id, key_id)
