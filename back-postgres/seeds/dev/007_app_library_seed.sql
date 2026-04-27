@@ -4,7 +4,7 @@
 -- File: back-postgres/seeds/dev/007_app_library_seed.sql
 -- Created: 2025-11-15
 -- Purpose: Optional manual seed (insert-only). Automatic bootstrap: schema/008_ecards_app_bootstrap.sql
--- Rizervox: schema/009_rizervox_app_bootstrap.sql (no duplicate seeds/dev/008_cms file).
+-- Rizervox: schema/009_rizervox_app_bootstrap.sql (auto). Optional manual overlay: seeds/dev/008_cms_app_seed_dev.sql.
 -- ============================================================================
 
 -- ============================================================================
