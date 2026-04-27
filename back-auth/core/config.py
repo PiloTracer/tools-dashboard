@@ -2,10 +2,47 @@
 
 from __future__ import annotations
 
+import logging
+import re
 from functools import lru_cache
-from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
+
+_GOOGLE_USERINFO_EMAIL = "https://www.googleapis.com/auth/userinfo.email"
+_GOOGLE_USERINFO_PROFILE = "https://www.googleapis.com/auth/userinfo.profile"
+_DEFAULT_GOOGLE_SCOPES: tuple[str, ...] = ("openid", _GOOGLE_USERINFO_EMAIL, _GOOGLE_USERINFO_PROFILE)
+
+
+def _tokenize_google_scopes(raw: str) -> list[str]:
+    """Split env value on whitespace and commas; strip quotes from each token."""
+    tokens: list[str] = []
+    for chunk in re.split(r"[\s,]+", raw.strip()):
+        t = chunk.strip().strip('"').strip("'")
+        if t:
+            tokens.append(t)
+    return tokens
+
+
+def _normalize_google_scope_token(token: str) -> str | None:
+    """Map env tokens to Google-supported scope strings; reject prose or accidental .env pastes."""
+    t = token.strip().strip('"').strip("'")
+    if not t:
+        return None
+    low = t.lower()
+    if low == "openid":
+        return "openid"
+    if low == "email" or t == _GOOGLE_USERINFO_EMAIL:
+        return _GOOGLE_USERINFO_EMAIL
+    if low == "profile" or t == _GOOGLE_USERINFO_PROFILE:
+        return _GOOGLE_USERINFO_PROFILE
+    if t.startswith("https://www.googleapis.com/auth/userinfo."):
+        if "userinfo.email" in t:
+            return _GOOGLE_USERINFO_EMAIL
+        if "userinfo.profile" in t:
+            return _GOOGLE_USERINFO_PROFILE
+    return None
 
 
 class Settings(BaseSettings):
@@ -33,6 +70,7 @@ class Settings(BaseSettings):
     google_oauth_client_id: str | None = None
     google_oauth_client_secret: str | None = None
     google_oauth_redirect_uri: str | None = None
+    # Space- or comma-separated; only openid + Google userinfo scopes are forwarded (see google_scopes_list).
     google_oauth_scopes: str = "openid email profile"
     google_oauth_auth_endpoint: str = "https://accounts.google.com/o/oauth2/v2/auth"
     google_oauth_token_endpoint: str = "https://oauth2.googleapis.com/token"
@@ -62,7 +100,39 @@ class Settings(BaseSettings):
         return f"{base}/{path}?token={token}"
 
     def google_scopes_list(self) -> list[str]:
-        return [scope.strip() for scope in self.google_oauth_scopes.split() if scope.strip()]
+        raw = (self.google_oauth_scopes or "").strip()
+        if not raw:
+            return list(_DEFAULT_GOOGLE_SCOPES)
+        tokens = _tokenize_google_scopes(raw)
+        seen: set[str] = set()
+        ordered: list[str] = []
+        dropped = 0
+        for tok in tokens:
+            norm = _normalize_google_scope_token(tok)
+            if norm is None:
+                dropped += 1
+                continue
+            if norm not in seen:
+                seen.add(norm)
+                ordered.append(norm)
+        if not ordered:
+            if dropped:
+                logger.warning(
+                    "GOOGLE_OAUTH_SCOPES had no valid tokens (%d ignored); using default sign-in scopes "
+                    "(openid, email, profile or full https://www.googleapis.com/auth/userinfo.* URLs).",
+                    dropped,
+                )
+            return list(_DEFAULT_GOOGLE_SCOPES)
+        if dropped:
+            logger.warning(
+                "Ignored %d invalid GOOGLE_OAUTH_SCOPES token(s); use openid, email, profile, "
+                "or full https://www.googleapis.com/auth/userinfo.* URLs (space- or comma-separated).",
+                dropped,
+            )
+        if "openid" not in seen:
+            ordered.insert(0, "openid")
+            seen.add("openid")
+        return ordered
 
 
 @lru_cache

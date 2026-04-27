@@ -44,6 +44,7 @@ services:
       dockerfile: Dockerfile.prd
     environment:
       - NODE_ENV=production
+      - NODE_EXTRA_CA_CERTS=${NODE_EXTRA_CA_CERTS:-}
       - BACKEND_API_URL=${FRONT_INTERNAL_BACK_API_URL:-http://back-api:8000}
       - AUTH_API_URL=${FRONT_INTERNAL_BACK_AUTH_URL:-http://back-auth:8001}
       - WEBSOCKET_URL=${FRONT_INTERNAL_WEBSOCKET_URL:-ws://back-websockets:8010}
@@ -63,6 +64,7 @@ services:
       dockerfile: Dockerfile.prd
     environment:
       - NODE_ENV=production
+      - NODE_EXTRA_CA_CERTS=${NODE_EXTRA_CA_CERTS:-}
       - BACKEND_API_URL=${FRONT_INTERNAL_BACK_API_URL:-http://back-api:8000}
       - AUTH_API_URL=${FRONT_INTERNAL_BACK_AUTH_URL:-http://back-auth:8001}
       - WEBSOCKET_URL=${FRONT_INTERNAL_WEBSOCKET_URL:-ws://back-websockets:8010}
