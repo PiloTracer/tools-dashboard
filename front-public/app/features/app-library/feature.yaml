@@ -150,20 +150,20 @@ testing:
 # Documentation
 documentation:
   planning:
-    - .claude/features/app-library/README.md
-    - .claude/features/app-library/USER_STORIES.md
-    - .claude/features/app-library/TECHNICAL_SPEC.md
-    - .claude/features/app-library/DATABASE_SCHEMA.md
-    - .claude/features/app-library/IMPLEMENTATION_PLAN.md
+    - .ai/features/app-library/README.md
+    - .ai/features/app-library/USER_STORIES.md
+    - .ai/features/app-library/TECHNICAL_SPEC.md
+    - .ai/features/app-library/DATABASE_SCHEMA.md
+    - .ai/features/app-library/IMPLEMENTATION_PLAN.md
 
   guides:
-    - .claude/features/app-library/OAUTH_IMPLEMENTATION_GUIDE.md
+    - .ai/features/app-library/OAUTH_IMPLEMENTATION_GUIDE.md
 
   session_starters:
-    - .claude/prompts/app-library-starter.md
+    - .ai/prompts/app-library-starter.md
 
   plans:
-    - .claude/plans/app-library-front-public.md
+    - .ai/plans/app-library-front-public.md
 
 # Deployment
 deployment:
@@ -195,7 +195,7 @@ rollback:
 support:
   contact: support@tools-dashboard.io
   documentation_url: /docs/app-library
-  troubleshooting_guide: .claude/features/app-library/README.md#FAQ
+  troubleshooting_guide: .ai/features/app-library/README.md#FAQ
 
 # Changelog
 changelog:

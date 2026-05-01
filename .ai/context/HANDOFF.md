@@ -2,7 +2,7 @@
 
 **Purpose:** Fast resume for the next chat or engineer. Read this first, then `.cursorrules` and `DOCS_TECH_STACK.md` as needed.
 
-**Last aligned:** 2026-04-25 — **Improvement sprint** still tracked in `.claude/plans/20260422_PLAN_application-improvement-priorities.md` when present; see **Recently landed** tables below.
+**Last aligned:** 2026-04-25 — **Improvement sprint** still tracked in `.ai/plans/20260422_PLAN_application-improvement-priorities.md` when present; see **Recently landed** tables below.
 
 ---
 
@@ -67,11 +67,11 @@
 
 | Item | Location |
 |------|----------|
-| **Three-priority roadmap** | `.claude/plans/20260422_PLAN_application-improvement-priorities.md` |
-| **Feature maps / product features** | `.claude/features/*`, index `.claude/FEATURES_INDEX.md` |
-| **Conventions (plans, fixes, ADRs)** | `.claude/CONVENTIONS.md` |
+| **Three-priority roadmap** | `.ai/plans/20260422_PLAN_application-improvement-priorities.md` |
+| **Feature maps / product features** | `.ai/features/*`, index `.ai/FEATURES_INDEX.md` |
+| **Conventions (plans, fixes, ADRs)** | `.ai/CONVENTIONS.md` |
 
-**Note:** `.claude/` may be **gitignored** in this repo; if another machine does not have these files, copy them from a machine that does or remove `.claude/` from `.gitignore` for that subtree only (team policy).
+**Note:** `.ai/` may be **gitignored** in this repo; if another machine does not have these files, copy them from a machine that does or remove `.ai/` from `.gitignore` for that subtree only (team policy).
 
 ---
 
@@ -258,9 +258,9 @@ Preflight **warns** on placeholder secrets in `.env.prd` — expected until oper
 | Task | Start here |
 |------|------------|
 | Stack / ports / tech overview | `DOCS_TECH_STACK.md` |
-| **Improvement roadmap (P1–P3)** | `.claude/plans/20260422_PLAN_application-improvement-priorities.md` |
-| Feature conventions | `.claude/CONVENTIONS.md`, `.claude/FEATURE_STANDARD.md` |
-| Feature index | `.claude/FEATURES_INDEX.md` |
+| **Improvement roadmap (P1–P3)** | `.ai/plans/20260422_PLAN_application-improvement-priorities.md` |
+| Feature conventions | `.ai/CONVENTIONS.md`, `.ai/FEATURE_STANDARD.md` |
+| Feature index | `.ai/FEATURES_INDEX.md` |
 | Nginx / TLS / WS notes | `infra/nginx/README.prd.md`, `infra/nginx/default.prd.conf`, `default.conf` (dev — **query-preserving** `/` and `/app` redirects) |
 | Start script behavior | `bin/start.sh` |
 | Prod compose edits | `docker-compose.prd.yml` |

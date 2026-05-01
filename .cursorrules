@@ -52,12 +52,12 @@ Read these at the start of a session when relevant:
 |------|---------|
 | `.ai/context/HANDOFF.md` | Session handoff: prod URLs, `prd` naming, commands, security checklist, what changed recently |
 | `DOCS_TECH_STACK.md` | Technology stack, services, and architecture |
-| `.claude/DIRECTORY_MAP.md` | Where generated docs and plans live |
-| `.claude/CONVENTIONS.md` | Documentation and naming conventions |
-| `.claude/FEATURE_STANDARD.md` | Feature development standards |
-| `.claude/FEATURES_INDEX.md` | Feature index (when working on product features) |
+| `.ai/DIRECTORY_MAP.md` | Where generated docs and plans live |
+| `.ai/CONVENTIONS.md` | Documentation and naming conventions |
+| `.ai/FEATURE_STANDARD.md` | Feature development standards |
+| `.ai/FEATURES_INDEX.md` | Feature index (when working on product features) |
 
-Multi-container workflows, ports, and operational notes are documented under `.claude/` and `DOCS_TECH_STACK.md`.
+Multi-container workflows, ports, and operational notes are documented under `.ai/` and `DOCS_TECH_STACK.md`.
 
 ---
 
@@ -140,7 +140,7 @@ docker compose -f docker-compose.dev.yml logs -f back-api
 ## Workflow Rules
 
 ### Planning
-- For large features, align with `.claude/plans/` and feature docs under `.claude/features/` before changing code broadly.
+- For large features, align with `.ai/plans/` and feature docs under `.ai/features/` before changing code broadly.
 
 ### Deletion
 - Never delete files without explicit user permission.
@@ -183,9 +183,9 @@ docker compose -f docker-compose.dev.yml logs -f back-api
 
 ---
 
-## `.claude` Directory Structure
+## `.ai` Directory Structure
 
-Generated planning and feature docs should follow naming in `.claude/CONVENTIONS.md` (including date-prefixed names where that doc requires them).
+Generated planning and feature docs should follow naming in `.ai/CONVENTIONS.md` (including date-prefixed names where that doc requires them).
 
 | Area | Purpose |
 |------|---------|
