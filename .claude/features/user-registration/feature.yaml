@@ -1,0 +1,60 @@
+name: user-registration
+version: 1.0.1
+description: Public registration, email verification, Google OAuth return handling, session login, and logout (back-auth)
+status: active
+owner: Engineering Team
+
+services:
+  front-public:
+    routes:
+      - path: /app/features/user-registration
+        file: app/routes/app.features.user-registration._index.tsx
+        description: Registration / login hub (re-exports feature routes)
+        methods: [GET, POST]
+
+      - path: /app/features/user-registration/verify
+        file: app/routes/app.features.user-registration.verify.tsx
+        description: Email verification and Google OAuth callback handling
+        methods: [GET, POST]
+
+    feature_modules:
+      - app/features/user-registration/routes/index.tsx
+      - app/features/user-registration/routes/verify.tsx
+
+    components:
+      - app/features/user-registration/ui/RegistrationForm.tsx
+      - app/features/user-registration/ui/LoginForm.tsx
+      - app/features/user-registration/ui/VerificationBanner.tsx
+
+  back-auth:
+    router_prefix: /user-registration
+    notes:
+      - Houses registration, login, logout, Google provider callbacks, verification, and related endpoints. See module for authoritative paths.
+    implementation:
+      - back-auth/features/user-registration/api.py
+
+  back-api:
+    notes:
+      - Router exists primarily as scaffolding; only health-style endpoints are implemented today (`GET /user-registration/health` behind `/api/` in nginx).
+    implementation:
+      - back-api/features/user-registration/api.py
+      - back-api/features/user-registration/domain.py
+      - back-api/features/user-registration/infrastructure.py
+
+  shared:
+    contracts:
+      - shared/contracts/user-registration/feature.yaml
+
+links:
+  planning_docs:
+    - .claude/features/user-registration/README.md
+
+  implementation_docs:
+    - front-public/app/features/user-registration/feature.yaml
+
+---
+
+Metadata:
+- Last Updated: April 22, 2026
+- Maintainer: Engineering Team
+- Status: Active

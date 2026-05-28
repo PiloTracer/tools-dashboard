@@ -1,0 +1,44 @@
+name: admin-signin
+version: 1.0.1
+description: Admin dashboard sign-in (Remix) using email-auth JWT login + role gate
+status: active
+owner: Engineering Team
+
+services:
+  front-admin:
+    routes:
+      - path: /admin/features/admin-signin
+        file: app/features/admin-signin/routes/index.tsx
+        description: Admin email/password form, CSRF protection, calls back-auth `/email/login`, requires `user.role === "admin"`, sets `admin_session` cookie (see implementation for security TODOs)
+        authentication_required: false
+        methods: [GET, POST]
+
+    components:
+      - app/features/admin-signin/ui/AdminSigninForm.tsx
+
+    routing:
+      - front-admin/react-router.config.ts
+
+  back-auth:
+    endpoints:
+      - path: /email/login
+        method: POST
+        description: JWT login used by admin sign-in action (shared with email-auth router)
+        auth_required: false
+
+    implementation:
+      - back-auth/features/email-auth/api.py
+
+links:
+  planning_docs:
+    - .claude/features/admin-signin/README.md
+
+  implementation_docs:
+    - front-admin/app/features/admin-signin/feature.yaml
+
+---
+
+Metadata:
+- Last Updated: April 22, 2026
+- Maintainer: Engineering Team
+- Status: Active

@@ -7,7 +7,7 @@ import time
 from datetime import datetime
 from typing import Any, Dict
 
-from cassandra.cluster import Cluster, NoHostAvailable, Session
+from cassandra.cluster import Cluster, DriverException, NoHostAvailable, Session
 from cassandra.policies import RoundRobinPolicy
 from cassandra.query import PreparedStatement
 
@@ -42,22 +42,28 @@ def init_cassandra(max_retries: int = 10, retry_delay: float = 2.0) -> None:
 
     logger.info(f"Initializing Cassandra connection to {contact_points}:{settings.cassandra_port}")
 
-    # Create cluster with retry logic
-    cluster = Cluster(
-        contact_points=contact_points,
-        port=settings.cassandra_port,
-        load_balancing_policy=RoundRobinPolicy()
-    )
-
-    # Retry connection with exponential backoff
+    # Retry connection with exponential backoff. Create a fresh Cluster each attempt:
+    # a failed connect() can shut down the driver cluster, so reusing it raises
+    # DriverException("Cluster is already shut down") on the next attempt.
     current_delay = retry_delay
     for attempt in range(1, max_retries + 1):
+        attempt_cluster = Cluster(
+            contact_points=contact_points,
+            port=settings.cassandra_port,
+            load_balancing_policy=RoundRobinPolicy(),
+        )
         try:
             logger.info(f"Cassandra connection attempt {attempt}/{max_retries}")
-            session = cluster.connect()
+            attempt_session = attempt_cluster.connect()
+            cluster = attempt_cluster
+            session = attempt_session
             logger.info("✅ Successfully connected to Cassandra cluster")
             break
-        except NoHostAvailable as e:
+        except (NoHostAvailable, DriverException) as e:
+            try:
+                attempt_cluster.shutdown()
+            except Exception:
+                pass
             if attempt < max_retries:
                 logger.warning(
                     f"⚠️  Cassandra connection failed (attempt {attempt}/{max_retries}): {e}"

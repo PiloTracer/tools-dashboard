@@ -1,0 +1,36 @@
+name: websockets
+version: 1.0.0
+description: Real-time WebSocket gateway service (scaffold; design in CONTEXT.md)
+status: scaffold
+owner: Engineering Team
+
+services:
+  back-websockets:
+    entrypoints:
+      - back-websockets/main.py
+      - back-websockets/connection_manager.py
+
+    http:
+      - path: /health
+        method: GET
+        description: Service liveness
+
+    context_docs:
+      - back-websockets/CONTEXT.md
+
+    dependencies_expected:
+      - redis (per design — verify compose wiring for your stack)
+
+notes:
+  - Not implemented as a `front-*` / `back-api/features/*` package; separate compose service.
+
+links:
+  planning_docs:
+    - .claude/features/websockets/README.md
+
+---
+
+Metadata:
+- Last Updated: April 22, 2026
+- Maintainer: Engineering Team
+- Status: Scaffold

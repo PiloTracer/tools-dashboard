@@ -1,0 +1,379 @@
+name: auto-auth
+version: 1.0.0
+description: OAuth 2.0 authorization server and API authentication system
+status: active
+owner: Engineering Team
+
+# Service implementations across the stack
+services:
+  front-public:
+    notes:
+      - OAuth routes are registered as top-level Remix modules under `front-public/app/routes/` (not only under `app/features/auto-auth/routes/`, where older copies may still exist).
+    routes:
+      - path: /oauth/authorize
+        file: app/routes/oauth.authorize.tsx
+        description: OAuth 2.0 authorization endpoint (first-party / library flows; optional interactive consent controlled by env)
+        authentication_required: true
+        methods: [GET, POST]
+
+      - path: /oauth/token
+        file: app/routes/oauth.token.tsx
+        description: Token exchange endpoint (proxies to back-auth internal OAuth)
+        authentication_required: false
+        methods: [POST]
+
+      - path: /oauth/revoke
+        file: app/routes/oauth.revoke.tsx
+        description: Token revocation endpoint
+        authentication_required: true
+        methods: [POST]
+
+      - path: /.well-known/jwks.json
+        file: app/routes/.well-known.jwks.json.tsx
+        description: JWKS document (fetched from back-auth)
+        authentication_required: false
+        methods: [GET]
+
+      - path: /.well-known/openid-configuration
+        file: app/routes/.well-known.openid-configuration.tsx
+        description: OpenID Connect discovery metadata
+        authentication_required: false
+        methods: [GET]
+
+  front-admin:
+    notes:
+      - Route modules live under `front-admin/app/features/auto-auth/routes/`. The service-local `feature.yaml` documents paths `/oauth-clients` and `/api-keys` (relative to the admin app’s public URL prefix, commonly `/admin/` in deployments). Verify `front-admin/react-router.config.ts` when wiring new admin URLs; it may not list every feature yet.
+    routes:
+      - path: /oauth-clients
+        file: app/features/auto-auth/routes/oauth-clients.tsx
+        description: OAuth client management UI
+        authentication_required: true
+        admin_only: true
+        methods: [GET, POST]
+
+      - path: /api-keys
+        file: app/features/auto-auth/routes/api-keys.tsx
+        description: API key management UI
+        authentication_required: true
+        admin_only: true
+        methods: [GET, POST]
+
+  back-api:
+    # External App APIs (API Key Auth)
+    endpoints:
+      - path: /api/users/{user_id}
+        method: GET
+        description: Get user profile
+        auth_type: API_KEY
+        auth_required: true
+
+      - path: /api/users/{user_id}/subscription
+        method: GET
+        description: Get user subscription status
+        auth_type: API_KEY
+        auth_required: true
+
+      - path: /api/users/{user_id}/limits
+        method: GET
+        description: Get user rate limits
+        auth_type: API_KEY
+        auth_required: true
+
+      - path: /api/users/{user_id}/verify
+        method: POST
+        description: Verify user permissions
+        auth_type: API_KEY
+        auth_required: true
+
+      - path: /api/users/{user_id}/usage
+        method: POST
+        description: Record usage event
+        auth_type: API_KEY
+        auth_required: true
+
+      # OAuth Client Management (Admin Auth)
+      - path: /api/oauth-clients
+        method: POST
+        description: Register OAuth client
+        auth_type: JWT
+        auth_required: true
+        admin_only: true
+        file: features/auto-auth/api.py
+
+      - path: /api/oauth-clients
+        method: GET
+        description: List OAuth clients with pagination
+        auth_type: JWT
+        auth_required: true
+        admin_only: true
+        file: features/auto-auth/api.py
+
+      - path: /api/oauth-clients/{client_id}
+        method: GET
+        description: Get OAuth client details
+        auth_type: JWT
+        auth_required: true
+        admin_only: true
+        file: features/auto-auth/api.py
+
+      - path: /api/oauth-clients/{client_id}
+        method: PUT
+        description: Update OAuth client
+        auth_type: JWT
+        auth_required: true
+        admin_only: true
+        file: features/auto-auth/api.py
+
+      - path: /api/oauth-clients/{client_id}
+        method: DELETE
+        description: Delete OAuth client
+        auth_type: JWT
+        auth_required: true
+        admin_only: true
+        file: features/auto-auth/api.py
+
+      # API Key Management (Admin Auth)
+      - path: /api/api-keys
+        method: POST
+        description: Generate API key
+        auth_type: JWT
+        auth_required: true
+        admin_only: true
+        file: features/auto-auth/api.py
+
+      - path: /api/api-keys
+        method: GET
+        description: List API keys
+        auth_type: JWT
+        auth_required: true
+        admin_only: true
+        file: features/auto-auth/api.py
+
+      - path: /api/api-keys/{key_id}
+        method: DELETE
+        description: Revoke API key
+        auth_type: JWT
+        auth_required: true
+        admin_only: true
+        file: features/auto-auth/api.py
+
+    implementation:
+      - back-api/features/auto-auth/api.py
+      - back-api/features/auto-auth/domain.py
+      - back-api/features/auto-auth/infrastructure.py
+
+  back-auth:
+    notes:
+      - Public-site OAuth flows call these internal routes from front-public and back-api; see `back-auth/features/auto-auth/feature.yaml` for the canonical list.
+    endpoints:
+      - path: /internal/oauth/generate-code
+        method: POST
+        description: Create authorization code (PKCE-aware)
+      - path: /internal/oauth/validate-code
+        method: POST
+        description: Validate authorization code and PKCE verifier
+      - path: /internal/oauth/issue-tokens
+        method: POST
+        description: Issue access and refresh tokens
+      - path: /internal/oauth/refresh-tokens
+        method: POST
+        description: Refresh access token
+      - path: /internal/oauth/validate-token
+        method: POST
+        description: Validate access token
+      - path: /internal/oauth/revoke-token
+        method: POST
+        description: Revoke token
+      - path: /internal/oauth/jwks
+        method: GET
+        description: JSON Web Key Set
+
+    implementation:
+      - back-auth/features/auto-auth/api.py
+      - back-auth/features/auto-auth/domain.py
+      - back-auth/features/auto-auth/infrastructure.py
+
+# Shared contracts and types
+shared:
+  contracts:
+    - contracts/auto-auth/feature.yaml
+    - contracts/auto-auth/oauth_models.json
+    - contracts/auto-auth/api_key_models.json
+
+  types:
+    - types/auto-auth.ts
+    - types/oauth.ts
+
+# Database schema
+database:
+  postgres:
+    tables:
+      - name: oauth_clients
+        description: Registered OAuth applications
+        schema: |
+          client_id (PK)
+          client_secret (hashed)
+          name
+          description
+          redirect_uris (array)
+          allowed_scopes
+          created_at
+          updated_at
+          created_by (admin user)
+
+      - name: api_keys
+        description: API authentication keys
+        schema: |
+          key_id (PK)
+          key_hash (hashed)
+          label
+          description
+          last_used_at
+          rate_limit
+          created_at
+          expires_at
+          created_by (admin user)
+
+      - name: consent_records
+        description: User OAuth consent history
+        schema: |
+          consent_id (PK)
+          user_id (FK)
+          client_id (FK)
+          scopes (array)
+          granted_at
+          expires_at
+
+  cassandra:
+    tables:
+      - name: auth_events.oauth_auth_events
+        description: OAuth authorization events
+        schema: |
+          timestamp (clustering key)
+          event_type (authorization_initiated, consent_granted, token_exchanged, token_revoked)
+          client_id
+          user_id
+          ip_address
+          user_agent
+          scopes
+          status (success, failure)
+          error_code
+
+      - name: auth_events.api_access_events
+        description: API key usage events
+        schema: |
+          timestamp (clustering key)
+          key_id
+          endpoint
+          method
+          status_code
+          response_time_ms
+          ip_address
+          user_agent
+
+# External dependencies
+external_dependencies:
+  - bcrypt>=4.0.0
+  - PyJWT>=2.4.0
+  - cryptography>=37.0.0
+
+# Configuration
+configuration:
+  environment_variables:
+    - OAUTH_CODE_LIFETIME_SECONDS: Token code expiration (default 600)
+    - OAUTH_ACCESS_TOKEN_LIFETIME_SECONDS: Access token lifetime (default 3600)
+    - OAUTH_PKCE_REQUIRED: Enforce PKCE (default true)
+    - API_KEY_RATE_LIMIT_REQUESTS: Requests per window (default 1000)
+    - API_KEY_RATE_LIMIT_WINDOW_SECONDS: Rate limit window (default 3600)
+    - API_KEY_HASH_ALGORITHM: Hash algorithm for API keys (default argon2)
+
+  feature_flags:
+    - oauth_enabled: Enable OAuth 2.0 feature (default true)
+    - api_key_auth_enabled: Enable API key authentication (default true)
+    - pkce_required: Enforce PKCE in OAuth flow (default true)
+
+# Links to related documentation
+links:
+  planning_docs:
+    - .claude/features/auto-auth/README.md
+
+  implementation_docs:
+    - back-api/features/auto-auth/feature.yaml
+    - back-auth/features/auto-auth/feature.yaml
+    - front-public/app/features/auto-auth/feature.yaml
+    - front-admin/app/features/auto-auth/feature.yaml
+
+  specifications:
+    - shared/contracts/auto-auth/oauth_models.json
+    - shared/contracts/auto-auth/api_key_models.json
+
+  session_starters:
+    - .claude/prompts/auto-auth-starter.md
+
+  related_features:
+    - .claude/features/users-oauth-resource/feature.yaml
+
+# Service dependencies
+service_dependencies:
+  internal:
+    - back-auth (core OAuth server)
+    - back-api (client/key management, API validation)
+    - back-postgres (persistent storage)
+    - back-cassandra (audit logging)
+
+  external:
+    - none currently
+
+# Testing information
+testing:
+  notes:
+    - No dedicated `tests/` tree was present under `back-api/features/auto-auth/` or `front-public/e2e/` at last documentation review; add concrete paths here when suites land.
+
+# Security information
+security:
+  oauth:
+    - flow: authorization_code
+    - pkce: required (S256 challenge)
+    - csrf_protection: state parameter
+    - token_storage: session_storage (not localStorage)
+    - scope_validation: strict
+
+  api_keys:
+    - hash_algorithm: argon2
+    - storage: PostgreSQL (hashed only)
+    - transmission: Authorization header (Bearer scheme)
+    - rate_limiting: per-key enforced
+
+  audit:
+    - all_auth_operations_logged: true
+    - log_storage: Cassandra (time-series optimized)
+    - retention_period: 2 years
+    - includes: user_id, client_id, ip, user_agent, outcome
+
+# Deployment notes
+deployment:
+  required_services:
+    - back-auth
+    - back-api
+    - back-postgres
+    - back-cassandra
+
+  pre_deployment_checklist:
+    - Database migrations applied
+    - OAuth configuration loaded
+    - HTTPS certificates configured
+    - PKCE secrets generated
+    - Rate limiting configured
+
+  post_deployment_checklist:
+    - OAuth discovery endpoints accessible
+    - API key validation working
+    - Audit logging functioning
+    - Token generation tested
+
+---
+
+Metadata:
+- Last Updated: April 22, 2026
+- Maintainer: Engineering Team
+- Status: Active

@@ -1,0 +1,38 @@
+name: background-workers
+version: 1.0.0
+description: Celery worker service (Redis broker; heartbeat task registered; task modules stubbed)
+status: scaffold
+owner: Engineering Team
+
+services:
+  back-workers:
+    entrypoints:
+      - back-workers/main.py
+
+    celery_tasks_registered:
+      - heartbeat (returns "ok")
+
+    task_modules_stub:
+      - back-workers/tasks/cleanup.py
+      - back-workers/tasks/backup.py
+      - back-workers/tasks/data_export.py
+
+    context_docs:
+      - back-workers/CONTEXT.md
+
+    infrastructure:
+      - redis (broker URL in main.py)
+
+notes:
+  - Separate compose service; not under `back-api/features/*`.
+
+links:
+  planning_docs:
+    - .claude/features/background-workers/README.md
+
+---
+
+Metadata:
+- Last Updated: April 22, 2026
+- Maintainer: Engineering Team
+- Status: Scaffold

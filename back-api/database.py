@@ -1,9 +1,10 @@
 """Database connection management for back-api service."""
 
 import os
+import time
+
 import asyncpg
-from cassandra.cluster import Cluster
-from cassandra.auth import PlainTextAuthProvider
+from cassandra.cluster import Cluster, NoHostAvailable
 from typing import Any
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
 
@@ -44,19 +45,37 @@ class DatabaseManager:
         )
         print(f"✅ SQLAlchemy engine created: {sqlalchemy_url}")
 
-    def connect_cassandra(self) -> None:
-        """Initialize Cassandra connection."""
-        contact_points = os.getenv("CASSANDRA_CONTACT_POINTS", "cassandra").split(",")
+    def connect_cassandra(self, max_retries: int = 10, retry_delay: float = 2.0) -> None:
+        """Initialize Cassandra connection with retry (Cassandra may lag compose healthchecks)."""
+        contact_points = [
+            point.strip()
+            for point in os.getenv("CASSANDRA_CONTACT_POINTS", "cassandra").split(",")
+            if point.strip()
+        ]
         keyspace = os.getenv("CASSANDRA_KEYSPACE", "tools_dashboard")
+        port = int(os.getenv("CASSANDRA_PORT", "9042"))
 
-        # Create cluster connection
-        self.cassandra_cluster = Cluster(
-            contact_points=contact_points,
-            port=9042,
-        )
-
-        self.cassandra_session = self.cassandra_cluster.connect(keyspace)
-        print(f"✅ Cassandra session created: {contact_points} / {keyspace}")
+        current_delay = retry_delay
+        for attempt in range(1, max_retries + 1):
+            cluster = Cluster(contact_points=contact_points, port=port)
+            try:
+                self.cassandra_cluster = cluster
+                self.cassandra_session = cluster.connect(keyspace)
+                print(f"✅ Cassandra session created: {contact_points} / {keyspace}")
+                return
+            except NoHostAvailable as exc:
+                try:
+                    cluster.shutdown()
+                except Exception:
+                    pass
+                if attempt >= max_retries:
+                    raise
+                print(
+                    f"⚠️  Cassandra connection failed (attempt {attempt}/{max_retries}): {exc}"
+                    f"\n   Retrying in {current_delay:.1f} seconds..."
+                )
+                time.sleep(current_delay)
+                current_delay *= 2
 
     async def disconnect(self) -> None:
         """Close all database connections."""
