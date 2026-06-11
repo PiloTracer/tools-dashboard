@@ -1,0 +1,47 @@
+name: task-scheduler
+version: 1.0.1
+description: Admin UI scaffold for scheduled tasks (minimal implementation today)
+status: active
+owner: Engineering Team
+
+services:
+  front-admin:
+    routes:
+      - path: /admin/features/task-scheduler
+        file: app/features/task-scheduler/routes/index.tsx
+        description: Task scheduler index (placeholder loader returning empty tasks)
+        authentication_required: true
+        admin_only: true
+        methods: [GET]
+
+      - path: /admin/features/task-scheduler/create
+        file: app/features/task-scheduler/routes/create.tsx
+        description: Simple create form; POST redirects back to scheduler index
+        authentication_required: true
+        admin_only: true
+        methods: [GET, POST]
+
+    components:
+      - app/features/task-scheduler/ui/Scheduler.tsx
+      - app/features/task-scheduler/ui/TaskForm.tsx
+
+    routing:
+      - front-admin/react-router.config.ts
+
+notes:
+  - There is no back-api/features/task-scheduler or worker integration in this repository yet; admin pages are a thin scaffold.
+  - For the separate Celery **compose** service (future real scheduling), see `.ai/features/background-workers/`.
+
+links:
+  planning_docs:
+    - .ai/features/task-scheduler/README.md
+
+  implementation_docs:
+    - front-admin/app/features/task-scheduler/feature.yaml
+
+---
+
+Metadata:
+- Last Updated: April 22, 2026
+- Maintainer: Engineering Team
+- Status: Active

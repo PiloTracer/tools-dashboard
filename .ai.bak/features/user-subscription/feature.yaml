@@ -1,0 +1,82 @@
+name: user-subscription
+version: 1.0.1
+description: Subscription packages, checkout UI, and back-api subscription router
+status: active
+owner: Engineering Team
+
+services:
+  front-public:
+    routes:
+      - path: /app/features/user-subscription
+        file: app/routes/app.features.user-subscription._index.tsx
+        description: Package listing (re-exports feature route)
+        methods: [GET]
+
+      - path: /app/features/user-subscription/:slug
+        file: app/routes/app.features.user-subscription.$slug.tsx
+        description: Checkout for a specific package slug
+        methods: [GET, POST]
+
+    feature_modules:
+      - app/features/user-subscription/routes/index.tsx
+      - app/features/user-subscription/routes/checkout.tsx
+
+    components:
+      - app/features/user-subscription/ui/PackageCard.tsx
+      - app/features/user-subscription/ui/PricingToggle.tsx
+      - app/features/user-subscription/ui/CheckoutForm.tsx
+      - app/features/user-subscription/ui/FeatureList.tsx
+
+  back-api:
+    router_prefix: /user-subscription
+    endpoints:
+      - path: /user-subscription/packages
+        method: GET
+        description: List subscription packages
+      - path: /user-subscription/packages/{slug}
+        method: GET
+        description: Get one package by slug
+      - path: /user-subscription/user/{user_id}
+        method: GET
+        description: Current subscription for user
+        auth_required: true
+      - path: /user-subscription/subscribe
+        method: POST
+        description: Subscribe user to package
+        auth_required: true
+      - path: /user-subscription/cancel
+        method: POST
+        description: Cancel subscription
+        auth_required: true
+      - path: /user-subscription/upgrade
+        method: POST
+        description: Upgrade or downgrade package
+        auth_required: true
+
+    implementation:
+      - back-api/features/user-subscription/api.py
+      - back-api/features/user-subscription/domain.py
+      - back-api/features/user-subscription/infrastructure.py
+
+  shared:
+    contracts:
+      - shared/contracts/user-subscription/feature.yaml
+
+  front-admin:
+    notes:
+      - No `front-admin/app/features/user-subscription/` tree exists; admin subscription dashboards referenced in older docs are not implemented in-repo.
+
+links:
+  planning_docs:
+    - .ai/features/user-subscription/README.md
+
+  implementation_docs:
+    - back-api/features/user-subscription/feature.yaml
+    - front-public/app/features/user-subscription/feature.yaml
+
+---
+
+Metadata:
+- Last Updated: April 22, 2026
+- Maintainer: Engineering Team
+- Status: Active

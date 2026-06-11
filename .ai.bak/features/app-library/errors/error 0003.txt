@@ -1,0 +1,333 @@
+postgresql            | 2025-11-16 01:05:39.358 | 2025-11-16 07:05:39.358 UTC [208] ERROR:  column "dev_url" of relation "oauth_clients" does not exist at character 153
+postgresql            | 2025-11-16 01:05:39.358 | 2025-11-16 07:05:39.358 UTC [208] STATEMENT:  
+postgresql            | 2025-11-16 01:05:39.358 | 	                INSERT INTO oauth_clients
+postgresql            | 2025-11-16 01:05:39.358 | 	                    (client_id, client_secret_hash, client_name, description, logo_url,
+postgresql            | 2025-11-16 01:05:39.358 | 	                     dev_url, prod_url, redirect_uris, allowed_scopes, is_active, created_by)
+postgresql            | 2025-11-16 01:05:39.358 | 	                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+postgresql            | 2025-11-16 01:05:39.358 | 	                RETURNING id, client_id, client_name, description, logo_url,
+postgresql            | 2025-11-16 01:05:39.358 | 	                          dev_url, prod_url, redirect_uris, allowed_scopes,
+postgresql            | 2025-11-16 01:05:39.358 | 	                          is_active, created_at, updated_at, deleted_at, created_by
+postgresql            | 2025-11-16 01:05:39.358 | 	                
+back-api              | 2025-11-16 01:05:39.359 | 🚀 Starting back-api service...
+back-api              | 2025-11-16 01:05:39.359 | ✅ PostgreSQL pool created: postgresql://user:pass@postgresql:5432/main_db
+back-api              | 2025-11-16 01:05:39.359 | ✅ Cassandra session created: ['cassandra'] / tools_dashboard
+back-api              | 2025-11-16 01:05:39.359 | ✅ Repositories initialized and ready
+back-api              | 2025-11-16 01:05:39.359 | INFO:     172.19.0.14:49690 - "POST /api/admin/app-library HTTP/1.1" 500 Internal Server Error
+back-api              | 2025-11-16 01:05:39.373 | ERROR:    Exception in ASGI application
+back-api              | 2025-11-16 01:05:39.373 | Traceback (most recent call last):
+back-api              | 2025-11-16 01:05:39.373 |   File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 407, in run_asgi
+back-api              | 2025-11-16 01:05:39.373 |     result = await app(  # type: ignore[func-returns-value]
+back-api              | 2025-11-16 01:05:39.373 |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:39.373 |   File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 69, in __call__
+back-api              | 2025-11-16 01:05:39.373 |     return await self.app(scope, receive, send)
+back-api              | 2025-11-16 01:05:39.373 |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:39.373 |   File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+back-api              | 2025-11-16 01:05:39.373 |     await super().__call__(scope, receive, send)
+back-api              | 2025-11-16 01:05:39.373 |   File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 123, in __call__
+back-api              | 2025-11-16 01:05:39.373 |     await self.middleware_stack(scope, receive, send)
+back-api              | 2025-11-16 01:05:39.373 |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+back-api              | 2025-11-16 01:05:39.373 |     raise exc
+back-api              | 2025-11-16 01:05:39.373 |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+back-api              | 2025-11-16 01:05:39.373 |     await self.app(scope, receive, _send)
+back-api              | 2025-11-16 01:05:39.373 |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 83, in __call__
+back-api              | 2025-11-16 01:05:39.373 |     await self.app(scope, receive, send)
+back-api              | 2025-11-16 01:05:39.373 |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+back-api              | 2025-11-16 01:05:39.373 |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+back-api              | 2025-11-16 01:05:39.374 |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+back-api              | 2025-11-16 01:05:39.374 |     raise exc
+back-api              | 2025-11-16 01:05:39.374 |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+back-api              | 2025-11-16 01:05:39.374 |     await app(scope, receive, sender)
+back-api              | 2025-11-16 01:05:39.374 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 758, in __call__
+back-api              | 2025-11-16 01:05:39.374 |     await self.middleware_stack(scope, receive, send)
+back-api              | 2025-11-16 01:05:39.374 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 778, in app
+back-api              | 2025-11-16 01:05:39.374 |     await route.handle(scope, receive, send)
+back-api              | 2025-11-16 01:05:39.374 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 299, in handle
+back-api              | 2025-11-16 01:05:39.374 |     await self.app(scope, receive, send)
+back-api              | 2025-11-16 01:05:39.374 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 79, in app
+back-api              | 2025-11-16 01:05:39.374 |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+back-api              | 2025-11-16 01:05:39.374 |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+back-api              | 2025-11-16 01:05:39.374 |     raise exc
+back-api              | 2025-11-16 01:05:39.374 |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+back-api              | 2025-11-16 01:05:39.374 |     await app(scope, receive, sender)
+back-api              | 2025-11-16 01:05:39.374 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 74, in app
+back-api              | 2025-11-16 01:05:39.374 |     response = await func(request)
+back-api              | 2025-11-16 01:05:39.374 |                ^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:39.374 |   File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
+back-api              | 2025-11-16 01:05:39.374 |     raw_response = await run_endpoint_function(
+back-api              | 2025-11-16 01:05:39.374 |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:39.374 |   File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
+back-api              | 2025-11-16 01:05:39.374 |     return await dependant.call(**values)
+back-api              | 2025-11-16 01:05:39.374 |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:39.374 |   File "/app/features/app-library/api.py", line 280, in create_app
+back-api              | 2025-11-16 01:05:39.374 |     app, client_secret = await domain.create_app(
+back-api              | 2025-11-16 01:05:39.374 |                          ^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:39.374 |   File "/app/features/app-library/domain.py", line 230, in create_app
+back-api              | 2025-11-16 01:05:39.374 |     app = await app_repo.create(
+back-api              | 2025-11-16 01:05:39.374 |           ^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:39.374 |   File "/app/repositories/app_library_repository.py", line 119, in create
+back-api              | 2025-11-16 01:05:39.374 |     row = await conn.fetchrow(
+back-api              | 2025-11-16 01:05:39.374 |           ^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:39.374 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 748, in fetchrow
+back-api              | 2025-11-16 01:05:39.374 |     data = await self._execute(
+back-api              | 2025-11-16 01:05:39.374 |            ^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:39.374 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 1864, in _execute
+back-api              | 2025-11-16 01:05:39.374 |     result, _ = await self.__execute(
+back-api              | 2025-11-16 01:05:39.374 |                 ^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:39.374 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 1961, in __execute
+back-api              | 2025-11-16 01:05:39.374 |     result, stmt = await self._do_execute(
+back-api              | 2025-11-16 01:05:39.374 |                    ^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:39.374 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 2012, in _do_execute
+back-api              | 2025-11-16 01:05:39.374 |     stmt = await self._get_statement(
+back-api              | 2025-11-16 01:05:39.374 |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:39.374 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 432, in _get_statement
+back-api              | 2025-11-16 01:05:39.374 |     statement = await self._protocol.prepare(
+back-api              | 2025-11-16 01:05:39.374 |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:39.374 |   File "asyncpg/protocol/protocol.pyx", line 165, in prepare
+back-api              | 2025-11-16 01:05:39.374 | asyncpg.exceptions.UndefinedColumnError: column "dev_url" of relation "oauth_clients" does not exist
+back-auth             | 2025-11-16 01:05:39.915 | INFO:     127.0.0.1:57128 - "GET /health HTTP/1.1" 200 OK
+back-auth             | 2025-11-16 01:05:45.004 | INFO:     127.0.0.1:48544 - "GET /health HTTP/1.1" 200 OK
+postgresql            | 2025-11-16 01:05:45.361 | 2025-11-16 07:05:45.360 UTC [208] ERROR:  column "dev_url" does not exist at character 99
+postgresql            | 2025-11-16 01:05:45.361 | 2025-11-16 07:05:45.360 UTC [208] STATEMENT:  
+postgresql            | 2025-11-16 01:05:45.361 | 	                SELECT id, client_id, client_name, description, logo_url,
+postgresql            | 2025-11-16 01:05:45.361 | 	                       dev_url, prod_url, redirect_uris, allowed_scopes,
+postgresql            | 2025-11-16 01:05:45.361 | 	                       is_active, created_at, updated_at, deleted_at, created_by
+postgresql            | 2025-11-16 01:05:45.361 | 	                FROM oauth_clients
+postgresql            | 2025-11-16 01:05:45.361 | 	                WHERE 1=1 AND deleted_at IS NULL
+postgresql            | 2025-11-16 01:05:45.361 | 	                ORDER BY client_name ASC
+postgresql            | 2025-11-16 01:05:45.361 | 	                
+back-api              | 2025-11-16 01:05:45.363 | INFO:     172.19.0.14:42072 - "GET /api/admin/app-library?include_deleted=false HTTP/1.1" 500 Internal Server Error
+back-api              | 2025-11-16 01:05:45.372 | ERROR:    Exception in ASGI application
+back-api              | 2025-11-16 01:05:45.372 | Traceback (most recent call last):
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 407, in run_asgi
+back-api              | 2025-11-16 01:05:45.372 |     result = await app(  # type: ignore[func-returns-value]
+back-api              | 2025-11-16 01:05:45.372 |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 69, in __call__
+back-api              | 2025-11-16 01:05:45.372 |     return await self.app(scope, receive, send)
+back-api              | 2025-11-16 01:05:45.372 |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+back-api              | 2025-11-16 01:05:45.372 |     await super().__call__(scope, receive, send)
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 123, in __call__
+back-api              | 2025-11-16 01:05:45.372 |     await self.middleware_stack(scope, receive, send)
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+back-api              | 2025-11-16 01:05:45.372 |     raise exc
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+back-api              | 2025-11-16 01:05:45.372 |     await self.app(scope, receive, _send)
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 83, in __call__
+back-api              | 2025-11-16 01:05:45.372 |     await self.app(scope, receive, send)
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+back-api              | 2025-11-16 01:05:45.372 |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+back-api              | 2025-11-16 01:05:45.372 |     raise exc
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+back-api              | 2025-11-16 01:05:45.372 |     await app(scope, receive, sender)
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 758, in __call__
+back-api              | 2025-11-16 01:05:45.372 |     await self.middleware_stack(scope, receive, send)
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 778, in app
+back-api              | 2025-11-16 01:05:45.372 |     await route.handle(scope, receive, send)
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 299, in handle
+back-api              | 2025-11-16 01:05:45.372 |     await self.app(scope, receive, send)
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 79, in app
+back-api              | 2025-11-16 01:05:45.372 |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+back-api              | 2025-11-16 01:05:45.372 |     raise exc
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+back-api              | 2025-11-16 01:05:45.372 |     await app(scope, receive, sender)
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 74, in app
+back-api              | 2025-11-16 01:05:45.372 |     response = await func(request)
+back-api              | 2025-11-16 01:05:45.372 |                ^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
+back-api              | 2025-11-16 01:05:45.372 |     raw_response = await run_endpoint_function(
+back-api              | 2025-11-16 01:05:45.372 |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
+back-api              | 2025-11-16 01:05:45.372 |     return await dependant.call(**values)
+back-api              | 2025-11-16 01:05:45.372 |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:45.372 |   File "/app/features/app-library/api.py", line 246, in list_all_apps
+back-api              | 2025-11-16 01:05:45.372 |     apps = await app_repo.find_all_active(include_deleted=include_deleted)
+back-api              | 2025-11-16 01:05:45.372 |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:45.372 |   File "/app/repositories/app_library_repository.py", line 27, in find_all_active
+back-api              | 2025-11-16 01:05:45.372 |     rows = await conn.fetch(
+back-api              | 2025-11-16 01:05:45.372 |            ^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 690, in fetch
+back-api              | 2025-11-16 01:05:45.372 |     return await self._execute(
+back-api              | 2025-11-16 01:05:45.372 |            ^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 1864, in _execute
+back-api              | 2025-11-16 01:05:45.372 |     result, _ = await self.__execute(
+back-api              | 2025-11-16 01:05:45.372 |                 ^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 1961, in __execute
+back-api              | 2025-11-16 01:05:45.372 |     result, stmt = await self._do_execute(
+back-api              | 2025-11-16 01:05:45.372 |                    ^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 2012, in _do_execute
+back-api              | 2025-11-16 01:05:45.372 |     stmt = await self._get_statement(
+back-api              | 2025-11-16 01:05:45.372 |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:45.372 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 432, in _get_statement
+back-api              | 2025-11-16 01:05:45.372 |     statement = await self._protocol.prepare(
+back-api              | 2025-11-16 01:05:45.372 |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:45.372 |   File "asyncpg/protocol/protocol.pyx", line 165, in prepare
+back-api              | 2025-11-16 01:05:45.372 | asyncpg.exceptions.UndefinedColumnError: column "dev_url" does not exist
+back-auth             | 2025-11-16 01:05:49.148 | INFO:     172.19.0.14:60318 - "POST /email/login HTTP/1.1" 200 OK
+back-auth             | 2025-11-16 01:05:50.081 | INFO:     127.0.0.1:48550 - "GET /health HTTP/1.1" 200 OK
+postgresql            | 2025-11-16 01:05:50.577 | 2025-11-16 07:05:50.577 UTC [208] ERROR:  column "dev_url" does not exist at character 99
+postgresql            | 2025-11-16 01:05:50.577 | 2025-11-16 07:05:50.577 UTC [208] STATEMENT:  
+postgresql            | 2025-11-16 01:05:50.577 | 	                SELECT id, client_id, client_name, description, logo_url,
+postgresql            | 2025-11-16 01:05:50.577 | 	                       dev_url, prod_url, redirect_uris, allowed_scopes,
+postgresql            | 2025-11-16 01:05:50.577 | 	                       is_active, created_at, updated_at, deleted_at, created_by
+postgresql            | 2025-11-16 01:05:50.577 | 	                FROM oauth_clients
+postgresql            | 2025-11-16 01:05:50.577 | 	                WHERE 1=1 AND deleted_at IS NULL
+postgresql            | 2025-11-16 01:05:50.577 | 	                ORDER BY client_name ASC
+postgresql            | 2025-11-16 01:05:50.577 | 	                
+back-api              | 2025-11-16 01:05:50.578 | INFO:     172.19.0.14:37012 - "GET /api/admin/app-library?include_deleted=false HTTP/1.1" 500 Internal Server Error
+back-api              | 2025-11-16 01:05:50.583 | ERROR:    Exception in ASGI application
+back-api              | 2025-11-16 01:05:50.583 | Traceback (most recent call last):
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 407, in run_asgi
+back-api              | 2025-11-16 01:05:50.583 |     result = await app(  # type: ignore[func-returns-value]
+back-api              | 2025-11-16 01:05:50.583 |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 69, in __call__
+back-api              | 2025-11-16 01:05:50.583 |     return await self.app(scope, receive, send)
+back-api              | 2025-11-16 01:05:50.583 |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+back-api              | 2025-11-16 01:05:50.583 |     await super().__call__(scope, receive, send)
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 123, in __call__
+back-api              | 2025-11-16 01:05:50.583 |     await self.middleware_stack(scope, receive, send)
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+back-api              | 2025-11-16 01:05:50.583 |     raise exc
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+back-api              | 2025-11-16 01:05:50.583 |     await self.app(scope, receive, _send)
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 83, in __call__
+back-api              | 2025-11-16 01:05:50.583 |     await self.app(scope, receive, send)
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+back-api              | 2025-11-16 01:05:50.583 |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+back-api              | 2025-11-16 01:05:50.583 |     raise exc
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+back-api              | 2025-11-16 01:05:50.583 |     await app(scope, receive, sender)
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 758, in __call__
+back-api              | 2025-11-16 01:05:50.583 |     await self.middleware_stack(scope, receive, send)
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 778, in app
+back-api              | 2025-11-16 01:05:50.583 |     await route.handle(scope, receive, send)
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 299, in handle
+back-api              | 2025-11-16 01:05:50.583 |     await self.app(scope, receive, send)
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 79, in app
+back-api              | 2025-11-16 01:05:50.583 |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+back-api              | 2025-11-16 01:05:50.583 |     raise exc
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+back-api              | 2025-11-16 01:05:50.583 |     await app(scope, receive, sender)
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 74, in app
+back-api              | 2025-11-16 01:05:50.583 |     response = await func(request)
+back-api              | 2025-11-16 01:05:50.583 |                ^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
+back-api              | 2025-11-16 01:05:50.583 |     raw_response = await run_endpoint_function(
+back-api              | 2025-11-16 01:05:50.583 |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
+back-api              | 2025-11-16 01:05:50.583 |     return await dependant.call(**values)
+back-api              | 2025-11-16 01:05:50.583 |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:50.583 |   File "/app/features/app-library/api.py", line 246, in list_all_apps
+back-api              | 2025-11-16 01:05:50.583 |     apps = await app_repo.find_all_active(include_deleted=include_deleted)
+back-api              | 2025-11-16 01:05:50.583 |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:50.583 |   File "/app/repositories/app_library_repository.py", line 27, in find_all_active
+back-api              | 2025-11-16 01:05:50.583 |     rows = await conn.fetch(
+back-api              | 2025-11-16 01:05:50.583 |            ^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 690, in fetch
+back-api              | 2025-11-16 01:05:50.583 |     return await self._execute(
+back-api              | 2025-11-16 01:05:50.583 |            ^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 1864, in _execute
+back-api              | 2025-11-16 01:05:50.583 |     result, _ = await self.__execute(
+back-api              | 2025-11-16 01:05:50.583 |                 ^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 1961, in __execute
+back-api              | 2025-11-16 01:05:50.583 |     result, stmt = await self._do_execute(
+back-api              | 2025-11-16 01:05:50.583 |                    ^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 2012, in _do_execute
+back-api              | 2025-11-16 01:05:50.583 |     stmt = await self._get_statement(
+back-api              | 2025-11-16 01:05:50.583 |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:50.583 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 432, in _get_statement
+back-api              | 2025-11-16 01:05:50.583 |     statement = await self._protocol.prepare(
+back-api              | 2025-11-16 01:05:50.583 |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:05:50.583 |   File "asyncpg/protocol/protocol.pyx", line 165, in prepare
+back-api              | 2025-11-16 01:05:50.583 | asyncpg.exceptions.UndefinedColumnError: column "dev_url" does not exist
+back-auth             | 2025-11-16 01:05:55.168 | INFO:     127.0.0.1:58754 - "GET /health HTTP/1.1" 200 OK
+back-auth             | 2025-11-16 01:06:00.223 | INFO:     127.0.0.1:58770 - "GET /health HTTP/1.1" 200 OK
+back-auth             | 2025-11-16 01:06:05.300 | INFO:     127.0.0.1:52392 - "GET /health HTTP/1.1" 200 OK
+back-auth             | 2025-11-16 01:06:10.368 | INFO:     127.0.0.1:41462 - "GET /health HTTP/1.1" 200 OK
+postgresql            | 2025-11-16 01:06:10.958 | 2025-11-16 07:06:10.958 UTC [208] ERROR:  column "dev_url" of relation "oauth_clients" does not exist at character 153
+postgresql            | 2025-11-16 01:06:10.958 | 2025-11-16 07:06:10.958 UTC [208] STATEMENT:  
+postgresql            | 2025-11-16 01:06:10.958 | 	                INSERT INTO oauth_clients
+postgresql            | 2025-11-16 01:06:10.958 | 	                    (client_id, client_secret_hash, client_name, description, logo_url,
+postgresql            | 2025-11-16 01:06:10.958 | 	                     dev_url, prod_url, redirect_uris, allowed_scopes, is_active, created_by)
+postgresql            | 2025-11-16 01:06:10.958 | 	                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+postgresql            | 2025-11-16 01:06:10.958 | 	                RETURNING id, client_id, client_name, description, logo_url,
+postgresql            | 2025-11-16 01:06:10.958 | 	                          dev_url, prod_url, redirect_uris, allowed_scopes,
+postgresql            | 2025-11-16 01:06:10.958 | 	                          is_active, created_at, updated_at, deleted_at, created_by
+postgresql            | 2025-11-16 01:06:10.958 | 	                
+back-api              | 2025-11-16 01:06:10.961 | INFO:     172.19.0.14:57736 - "POST /api/admin/app-library HTTP/1.1" 500 Internal Server Error
+back-api              | 2025-11-16 01:06:10.969 | ERROR:    Exception in ASGI application
+back-api              | 2025-11-16 01:06:10.969 | Traceback (most recent call last):
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 407, in run_asgi
+back-api              | 2025-11-16 01:06:10.969 |     result = await app(  # type: ignore[func-returns-value]
+back-api              | 2025-11-16 01:06:10.969 |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 69, in __call__
+back-api              | 2025-11-16 01:06:10.969 |     return await self.app(scope, receive, send)
+back-api              | 2025-11-16 01:06:10.969 |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+back-api              | 2025-11-16 01:06:10.969 |     await super().__call__(scope, receive, send)
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 123, in __call__
+back-api              | 2025-11-16 01:06:10.969 |     await self.middleware_stack(scope, receive, send)
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+back-api              | 2025-11-16 01:06:10.969 |     raise exc
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+back-api              | 2025-11-16 01:06:10.969 |     await self.app(scope, receive, _send)
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 83, in __call__
+back-api              | 2025-11-16 01:06:10.969 |     await self.app(scope, receive, send)
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+back-api              | 2025-11-16 01:06:10.969 |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+back-api              | 2025-11-16 01:06:10.969 |     raise exc
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+back-api              | 2025-11-16 01:06:10.969 |     await app(scope, receive, sender)
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 758, in __call__
+back-api              | 2025-11-16 01:06:10.969 |     await self.middleware_stack(scope, receive, send)
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 778, in app
+back-api              | 2025-11-16 01:06:10.969 |     await route.handle(scope, receive, send)
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 299, in handle
+back-api              | 2025-11-16 01:06:10.969 |     await self.app(scope, receive, send)
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 79, in app
+back-api              | 2025-11-16 01:06:10.969 |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+back-api              | 2025-11-16 01:06:10.969 |     raise exc
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+back-api              | 2025-11-16 01:06:10.969 |     await app(scope, receive, sender)
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 74, in app
+back-api              | 2025-11-16 01:06:10.969 |     response = await func(request)
+back-api              | 2025-11-16 01:06:10.969 |                ^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
+back-api              | 2025-11-16 01:06:10.969 |     raw_response = await run_endpoint_function(
+back-api              | 2025-11-16 01:06:10.969 |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
+back-api              | 2025-11-16 01:06:10.969 |     return await dependant.call(**values)
+back-api              | 2025-11-16 01:06:10.969 |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:06:10.969 |   File "/app/features/app-library/api.py", line 280, in create_app
+back-api              | 2025-11-16 01:06:10.969 |     app, client_secret = await domain.create_app(
+back-api              | 2025-11-16 01:06:10.969 |                          ^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:06:10.969 |   File "/app/features/app-library/domain.py", line 230, in create_app
+back-api              | 2025-11-16 01:06:10.969 |     app = await app_repo.create(
+back-api              | 2025-11-16 01:06:10.969 |           ^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:06:10.969 |   File "/app/repositories/app_library_repository.py", line 119, in create
+back-api              | 2025-11-16 01:06:10.969 |     row = await conn.fetchrow(
+back-api              | 2025-11-16 01:06:10.969 |           ^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 748, in fetchrow
+back-api              | 2025-11-16 01:06:10.969 |     data = await self._execute(
+back-api              | 2025-11-16 01:06:10.969 |            ^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 1864, in _execute
+back-api              | 2025-11-16 01:06:10.969 |     result, _ = await self.__execute(
+back-api              | 2025-11-16 01:06:10.969 |                 ^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:06:10.969 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 1961, in __execute
+back-api              | 2025-11-16 01:06:10.970 |     result, stmt = await self._do_execute(
+back-api              | 2025-11-16 01:06:10.970 |                    ^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:06:10.970 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 2012, in _do_execute
+back-api              | 2025-11-16 01:06:10.970 |     stmt = await self._get_statement(
+back-api              | 2025-11-16 01:06:10.970 |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:06:10.970 |   File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 432, in _get_statement
+back-api              | 2025-11-16 01:06:10.970 |     statement = await self._protocol.prepare(
+back-api              | 2025-11-16 01:06:10.970 |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+back-api              | 2025-11-16 01:06:10.970 |   File "asyncpg/protocol/protocol.pyx", line 165, in prepare
+back-api              | 2025-11-16 01:06:10.970 | asyncpg.exceptions.UndefinedColumnError: column "dev_url" of relation "oauth_clients" does not exist
+mailhog               | 2025-11-16 01:06:13.022 | [APIv1] KEEPALIVE /api/v1/events

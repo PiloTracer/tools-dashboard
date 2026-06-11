@@ -1,0 +1,285 @@
+postgresql           
+
+2025-11-16 06:35:52.673 UTC [207] ERROR:  column "dev_url" does not exist at character 99
+
+2025-11-16 06:35:52.673 UTC [207] STATEMENT:  
+
+	                SELECT id, client_id, client_name, description, logo_url,
+
+	                       dev_url, prod_url, redirect_uris, allowed_scopes,
+
+	                       is_active, created_at, updated_at, deleted_at, created_by
+
+	                FROM oauth_clients
+
+	                WHERE 1=1 AND deleted_at IS NULL
+
+	                ORDER BY client_name ASC
+
+
+
+
+
+INFO:     172.19.0.13:57656 - "GET /api/admin/app-library?include_deleted=false HTTP/1.1" 500 Internal Server Error
+
+back-api             
+
+ERROR:    Exception in ASGI application
+
+Traceback (most recent call last):
+
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 407, in run_asgi
+
+    result = await app(  # type: ignore[func-returns-value]
+
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 69, in __call__
+
+    return await self.app(scope, receive, send)
+
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+
+    await super().__call__(scope, receive, send)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 123, in __call__
+
+    await self.middleware_stack(scope, receive, send)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+
+    raise exc
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+
+    await self.app(scope, receive, _send)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 83, in __call__
+
+    await self.app(scope, receive, send)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+
+    raise exc
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+
+    await app(scope, receive, sender)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 758, in __call__
+
+    await self.middleware_stack(scope, receive, send)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 778, in app
+
+    await route.handle(scope, receive, send)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 299, in handle
+
+    await self.app(scope, receive, send)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 79, in app
+
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+
+    raise exc
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+
+    await app(scope, receive, sender)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 74, in app
+
+    response = await func(request)
+
+               ^^^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
+
+    raw_response = await run_endpoint_function(
+
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
+
+    return await dependant.call(**values)
+
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/app/features/app-library/api.py", line 246, in list_all_apps
+
+    apps = await app_repo.find_all_active(include_deleted=include_deleted)
+
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+back-api             
+
+  File "/app/repositories/app_library_repository.py", line 27, in find_all_active
+
+    rows = await conn.fetch(
+
+           ^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 690, in fetch
+
+    return await self._execute(
+
+           ^^^^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 1864, in _execute
+
+    result, _ = await self.__execute(
+
+                ^^^^^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 1961, in __execute
+
+    result, stmt = await self._do_execute(
+
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 2012, in _do_execute
+
+    stmt = await self._get_statement(
+
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 432, in _get_statement
+
+    statement = await self._protocol.prepare(
+
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "asyncpg/protocol/protocol.pyx", line 165, in prepare
+
+asyncpg.exceptions.UndefinedColumnError: column "dev_url" does not exist
+
+
+
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+
+    await self.app(scope, receive, _send)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 83, in __call__
+
+    await self.app(scope, receive, send)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+
+    raise exc
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+
+    await app(scope, receive, sender)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 758, in __call__
+
+    await self.middleware_stack(scope, receive, send)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 778, in app
+
+    await route.handle(scope, receive, send)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 299, in handle
+
+    await self.app(scope, receive, send)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 79, in app
+
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+
+    raise exc
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+
+    await app(scope, receive, sender)
+
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 74, in app
+
+    response = await func(request)
+
+               ^^^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
+
+    raw_response = await run_endpoint_function(
+
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
+
+    return await dependant.call(**values)
+
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/app/features/app-library/api.py", line 280, in create_app
+
+    app, client_secret = await domain.create_app(
+
+                         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/app/features/app-library/domain.py", line 230, in create_app
+
+    app = await app_repo.create(
+
+          ^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/app/repositories/app_library_repository.py", line 119, in create
+
+    row = await conn.fetchrow(
+
+          ^^^^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 748, in fetchrow
+
+    data = await self._execute(
+
+           ^^^^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 1864, in _execute
+
+    result, _ = await self.__execute(
+
+                ^^^^^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 1961, in __execute
+
+    result, stmt = await self._do_execute(
+
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 2012, in _do_execute
+
+    stmt = await self._get_statement(
+
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/asyncpg/connection.py", line 432, in _get_statement
+
+    statement = await self._protocol.prepare(
+
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "asyncpg/protocol/protocol.pyx", line 165, in prepare
+
+asyncpg.exceptions.UndefinedColumnError: column "dev_url" of relation "oauth_clients" does not exist
+
+
+
