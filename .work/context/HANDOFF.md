@@ -6,10 +6,16 @@
 
 ## Session status
 
-**Closed:** 2025-07-14 — goal: prepare for production — SeaweedFS keys rotated, configs moved to .gitignore with deploy-time generation script
-**Updated:** 2025-07-14
+**Closed:** 2025-07-17 — goal: review and upgrade option 4 "Cleanup" in bin/start.sh
+**Updated:** 2025-07-17
 
 ---
+
+## Recently landed (2025-07-17)
+
+| Area | What changed |
+|------|----------------|
+| **Option 4 "Cleanup" upgraded** | `bin/start.sh` `run_cleanup` now: `down --remove-orphans` → project-scoped container prune → image prune (`-af`, label-filtered) → network prune → dangling build cache prune. Optional prompt for full cache nuke (`-af` with user consent). CLI `cleanup` command registered. |
 
 ## Recently landed (2025-07-11)
 

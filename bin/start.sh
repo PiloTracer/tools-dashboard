@@ -288,6 +288,7 @@ EOF
   echo "  backup [dir]  volume archives: postgres, redis, cassandra, seaweedfs (default: /mnt/data/backup_\$TD_PROJ)"
   echo "  restore [dir] restore volumes: postgres, redis, cassandra, seaweedfs (default: /mnt/data/backup_\$TD_PROJ)"
   echo "  free-ports    dev only: down + remove this project's containers on dev ports"
+  echo "  cleanup       Down + project-scoped prune (containers, images, networks, build cache)"
   echo "  test          Run the test suite (./bin/test.sh)"
   echo "  menu       Interactive menu (same as env-only)"
 }
@@ -313,7 +314,7 @@ if [ "${#}" -ge 2 ]; then
   export TD_ENV="$_e"
   TD_CLI_CMD="$(echo "$2" | tr '[:upper:]' '[:lower:]')"
   case "$TD_CLI_CMD" in
-    menu | up | up-build | down | logs | status | restart | rebuild | reset | build | config | preflight | backup | restore | free-ports | test) ;;
+    menu | up | up-build | down | logs | status | restart | rebuild | reset | build | config | preflight | backup | restore | free-ports | cleanup | test) ;;
     -h | --help | help)
       usage
       exit 0
@@ -789,9 +790,32 @@ cmd_reset_stack() {
 }
 
 run_cleanup() {
+  local proj
+  proj="$(td_compose_project_name)"
   echo "Stopping this stack only (no global docker prune — other stacks on the host are untouched)..."
   td_docker_compose down --remove-orphans
   td_prune_unused_volumes_for_project
+
+  echo "Removing stopped containers for project ${proj}..."
+  docker container prune -f --filter "label=com.docker.compose.project=${proj}" 2>/dev/null || true
+
+  echo "Removing unused images built by this compose project (label-filtered)..."
+  docker image prune -af --filter "label=com.docker.compose.project=${proj}" 2>/dev/null || true
+
+  echo "Removing unused networks for project ${proj}..."
+  docker network prune -f --filter "label=com.docker.compose.project=${proj}" 2>/dev/null || true
+
+  echo "Removing dangling build cache (globally safe — unreferenced cache only)..."
+  docker builder prune -f 2>/dev/null || true
+
+  echo ""
+  read -r -p "Remove ALL build cache? This affects other stacks' build speed on this host [y/N]: " all_cache
+  if [ "$all_cache" = "y" ] || [ "$all_cache" = "yes" ]; then
+    echo "Removing ALL build cache..."
+    docker builder prune -af 2>/dev/null || true
+  else
+    echo "Skipping full build cache removal."
+  fi
 }
 
 run_full_cleanup() {
@@ -847,6 +871,7 @@ if [ -n "${TD_CLI_CMD:-}" ] && [ "$TD_CLI_CMD" != "menu" ]; then
     backup) td_run_backup "${1:-}" ;;
     restore) td_run_restore "${1:-}" ;;
     free-ports) td_free_dev_ports ;;
+    cleanup) run_cleanup ;;
     test) cmd_test "$@" ;;
   esac
   exit 0
@@ -863,7 +888,7 @@ while true; do
   echo " 2b) Preflight (validate compose + env)"
   echo " 2c) Build images only (no up — catches Docker build errors)"
   echo " 3) Down"
-  echo " 4) Cleanup (down this stack; project volume tidy only)"
+  echo " 4) Cleanup (project-scoped: down + prune containers, images, networks, build cache)"
   echo " 5) Force rebuild (no cache)"
   echo " 6) Restart (rolling — compose restart)"
   echo " 7) Rebuild stack (down → build → up, keeps data)"

@@ -8,6 +8,7 @@
 
 | Item | Artifact |
 |------|----------|
+| Option 4 "Cleanup" upgraded | `bin/start.sh` — project-scoped prune (containers, images, networks, build cache) + interactive full cache prompt |
 | Bug fixes (3) | Type fix `013` migration, user-status auth unblock, debug print cleanup |
 | OAuth client_secret verification | `verify-client-credentials` endpoint + token endpoint integration |
 | Admin session hardening (Priority 1A) | Signed Remix session storage; all admin routes migrated |
