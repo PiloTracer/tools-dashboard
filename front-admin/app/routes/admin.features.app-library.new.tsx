@@ -2,7 +2,8 @@ import type { ActionFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { Link, useActionData } from "@remix-run/react";
 import { AppForm } from "../features/app-library/ui/AppForm";
-import { getAdminApiAuthHeaders } from "../utils/admin-api-auth.server";
+import { getAdminSession } from "../utils/admin-session.server";
+import { bearerHeaders } from "../utils/admin-api-auth.server";
 
 type ActionData = {
   error?: string;
@@ -59,8 +60,9 @@ export async function action({ request }: ActionFunctionArgs) {
         .filter((scope) => scope.length > 0)
     : ["profile", "email"];
 
+  const { accessToken } = await getAdminSession(request);
   const apiUrl = process.env.API_URL || "http://back-api:8000";
-  const auth = getAdminApiAuthHeaders(request);
+  const auth = bearerHeaders(accessToken);
 
   try {
     // Create application via backend API

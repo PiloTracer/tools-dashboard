@@ -4,7 +4,22 @@
 
 **Last aligned:** 2026-04-25 — **Improvement sprint** still tracked in `.ai/plans/20260422_PLAN_application-improvement-priorities.md` when present; see **Recently landed** tables below.
 
+## Session status
+
+**Closed:** 2025-07-11 — fixed 3 bugs + 2 auth gaps (OAuth client_secret verification, admin session hardening)
+**Updated:** 2025-07-11
+
 ---
+
+## Recently landed (2025-07-11)
+
+| Area | What changed |
+|------|----------------|
+| **App access type fix** | `back-postgres/schema/013_app_access_rules_integer_ids.sql` — `user_ids` column changed from `UUID[]` to `INTEGER[]` so `only_specified`/`all_except` modes work with integer user IDs |
+| **User-status auth unblocked** | `back-api/features/user-status/api.py` — `get_current_user` now validates session against back-auth instead of returning `(None, None)`; front-public `UserStatusStore` now receives real auth state |
+| **Debug print cleanup** | `back-api/features/users/api.py` — replaced 10+ `print()` calls with structured `logging`; removed token/JWT/PII from log output; eliminated redundant manual JWT decode |
+| **OAuth client_secret verification** | `back-api/features/app-library/api.py` — new `POST /api/app-library/verify-client-credentials` endpoint. `front-public/app/routes/oauth.token.tsx` — calls it before exchanging authorization codes (removed **TODO**) |
+| **Admin session hardening (Priority 1A)** | New `front-admin/app/utils/admin-session.server.ts` — signed Remix `createCookieSessionStorage`. All admin routes migrated: `root.tsx`, sign-in, dashboard, logout, app-library CRUD. No more raw `admin_session` JWT cookie. |
 
 ## Recently landed (2026-04-25)
 
@@ -276,8 +291,8 @@ Preflight **warns** on placeholder secrets in `.env.prd` — expected until oper
 
 ## Open / follow-up (not blocking compose build)
 
-- **Priority 1 (active):** remaining 1A admin session hardening, 1B cookie audit, 1C remove `print` / logging on `back-api` users path; expand **API routing** table with measured `curl` matrix after any nginx/router change.
-- **OAuth:** explicit **`client_secret`** verification at token endpoint still **TODO** in `front-public/app/routes/oauth.token.tsx`; Rizervox operator doc: `.ai/context/IMPLEMENTATION_LOG_CMS_OAUTH_RIZERVOX.md`.
+- **Completed this session:** 1A admin session hardening (signed Remix session), 1C `print`/logging on `back-api` users path, OAuth `client_secret` verification at token endpoint. Remaining Priority 1: 1B public cookie audit, 1D nginx API routing table.
+- **Rizervox plan:** add `.ai/plan/multi-tenant-headless-cms` to this repo (or link) so bootstrap checklist can match product spec.
 - **Postgres migrations ledger:** `main.py` still replays every `schema/*.sql` each boot — consider Flyway/Alembic-style tracking for DDL-only files; bootstrap **data** for seeded clients is now insert-only (`DO NOTHING`).
 - **Rizervox plan:** add `.ai/plan/multi-tenant-headless-cms` to this repo (or link) so bootstrap checklist can match product spec.
 - `tmp/errors.txt` audit may still list CI, digest-pinned base images, nginx `resolver`, Python `requirements.txt` pinning breadth — triage as needed.

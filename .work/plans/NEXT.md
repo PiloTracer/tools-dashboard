@@ -8,6 +8,9 @@
 
 | Item | Artifact |
 |------|----------|
+| Bug fixes (3) | Type fix `013` migration, user-status auth unblock, debug print cleanup |
+| OAuth client_secret verification | `verify-client-credentials` endpoint + token endpoint integration |
+| Admin session hardening (Priority 1A) | Signed Remix session storage; all admin routes migrated |
 | Agent OS bootstrap | `.work/` skeleton, `.cursorrules` from template |
 
 ---
@@ -24,9 +27,9 @@
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| **0** | `@plan-foundation greenfield` | Creates foundation docs 01–04 if not present |
-| **1** | `@plan-foundation certify plan-master-ready` | After P0–P6 complete |
-| **2** | `@plan-master greenfield` | Master plan after foundation ready |
+| **1** | Admin user-creation endpoint | `back-api/features/user-management/api.py` — no `POST /admin/users` exists yet; users can only self-register |
+| **2** | Admin app-user access UI | Build UI to assign `only_specified` mode with user IDs; the type bug is now fixed |
+| **3** | Priority 1B & 1D | Public cookie audit + nginx API routing documentation table |
 
 ---
 

@@ -3,7 +3,8 @@ import { json } from "@remix-run/node";
 import { useLoaderData, useSearchParams, Link } from "@remix-run/react";
 import { AppTable, type App } from "../features/app-library/ui/AppTable";
 import { useState } from "react";
-import { getAdminApiAuthHeaders } from "../utils/admin-api-auth.server";
+import { getAdminSession } from "../utils/admin-session.server";
+import { bearerHeaders } from "../utils/admin-api-auth.server";
 
 type LoaderData = {
   apps: App[];
@@ -20,8 +21,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const sortBy = url.searchParams.get("sort_by") || "created_at";
   const sortOrder = url.searchParams.get("sort_order") || "desc";
 
+  const { accessToken } = await getAdminSession(request);
   const apiUrl = process.env.API_URL || "http://back-api:8000";
-  const auth = getAdminApiAuthHeaders(request);
+  const auth = bearerHeaders(accessToken);
 
   try {
     if (!auth.Authorization) {

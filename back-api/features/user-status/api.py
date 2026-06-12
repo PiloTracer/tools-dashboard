@@ -3,14 +3,21 @@ User Status Feature - API Router
 Defines the HTTP endpoints for user status management
 """
 
+import os
 from typing import Optional
 
+import httpx
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 
 from .domain import UserStatusService
 
 router = APIRouter(prefix="/user-status", tags=["user-status"])
+
+# Backend auth service URL (aligned with app-library pattern)
+_AUTH_SERVICE_URL = os.environ.get(
+    "AUTH_SERVICE_URL", "http://back-auth:8001"
+).rstrip("/")
 
 
 class NavigationUpdateRequest(BaseModel):
@@ -25,20 +32,39 @@ def get_service() -> UserStatusService:
     return UserStatusService()
 
 
-def get_current_user(request: Request) -> tuple[Optional[str], Optional[str]]:
+async def get_current_user(request: Request) -> tuple[Optional[str], Optional[str]]:
     """
-    Extract current user information from request.
+    Resolve the signed-in user from the browser session cookie.
 
-    This is a placeholder - in production, this would validate JWT tokens,
-    check session cookies, etc.
-
-    Returns:
-        Tuple of (user_id, email) or (None, None) if not authenticated
+    Forwards the ``Cookie`` header to ``back-auth/user-registration/status`` and
+    extracts the user id + email.  Unauthenticated / unverified sessions return
+    ``(None, None)`` so callers can produce the appropriate anonymous response.
     """
-    # TODO: Implement actual authentication check
-    # For now, return None to indicate anonymous user
-    # This will be replaced with actual session/token validation
-    return None, None
+    cookie = request.headers.get("cookie") or ""
+    if not cookie:
+        return None, None
+
+    url = f"{_AUTH_SERVICE_URL}/user-registration/status"
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, headers={"Cookie": cookie}, timeout=10.0)
+    except (httpx.RequestError, httpx.TimeoutException):
+        return None, None
+
+    if resp.status_code != 200:
+        return None, None
+
+    data = resp.json()
+    st = data.get("status")
+    if st != "verified":
+        return None, None
+
+    user_id = data.get("userId")
+    email = data.get("email") or ""
+    if user_id is None:
+        return None, None
+
+    return str(user_id), email
 
 
 @router.get("/", summary="Get user status")

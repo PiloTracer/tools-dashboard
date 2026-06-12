@@ -12,7 +12,8 @@ import {
 } from "@remix-run/react";
 import { useState, useEffect, useRef } from "react";
 import type { App } from "../features/app-library/ui/AppTable";
-import { getAdminApiAuthHeaders } from "../utils/admin-api-auth.server";
+import { getAdminSession } from "../utils/admin-session.server";
+import { bearerHeaders } from "../utils/admin-api-auth.server";
 
 export type AppLibraryTab =
   | "overview"
@@ -102,8 +103,9 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     : "overview";
   const startEditing = editParam === "1" || editParam === "true";
 
+  const { accessToken } = await getAdminSession(request);
   const apiUrl = process.env.API_URL || "http://back-api:8000";
-  const auth = getAdminApiAuthHeaders(request);
+  const auth = bearerHeaders(accessToken);
 
   try {
     const appPromise = fetch(`${apiUrl}/api/admin/app-library/${appId}`, {
@@ -168,8 +170,9 @@ export async function action({ request, params }: ActionFunctionArgs) {
   const formData = await request.formData();
   const _action = formData.get("_action")?.toString();
 
+  const { accessToken } = await getAdminSession(request);
   const apiUrl = process.env.API_URL || "http://back-api:8000";
-  const auth = getAdminApiAuthHeaders(request);
+  const auth = bearerHeaders(accessToken);
 
   try {
     switch (_action) {

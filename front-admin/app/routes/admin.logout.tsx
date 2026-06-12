@@ -5,11 +5,13 @@ import { clearAdminAuthCookies } from "../utils/admin-csrf.server";
 const SIGNIN = "/admin/features/admin-signin";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  return redirect(SIGNIN, { headers: clearAdminAuthCookies(request) });
+  const headers = await clearAdminAuthCookies(request);
+  return redirect(SIGNIN, { headers });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-  return redirect(SIGNIN, { headers: clearAdminAuthCookies(request) });
+  const headers = await clearAdminAuthCookies(request);
+  return redirect(SIGNIN, { headers });
 }
 
 export default function AdminLogout() {

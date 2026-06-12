@@ -86,6 +86,35 @@ class AppRepository:
             )
             return dict(row) if row else None
 
+    async def verify_client_secret(self, client_id: str, client_secret: str) -> bool:
+        """Verify a client secret against the stored bcrypt hash.
+
+        Args:
+            client_id: OAuth client ID (string identifier, not UUID)
+            client_secret: Plain-text secret to verify
+
+        Returns:
+            True if the secret matches the stored hash and client is active
+        """
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT client_secret_hash, is_active
+                FROM oauth_clients
+                WHERE client_id = $1
+                """,
+                client_id
+            )
+            if not row or not row["is_active"]:
+                return False
+            stored_hash = row["client_secret_hash"]
+            if not stored_hash:
+                return False
+            return bcrypt.checkpw(
+                client_secret.encode("utf-8"),
+                stored_hash.encode("utf-8"),
+            )
+
     async def create(
         self,
         client_id: str,

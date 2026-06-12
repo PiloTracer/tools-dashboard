@@ -47,9 +47,25 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
-    // Note: Client credentials (client_id + client_secret) should be validated
-    // For now, we rely on authorization code validation which includes client_id verification
-    // TODO: Add explicit client_secret verification via back-api
+    // Verify client credentials via back-api
+    const credsResponse = await fetch(
+      `${BACK_API_URL}/api/app-library/verify-client-credentials`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ client_id: clientId, client_secret: clientSecret }),
+      }
+    );
+
+    if (!credsResponse.ok) {
+      return json(
+        {
+          error: "invalid_client",
+          error_description: "Invalid client credentials",
+        },
+        { status: 401 }
+      );
+    }
 
     // AUTHORIZATION CODE GRANT
     if (grantType === "authorization_code") {

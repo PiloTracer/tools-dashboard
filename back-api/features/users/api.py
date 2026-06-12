@@ -5,16 +5,15 @@ Provides user information to authorized OAuth clients.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, status, Header, Depends
-from pydantic import BaseModel
+import logging
 from typing import Optional
-import sys
-from pathlib import Path
 
-# Add parent directories to path for imports
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from fastapi import APIRouter, HTTPException, status, Header
+from pydantic import BaseModel
 
 from database import db_manager
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -91,27 +90,24 @@ async def get_current_user(
 
     token = parts[1]
 
-    # Validate token by calling back-auth's internal endpoint
+    # Validate token by calling back-auth's internal OAuth endpoint
     import httpx
 
-    BACK_AUTH_URL = "http://back-auth:8001"
+    AUTH_SVC = "http://back-auth:8001"
 
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{BACK_AUTH_URL}/internal/oauth/validate-token",
+                f"{AUTH_SVC}/internal/oauth/validate-token",
                 json={"token": token},
                 timeout=10.0,
             )
-    except Exception as e:
-        print(f"ERROR: Failed to call validate-token: {str(e)}")
+    except httpx.RequestError as exc:
+        logger.error("Token validation call failed: %s", exc)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to validate token: {str(e)}",
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Authentication service unavailable",
         )
-
-    print(f"DEBUG: Validation response status: {response.status_code}")
-    print(f"DEBUG: Validation response body: {response.text}")
 
     if response.status_code != 200:
         raise HTTPException(
@@ -121,67 +117,24 @@ async def get_current_user(
         )
 
     validation_result = response.json()
-    print(f"DEBUG: Validation result: {validation_result}")
 
     if not validation_result.get("valid"):
-        print(f"DEBUG: Token not valid. Error: {validation_result.get('error')}")
+        logger.warning("Token rejected by back-auth: %s", validation_result.get("error", "unknown"))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=validation_result.get("error", "Invalid or expired access token"),
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Extract user_id from validation result (it's a UUID string)
-    user_id_uuid_str = validation_result.get("user_id")
-    print(f"DEBUG: user_id_uuid_str = {user_id_uuid_str}")
+    # The validate-token endpoint already returns the resolved user_id —
+    # no need to manually decode the JWT payload.
+    user_id = validation_result.get("user_id")
 
-    if not user_id_uuid_str:
-        print("DEBUG: Missing user_id in validation result")
+    if not user_id:
+        logger.warning("validate-token response missing user_id")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload - missing user ID",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    # Extract user_id from JWT token directly (without library)
-    # JWT format: header.payload.signature (base64url encoded)
-    import base64
-    import json
-
-    try:
-        print("DEBUG: Starting JWT decode")
-        # Split JWT and get payload (second part)
-        parts = token.split('.')
-        print(f"DEBUG: JWT parts count: {len(parts)}")
-
-        if len(parts) != 3:
-            raise ValueError("Invalid JWT format")
-
-        # Decode payload (add padding if needed)
-        payload_b64 = parts[1]
-        print(f"DEBUG: Payload base64 length: {len(payload_b64)}")
-
-        # Add padding for base64 decoding
-        padding = 4 - len(payload_b64) % 4
-        if padding != 4:
-            payload_b64 += '=' * padding
-        print(f"DEBUG: After padding: {len(payload_b64)}")
-
-        # Decode base64 and parse JSON
-        payload_json = base64.urlsafe_b64decode(payload_b64)
-        print(f"DEBUG: Decoded payload JSON: {payload_json[:100]}")
-
-        payload = json.loads(payload_json)
-        print(f"DEBUG: Parsed payload: {payload}")
-
-        # Extract user_id (stored as string in "sub" claim)
-        user_id = int(payload["sub"])
-        print(f"DEBUG: Extracted user_id: {user_id}")
-    except Exception as e:
-        print(f"DEBUG: JWT decode failed: {type(e).__name__}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid token payload: {str(e)}",
+            detail="Invalid token payload — missing user ID",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -193,11 +146,12 @@ async def get_current_user(
     """
 
     try:
-        user_row = await db_manager.pg_pool.fetchrow(query, user_id)
+        user_row = await db_manager.pg_pool.fetchrow(query, int(user_id))
     except Exception as e:
+        logger.error("DB error fetching user %s", user_id, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Database error: {str(e)}",
+            detail="Database error",
         )
 
     if not user_row:
@@ -256,7 +210,7 @@ async def get_current_user(
             )
     except Exception as e:
         # Log error but don't fail the request (loose coupling)
-        print(f"Warning: Could not fetch subscription data for user {user_id}: {e}")
+        logger.warning("Could not fetch subscription data for user %s: %s", user_id, e)
         # Provide default subscription
         from datetime import datetime, timedelta
         reset_date = (datetime.utcnow() + timedelta(days=30)).isoformat() + "Z"

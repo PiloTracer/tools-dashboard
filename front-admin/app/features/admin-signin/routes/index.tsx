@@ -1,7 +1,8 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { useActionData, useLoaderData, useNavigation } from "@remix-run/react";
-import { adminCookieSecureSuffix, isValidAdminCsrf, newAdminCsrf } from "../../../utils/admin-csrf.server";
+import { isValidAdminCsrf, newAdminCsrf } from "../../../utils/admin-csrf.server";
+import { getAdminSession, commitAdminSession } from "../../../utils/admin-session.server";
 import { AdminSigninForm } from "../ui/AdminSigninForm";
 
 type ActionData = {
@@ -19,14 +20,9 @@ type ActionData = {
  * If not authenticated, show form
  */
 export async function loader({ request }: LoaderFunctionArgs) {
-  // Check if user is authenticated
-  const cookie = request.headers.get("Cookie");
-  const hasSession = cookie?.includes("admin_session");
-
-  // If authenticated, redirect to dashboard
-  // Use full path including /admin/ prefix for proper routing through nginx
-  if (hasSession) {
-    // TODO: Verify session token and check admin role
+  // Check if user is already authenticated via signed session
+  const { accessToken } = await getAdminSession(request);
+  if (accessToken) {
     return redirect("/admin/");
   }
 
@@ -127,16 +123,17 @@ export async function action({ request }: ActionFunctionArgs) {
       );
     }
 
-    // Store tokens in httpOnly cookies
-    // TODO: Implement secure cookie storage using Remix sessions
-    // For now, we'll use a simple approach (this should be enhanced in production)
+    // Store tokens in signed Remix session
+    const sessionCookie = await commitAdminSession(
+      request,
+      data.access_token,
+      data.user?.email || "",
+    );
 
     // Redirect to admin dashboard
-    // Use full path including /admin/ prefix for proper routing through nginx
-    const secure = adminCookieSecureSuffix(request);
     return redirect("/admin/", {
       headers: {
-        "Set-Cookie": `admin_session=${data.access_token}; HttpOnly${secure}; SameSite=Lax; Path=/; Max-Age=1800`,
+        "Set-Cookie": sessionCookie,
       },
     });
   } catch (error) {

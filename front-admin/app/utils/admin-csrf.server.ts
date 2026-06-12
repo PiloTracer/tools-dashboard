@@ -39,10 +39,12 @@ export function isValidAdminCsrf(request: Request, formData: FormData): boolean 
   return fromCookie.length > 0 && fromCookie === fromBody;
 }
 
-/** Clear admin JWT cookie and CSRF cookie (same Path/Secure as when set). */
-export function clearAdminAuthCookies(request: Request): Headers {
+/** Clear admin session and CSRF cookie. */
+export async function clearAdminAuthCookies(request: Request): Promise<Headers> {
+  const { destroyAdminSession } = await import("./admin-session.server");
   const secure = adminCookieSecureSuffix(request);
   const h = new Headers();
+  h.append("Set-Cookie", await destroyAdminSession(request));
   h.append("Set-Cookie", `admin_session=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax${secure}`);
   h.append("Set-Cookie", `${COOKIE_NAME}=; Path=/admin; HttpOnly; Max-Age=0; SameSite=Lax${secure}`);
   return h;

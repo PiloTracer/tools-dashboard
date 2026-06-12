@@ -388,6 +388,44 @@ async def toggle_favorite(
     return preference
 
 
+@public_router.post("/verify-client-credentials")
+async def verify_client_credentials(
+    request: Request,
+    app_repo: Any = Depends(get_app_repo),
+):
+    """Verify OAuth client credentials (client_id + client_secret).
+
+    Used by the token endpoint to validate client secrets before
+    exchanging authorization codes for tokens.
+
+    Returns ``{"valid": true}`` on success or a 401 response on failure.
+    """
+    import json as _json
+
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid JSON body")
+
+    client_id = body.get("client_id")
+    client_secret = body.get("client_secret")
+
+    if not client_id or not client_secret:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing client_id or client_secret",
+        )
+
+    valid = await app_repo.verify_client_secret(client_id, client_secret)
+    if not valid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid client credentials",
+        )
+
+    return {"valid": True}
+
+
 # ========== ADMIN ENDPOINTS ==========
 
 @admin_router.get("/app-library")
