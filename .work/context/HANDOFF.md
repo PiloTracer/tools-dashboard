@@ -6,7 +6,7 @@
 
 ## Session status
 
-**Closed:** 2025-07-14 — goal: prepare for production — credential hardening, config fixes, env sync, deployment checklist created
+**Closed:** 2025-07-14 — goal: prepare for production — SeaweedFS keys rotated, configs moved to .gitignore with deploy-time generation script
 **Updated:** 2025-07-14
 
 ---

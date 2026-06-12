@@ -17,6 +17,7 @@
 | Test suite architecture | pytest per service + smoke tests + `bin/test.sh` + start.sh wiring |
 | Agent OS bootstrap | `.work/` skeleton, `.cursorrules` from template |
 | Credential hardening + env sync | Production-ready credentials in `.env`/`.env.prd`; start.sh shell cleanup; compose fixes for dev+prd; Redis AOF, nginx limits, migration ordering |
+| SeaweedFS secrets removed from git | `s3-config.json`/`security.toml` → `.gitignore`; generated from `.env` by `scripts/init-seaweedfs-config.sh`; keys rotated |
 
 ---
 
