@@ -32,9 +32,9 @@ def websockets_url() -> str:
 
 @pytest.fixture(scope="session")
 def registry_url() -> str:
-    return os.environ.get("REGISTRY_URL", "http://feature-registry:8003")
+    return os.environ.get("REGISTRY_URL", "http://feature-registry:8005")
 
 
 @pytest.fixture(scope="session")
 def nginx_url() -> str:
-    return os.environ.get("NGINX_URL", "http://nginx-proxy:8082")
+    return os.environ.get("NGINX_URL", "http://nginx-proxy:80")

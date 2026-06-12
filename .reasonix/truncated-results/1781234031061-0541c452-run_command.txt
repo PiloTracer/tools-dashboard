@@ -1,0 +1,516 @@
+$ docker compose exec back-auth rm -f '/app/tests/\$f;' && bash bin/test.sh
+[exit 0]
+[0;36m[test][0m Running full test suite…
+
+[0;36m[test][0m Running smoke tests (health checks)…
+FFFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+_____________________________ test_back_api_health _____________________________
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:101: in map_httpcore_exceptions
+    yield
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:394: in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py:256: in handle_async_request
+    raise exc from None
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py:236: in handle_async_request
+    response = await connection.handle_async_request(
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection.py:101: in handle_async_request
+    raise exc
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection.py:78: in handle_async_request
+    stream = await self._connect(request)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection.py:124: in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_backends/auto.py:31: in connect_tcp
+    return await self._backend.connect_tcp(
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_backends/anyio.py:113: in connect_tcp
+    with map_exceptions(exc_map):
+/usr/lib/python3.10/contextlib.py:153: in __exit__
+    self.gen.throw(typ, value, traceback)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_exceptions.py:14: in map_exceptions
+    raise to_exc(exc) from exc
+E   httpcore.ConnectError: [Errno -2] Name or service not known
+
+The above exception was the direct cause of the following exception:
+tests/test_smoke.py:15: in test_back_api_health
+    resp = await client.get(f"{api_url}/health", timeout=10.0)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1768: in get
+    return await self.request(
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1629: in send
+    response = await self._send_handling_auth(
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:393: in handle_async_request
+    with map_httpcore_exceptions():
+/usr/lib/python3.10/contextlib.py:153: in __exit__
+    self.gen.throw(typ, value, traceback)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:118: in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+E   httpx.ConnectError: [Errno -2] Name or service not known
+____________________________ test_back_auth_health _____________________________
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:101: in map_httpcore_exceptions
+    yield
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:394: in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py:256: in handle_async_request
+    raise exc from None
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py:236: in handle_async_request
+    response = await connection.handle_async_request(
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection.py:101: in handle_async_request
+    raise exc
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection.py:78: in handle_async_request
+    stream = await self._connect(request)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection.py:124: in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_backends/auto.py:31: in connect_tcp
+    return await self._backend.connect_tcp(
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_backends/anyio.py:113: in connect_tcp
+    with map_exceptions(exc_map):
+/usr/lib/python3.10/contextlib.py:153: in __exit__
+    self.gen.throw(typ, value, traceback)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_exceptions.py:14: in map_exceptions
+    raise to_exc(exc) from exc
+E   httpcore.ConnectError: [Errno -2] Name or service not known
+
+The above exception was the direct cause of the following exception:
+tests/test_smoke.py:24: in test_back_auth_health
+    resp = await client.get(f"{auth_url}/health", timeout=10.0)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1768: in get
+    return await self.request(
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1629: in send
+    response = await self._send_handling_auth(
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:393: in handle_async_request
+    with map_httpcore_exceptions():
+/usr/lib/python3.10/contextlib.py:153: in __exit__
+    self.gen.throw(typ, value, traceback)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:118: in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+E   httpx.ConnectError: [Errno -2] Name or service not known
+_________________________ test_back_websockets_health __________________________
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:101: in map_httpcore_exceptions
+    yield
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:394: in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py:256: in handle_async_request
+    raise exc from None
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py:236: in handle_async_request
+    response = await connection.handle_async_request(
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection.py:101: in handle_async_request
+    raise exc
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection.py:78: in handle_async_request
+    stream = await self._connect(request)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection.py:124: in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_backends/auto.py:31: in connect_tcp
+    return await self._backend.connect_tcp(
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_backends/anyio.py:113: in connect_tcp
+    with map_exceptions(exc_map):
+/usr/lib/python3.10/contextlib.py:153: in __exit__
+    self.gen.throw(typ, value, traceback)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_exceptions.py:14: in map_exceptions
+    raise to_exc(exc) from exc
+E   httpcore.ConnectError: [Errno -2] Name or service not known
+
+The above exception was the direct cause of the following exception:
+tests/test_smoke.py:33: in test_back_websockets_health
+    resp = await client.get(f"{websockets_url}/health", timeout=10.0)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1768: in get
+    return await self.request(
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1629: in send
+    response = await self._send_handling_auth(
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:393: in handle_async_request
+    with map_httpcore_exceptions():
+/usr/lib/python3.10/contextlib.py:153: in __exit__
+    self.gen.throw(typ, value, traceback)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:118: in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+E   httpx.ConnectError: [Errno -2] Name or service not known
+_________________________ test_feature_registry_health _________________________
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:101: in map_httpcore_exceptions
+    yield
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:394: in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py:256: in handle_async_request
+    raise exc from None
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py:236: in handle_async_request
+    response = await connection.handle_async_request(
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection.py:101: in handle_async_request
+    raise exc
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection.py:78: in handle_async_request
+    stream = await self._connect(request)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection.py:124: in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_backends/auto.py:31: in connect_tcp
+    return await self._backend.connect_tcp(
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_backends/anyio.py:113: in connect_tcp
+    with map_exceptions(exc_map):
+/usr/lib/python3.10/contextlib.py:153: in __exit__
+    self.gen.throw(typ, value, traceback)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_exceptions.py:14: in map_exceptions
+    raise to_exc(exc) from exc
+E   httpcore.ConnectError: [Errno -2] Name or service not known
+
+The above exception was the direct cause of the following exception:
+tests/test_smoke.py:42: in test_feature_registry_health
+    resp = await client.get(f"{registry_url}/health", timeout=10.0)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1768: in get
+    return await self.request(
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1629: in send
+    response = await self._send_handling_auth(
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:393: in handle_async_request
+    with map_httpcore_exceptions():
+/usr/lib/python3.10/contextlib.py:153: in __exit__
+    self.gen.throw(typ, value, traceback)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:118: in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+E   httpx.ConnectError: [Errno -2] Name or service not known
+_____________________________ test_nginx_reachable _____________________________
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:101: in map_httpcore_exceptions
+    yield
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:394: in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py:256: in handle_async_request
+    raise exc from None
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py:236: in handle_async_request
+    response = await connection.handle_async_request(
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection.py:101: in handle_async_request
+    raise exc
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection.py:78: in handle_async_request
+    stream = await self._connect(request)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection.py:124: in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_backends/auto.py:31: in connect_tcp
+    return await self._backend.connect_tcp(
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_backends/anyio.py:113: in connect_tcp
+    with map_exceptions(exc_map):
+/usr/lib/python3.10/contextlib.py:153: in __exit__
+    self.gen.throw(typ, value, traceback)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_exceptions.py:14: in map_exceptions
+    raise to_exc(exc) from exc
+E   httpcore.ConnectError: [Errno -2] Name or service not known
+
+The above exception was the direct cause of the following exception:
+tests/test_smoke.py:52: in test_nginx_reachable
+    resp = await client.get(nginx_url, timeout=10.0)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1768: in get
+    return await self.request(
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1629: in send
+    response = await self._send_handling_auth(
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:393: in handle_async_request
+    with map_httpcore_exceptions():
+/usr/lib/python3.10/contextlib.py:153: in __exit__
+    self.gen.throw(typ, value, traceback)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:118: in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+E   httpx.ConnectError: [Errno -2] Name or service not known
+________________ test_back_api_public_app_library_unauthorized _________________
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:101: in map_httpcore_exceptions
+    yield
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:394: in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py:256: in handle_async_request
+    raise exc from None
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py:236: in handle_async_request
+    response = await connection.handle_async_request(
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection.py:101: in handle_async_request
+    raise exc
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection.py:78: in handle_async_request
+    stream = await self._connect(request)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_async/connection.py:124: in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_backends/auto.py:31: in connect_tcp
+    return await self._backend.connect_tcp(
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_backends/anyio.py:113: in connect_tcp
+    with map_exceptions(exc_map):
+/usr/lib/python3.10/contextlib.py:153: in __exit__
+    self.gen.throw(typ, value, traceback)
+/home/admin/.local/lib/python3.10/site-packages/httpcore/_exceptions.py:14: in map_exceptions
+    raise to_exc(exc) from exc
+E   httpcore.ConnectError: [Errno -2] Name or service not known
+
+The above exception was the direct cause of the following exception:
+tests/test_smoke.py:61: in test_back_api_public_app_library_unauthorized
+    resp = await client.get(
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1768: in get
+    return await self.request(
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1629: in send
+    response = await self._send_handling_auth(
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:393: in handle_async_request
+    with map_httpcore_exceptions():
+/usr/lib/python3.10/contextlib.py:153: in __exit__
+    self.gen.throw(typ, value, traceback)
+/home/admin/.local/lib/python3.10/site-packages/httpx/_transports/default.py:118: in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+E   httpx.ConnectError: [Errno -2] Name or service not known
+=========================== short test summary info ============================
+FAILED tests/test_smoke.py::test_back_api_health - httpx.ConnectError: [Errno...
+FAILED tests/test_smoke.py::test_back_auth_health - httpx.ConnectError: [Errn...
+FAILED tests/test_smoke.py::test_back_websockets_health - httpx.ConnectError:...
+FAILED tests/test_smoke.py::test_feature_registry_health - httpx.ConnectError...
+FAILED tests/test_smoke.py::test_nginx_reachable - httpx.ConnectError: [Errno...
+FAILED tests/test_smoke.py::test_back_api_public_app_library_unauthorized - h...
+6 failed in 1.51s
+
+[0;36m[test][0m Running back-api tests…
+EEEEEEEEE                                                                [100%]
+==================================== ERRORS ====================================
+_____________ ERROR at setup of test_list_public_apps_unauthorized _____________
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: in setup
+    return super().setup()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:924: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+tests/conftest.py:34: in app
+    user_sub = importlib.import_module("features.user-subscription.api")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'features'
+________ ERROR at setup of test_verify_client_credentials_missing_body _________
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: in setup
+    return super().setup()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:924: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+tests/conftest.py:34: in app
+    user_sub = importlib.import_module("features.user-subscription.api")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'features'
+___________ ERROR at setup of test_verify_client_credentials_invalid ___________
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: in setup
+    return super().setup()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:924: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+tests/conftest.py:34: in app
+    user_sub = importlib.import_module("features.user-subscription.api")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'features'
+_____________ ERROR at setup of test_admin_list_apps_requires_auth _____________
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: in setup
+    return super().setup()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:924: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+tests/conftest.py:34: in app
+    user_sub = importlib.import_module("features.user-subscription.api")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'features'
+___________________ ERROR at setup of test_health_returns_ok ___________________
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: in setup
+    return super().setup()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:924: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+tests/conftest.py:34: in app
+    user_sub = importlib.import_module("features.user-subscription.api")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'features'
+_______________ ERROR at setup of test_list_users_requires_auth ________________
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: in setup
+    return super().setup()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:924: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+tests/conftest.py:34: in app
+    user_sub = importlib.import_module("features.user-subscription.api")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'features'
+_______________ ERROR at setup of test_create_user_requires_auth _______________
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: in setup
+    return super().setup()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:924: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+tests/conftest.py:34: in app
+    user_sub = importlib.import_module("features.user-subscription.api")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'features'
+_______________ ERROR at setup of test_create_user_missing_email _______________
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: in setup
+    return super().setup()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:924: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+tests/conftest.py:34: in app
+    user_sub = importlib.import_module("features.user-subscription.api")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'features'
+____________________ ERROR at setup of test_get_user_detail ____________________
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: in setup
+    return super().setup()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:924: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+tests/conftest.py:34: in app
+    user_sub = importlib.import_module("features.user-subscription.api")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'features'
+=============================== warnings summary ===============================
+../usr/local/lib/python3.11/site-packages/starlette/formparsers.py:12
+  /usr/local/lib/python3.11/site-packages/starlette/formparsers.py:12: PendingDeprecationWarning: Please use `import python_multipart` instead.
+    import multipart
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR tests/test_app_library.py::test_list_public_apps_unauthorized - ModuleN...
+ERROR tests/test_app_library.py::test_verify_client_credentials_missing_body
+ERROR tests/test_app_library.py::test_verify_client_credentials_invalid - Mod...
+ERROR tests/test_app_library.py::test_admin_list_apps_requires_auth - ModuleN...
+ERROR tests/test_health.py::test_health_returns_ok - ModuleNotFoundError: No ...
+ERROR tests/test_users_api.py::test_list_users_requires_auth - ModuleNotFound...
+ERROR tests/test_users_api.py::test_create_user_requires_auth - ModuleNotFoun...
+ERROR tests/test_users_api.py::test_create_user_missing_email - ModuleNotFoun...
+ERROR tests/test_users_api.py::test_get_user_detail - ModuleNotFoundError: No...
+1 warning, 9 errors in 0.13s
+
+[0;36m[test][0m Running back-auth tests…
+E                                                                        [100%]
+==================================== ERRORS ====================================
+___________________ ERROR at setup of test_health_returns_ok ___________________
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:558: in setup
+    return super().setup()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:924: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+tests/conftest.py:31: in app
+    reg = importlib.import_module("features.user-registration.api")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'features'
+=========================== short test summary info ============================
+ERROR tests/test_health.py::test_health_returns_ok - ModuleNotFoundError: No ...
+1 error in 0.04s
+
+[0;36m[test][0m Running back-websockets tests…
+.                                                                        [100%]
+1 passed in 0.04s
+
+[0;36m[test][0m Running feature-registry tests…
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____________________________ test_health_returns_ok ____________________________
+/usr/local/lib/python3.11/site-packages/httpx/_transports/default.py:101: in map_httpcore_exceptions
+    yield
+/usr/local/lib/python3.11/site-packages/httpx/_transports/default.py:394: in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/httpcore/_async/connection_pool.py:256: in handle_async_request
+    raise exc from None
+/usr/local/lib/python3.11/site-packages/httpcore/_async/connection_pool.py:236: in handle_async_request
+    response = await connection.handle_async_request(
+/usr/local/lib/python3.11/site-packages/httpcore/_async/connection.py:101: in handle_async_request
+    raise exc
+/usr/local/lib/python3.11/site-packages/httpcore/_async/connection.py:78: in handle_async_request
+    stream = await self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/httpcore/_async/connection.py:124: in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/httpcore/_backends/auto.py:31: in connect_tcp
+    return await self._backend.connect_tcp(
+/usr/local/lib/python3.11/site-packages/httpcore/_backends/anyio.py:113: in connect_tcp
+    with map_exceptions(exc_map):
+/usr/local/lib/python3.11/contextlib.py:158: in __exit__
+    self.gen.throw(typ, value, traceback)
+/usr/local/lib/python3.11/site-packages/httpcore/_exceptions.py:14: in map_exceptions
+    raise to_exc(exc) from exc
+E   httpcore.ConnectError: All connection attempts failed
+
+The above exception was the direct cause of the following exception:
+tests/test_health.py:11: in test_health_returns_ok
+    resp = await client.get("http://feature-registry:8003/health", timeout=10.0)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/httpx/_client.py:1768: in get
+    return await self.request(
+/usr/local/lib/python3.11/site-packages/httpx/_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/httpx/_client.py:1629: in send
+    response = await self._send_handling_auth(
+/usr/local/lib/python3.11/site-packages/httpx/_client.py:1657: in _send_handling_auth
+    response = awai
+
+[… truncated 1093 chars …]
