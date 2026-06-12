@@ -175,6 +175,8 @@ services:
         condition: service_healthy
       cassandra:
         condition: service_healthy
+      back-postgres-service:
+        condition: service_started
     restart: unless-stopped
     mem_limit: 512m
 
@@ -225,8 +227,6 @@ services:
       - DATABASE_URL=${BACK_POSTGRES_SERVICE_DATABASE_URL:-postgresql://user:pass@postgresql:5432/main_db}
     depends_on:
       postgresql:
-        condition: service_healthy
-      back-auth:
         condition: service_healthy
     restart: unless-stopped
     mem_limit: 256m
@@ -318,7 +318,7 @@ services:
       interval: 15s
       timeout: 10s
       retries: 15
-      start_period: 90s
+      start_period: 240s
     restart: unless-stopped
     mem_limit: 2048m
 

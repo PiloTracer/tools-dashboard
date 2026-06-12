@@ -168,3 +168,9 @@ secrets/
 bin/td-backup-cron-wrap-*.sh
 **/.ai/
 **/.ai.ui/
+
+.env.backup
+
+# SeaweedFS configs with real secrets — generated from .env by scripts/init-seaweedfs-config.sh
+seaweedfs-config/s3-config.json
+seaweedfs-config/security.toml

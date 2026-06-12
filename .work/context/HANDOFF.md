@@ -6,8 +6,8 @@
 
 ## Session status
 
-**Open:** 2025-07-11 — goal: build test suite, fix pending issues, complete admin user creation
-**Updated:** 2025-07-11
+**Closed:** 2025-07-14 — goal: prepare for production — credential hardening, config fixes, env sync, deployment checklist created
+**Updated:** 2025-07-14
 
 ---
 
@@ -296,12 +296,150 @@ Preflight **warns** on placeholder secrets in `.env.prd` — expected until oper
 
 ---
 
+## Production deployment checklist (not yet completed)
+
+**Session goal:** prepare for production — this checklist stays in HANDOFF until all items are confirmed done.
+
+### Architecture note — host nginx (not Docker nginx)
+
+In production, nginx runs **on the host machine**, not inside Docker. The `nginx-proxy` service in `docker-compose.prd.yml` must be **removed** or **set to `profiles: [never]`** before deploying. The compose stack only runs the app/API/Database containers behind the host nginx.
+
+**Required changes to `docker-compose.prd.yml` before deployment:**
+
+| Service | Change needed | Reason |
+|---------|---------------|--------|
+| `nginx-proxy` | Remove entire service block | Host nginx handles routing |
+| `front-admin` | **No port mapping needed** internally | Host nginx proxies directly via Docker internal DNS |
+| `front-public` | Same | Same |
+| `back-api` | Same | Same |
+| `back-auth` | Same | Same |
+| `back-websockets` | Same | Same |
+| `feature-registry` | Same | Same |
+
+**How host nginx reaches Docker containers:**
+
+Docker Compose creates a default bridge network (`tools_dashboard_prd_tds_default`). Host nginx can reach containers through:
+1. **Docker's embedded DNS**: `http://front-admin:3000`, `http://back-api:8000`, etc. — only works if nginx is inside Docker network
+2. **Published ports**: Add `ports:` to each service so host nginx proxies to `http://localhost:PORT`
+
+The recommended approach is **Option 1** — install nginx on the host and configure it to proxy to Docker container names. This requires nginx to resolve Docker container IPs. On Linux, Docker containers are reachable via `host.docker.internal` or by adding the containers to the host's `/etc/hosts`. The cleanest setup:
+
+```bash
+# Make host nginx resolve Docker container names
+# Add to /etc/hosts on the production host:
+127.0.0.1 front-admin front-public back-api back-auth back-websockets feature-registry seaweedfs
+```
+
+Alternatively, create a dedicated Docker network and join the host nginx container to it (if running nginx as a container):
+
+```bash
+# If running nginx as a separate container on the same Docker network:
+docker run -d --name prod-nginx \
+  --network tools_dashboard_prd_tds_default \
+  -v /path/to/nginx.conf:/etc/nginx/nginx.conf:ro \
+  -p 80:80 -p 443:443 \
+  nginx:alpine
+```
+
+**Host nginx config** should be based on `infra/nginx/default.prd.conf` but with these adjustments:
+
+| Change | Reason |
+|--------|--------|
+| Remove `server_name tools.aiepic.app _` → use actual hostname | Prod host may differ |
+| Add `listen 443 ssl` with cert paths | TLS terminates on host |
+| Add HSTS headers | Security best practice |
+| Verify `proxy_pass` targets use Docker service names | nginx must reach internal Docker DNS |
+
+### Pre-deployment — operator actions
+
+| # | Item | Status | Reference |
+|---|------|--------|-----------|
+| 1 | Remove `nginx-proxy` service from `docker-compose.prd.yml` (or set `profiles: [never]`) | ☐ | `docker-compose.prd.yml` |
+| 2 | Set up host nginx config (based on `infra/nginx/default.prd.conf`) with TLS certs | ☐ | `infra/nginx/README.prd.md` |
+| 3 | Configure DNS for `tools.aiepic.app` to point at the production host | ☐ | DNS provider |
+| 4 | Set `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` in `.env.prd` (separate Google OAuth app from dev) | ☐ | `.env.prd` lines 83-84 |
+| 5 | Verify `MAIL_HOST` / `MAIL_PASSWORD` in `.env.prd` are valid SendGrid (or other) production credentials | ☐ | `.env.prd` lines 91-92 |
+| 6 | **Remove:** `seaweedfs-config/s3-config.json` and `security.toml` are now in `.gitignore` — generated from `.env` at deploy time by `scripts/init-seaweedfs-config.sh`. No manual config needed. | ☐ | `scripts/init-seaweedfs-config.sh` |
+| 7 | Take a fresh `.tar.gz` backup of dev volumes as reference | ☐ | `./bin/start.sh dev backup` |
+
+### Deployment steps
+
+```bash
+# Step 1 — validate compose + env before building
+./bin/start.sh prd preflight
+
+# Step 2 — build images + start stack
+#    (nginx-proxy service NOT started — host nginx handles routing)
+./bin/start.sh prd up-build
+
+# Step 3 — verify Docker services came up healthy
+./bin/start.sh prd status
+
+# Step 4 — start host nginx (or restart if already running)
+sudo systemctl start nginx   # or: sudo nginx -s reload
+
+# Step 5 — verify end-to-end via host nginx
+curl -sI https://tools.aiepic.app/admin/ | head -5
+```
+
+### Post-deployment verification
+
+| # | Check | How |
+|---|-------|-----|
+| 1 | All containers healthy | `docker ps --format "table {{.Names}}\t{{.Status}}"` — no `unhealthy` |
+| 2 | Admin sign-in works | Browser → `https://tools.aiepic.app/admin/features/admin-signin` |
+| 3 | Public app loads | Browser → `https://tools.aiepic.app/app/` |
+| 4 | OAuth flow works | Try signing in with Google |
+| 5 | Verified email arrives | Create account, check configured mailbox |
+| 6 | SeaweedFS storage accessible | Check app library → Storage tab for an app |
+| 7 | WebSocket connects | Open browser dev tools → Network → WS → `wss://tools.aiepic.app/ws/` |
+
+### Credential matrix
+
+| Variable | `.env` (dev) | `.env.prd` (prod) | Same value? |
+|----------|-------------|-------------------|-------------|
+| `POSTGRES_USER` | `user` | `user` | ✅ Synced |
+| `POSTGRES_PASSWORD` | `EsxNwZNVOAmhqUwLA8uX` | `EsxNwZNVOAmhqUwLA8uX` | ✅ Synced |
+| `JWT_SECRET_KEY` | `JzoGr264mDiti...HiZE` | `JzoGr264mDiti...HiZE` | ✅ Synced |
+| `OAUTH_CONSENT_SERVICE_SECRET` | `3485a94a0f8c...6a3` | `3485a94a0f8c...6a3` | ✅ Synced |
+| `DEFAULT_ADMIN_PASSWORD` | `kJM-x6T-e4S-gZB` | `kJM-x6T-e4S-gZB` | ✅ Synced |
+| `SEAWEED_S3_ACCESS_KEY` | `uszw+pmYneCW...dis=` | `uszw+pmYneCW...dis=` | ✅ Synced |
+| `SEAWEED_S3_SECRET_KEY` | `aQbNHi3ExA4QST...cnw` | `aQbNHi3ExA4QST...cnw` | ✅ Synced |
+| `GOOGLE_OAUTH_CLIENT_ID` | `213082693271-...` | *(empty — set for prod)* | ❌ Must set per-environment |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | `GOCSPX-Ly9X...` | *(empty — set for prod)* | ❌ Must set per-environment |
+| `MAIL_*` | MailHog (local) | SendGrid values | ❌ Different per-environment |
+
+### Key env-URL differences (kept intentionally)
+
+| Variable | `.env` (dev) | `.env.prd` (prod) |
+|----------|-------------|-------------------|
+| `TD_PUBLIC_BASE_URL` | `https://dev.aiepic.app` | `https://tools.aiepic.app` |
+| `PUBLIC_APP_BASE_URL` | `https://dev.aiepic.app/app` | `https://tools.aiepic.app/app` |
+| `SESSION_COOKIE_SECURE` | `false` | `true` |
+| `SESSION_COOKIE_DOMAIN` | *(empty)* | `tools.aiepic.app` |
+| `SEAWEEDFS_S3_DOMAIN_NAME` | `localhost` | `tools.aiepic.app` |
+
+### Files changed in this session (2025-07-14)
+
+| File | What changed |
+|------|-------------|
+| `bin/start.sh` | Added `td_clean_shell_env()` to prevent stale shell env vars from overriding `.env` |
+| `docker-compose.dev.yml` | 5 hardcoded `pass` values → `${VAR:-default}` env references |
+| `docker-compose.prd.yml` | Cassandra `start_period: 90s` → `240s`; migration ordering fixed (back-postgres-service runs **before** back-auth) |
+| `infra/nginx/default.prd.conf` | `client_max_body_size 10M` → `50M` |
+| `back-redis/redis.conf` | `appendonly no` → `yes` (AOF persistence for production) |
+| `.env` | Fixed broken `GOOGLE_OAUTH_SCOPES` value |
+| `.env.prd` | Synced Postgres/Redis/JWT/OAuth/Seaweed credentials from `.env` |
+| `.work/plans/proposals/20250714-production-backup-restore-readiness.md` | Created proposal for backup/restore URL and credential alignment |
+
+---
+
 ## Open / follow-up (not blocking compose build)
 
 - **Completed this session (continued):** Admin user-creation endpoint + UI, session expiry redirect fix, full test suite architecture (pytest per service + smoke tests + runner). Remaining: 1B public cookie audit, 1D nginx API routing table.
+- **Production deployment:** See checklist above — NOT yet deployed to production.
 - **Rizervox plan:** add `.ai/plan/multi-tenant-headless-cms` to this repo (or link) so bootstrap checklist can match product spec.
 - **Postgres migrations ledger:** `main.py` still replays every `schema/*.sql` each boot — consider Flyway/Alembic-style tracking for DDL-only files; bootstrap **data** for seeded clients is now insert-only (`DO NOTHING`).
-- **Rizervox plan:** add `.ai/plan/multi-tenant-headless-cms` to this repo (or link) so bootstrap checklist can match product spec.
 - `tmp/errors.txt` audit may still list CI, digest-pinned base images, nginx `resolver`, Python `requirements.txt` pinning breadth — triage as needed.
 - Operator: real secrets, DNS, TLS cert, and external LB headers (`X-Forwarded-Proto`) for correct secure cookies and redirects.
 

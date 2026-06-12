@@ -79,7 +79,7 @@ services:
       dockerfile: Dockerfile.dev
     environment:
       - UVICORN_RELOAD=1
-      - DATABASE_URL=postgresql://user:pass@postgresql:5432/main_db
+      - DATABASE_URL=${BACK_API_DATABASE_URL:-postgresql://user:pass@postgresql:5432/main_db}
       - REDIS_URL=redis://redis:6379/0
       - CASSANDRA_CONTACT_POINTS=cassandra
       - FEATURE_REGISTRY_URL=http://feature-registry:8005
@@ -105,7 +105,7 @@ services:
       dockerfile: Dockerfile.dev
     environment:
       - UVICORN_RELOAD=1
-      - DATABASE_URL=postgresql+asyncpg://user:pass@postgresql:5432/main_db
+      - DATABASE_URL=${BACK_AUTH_DATABASE_URL:-postgresql+asyncpg://user:pass@postgresql:5432/main_db}
       - REDIS_URL=redis://redis:6379/1
       - PUBLIC_APP_BASE_URL=${PUBLIC_APP_BASE_URL}
       - VERIFICATION_PATH=${VERIFICATION_PATH:-/features/user-registration/verify}
@@ -199,7 +199,7 @@ services:
       context: ./back-postgres
       dockerfile: Dockerfile.dev
     environment:
-      - DATABASE_URL=postgresql://user:pass@postgresql:5432/main_db
+      - DATABASE_URL=${BACK_POSTGRES_SERVICE_DATABASE_URL:-postgresql://user:pass@postgresql:5432/main_db}
     volumes:
       - ./back-postgres:/app
     depends_on:
@@ -227,7 +227,7 @@ services:
       context: ./feature-registry
       dockerfile: Dockerfile.dev
     environment:
-      - DATABASE_URL=postgresql://user:pass@postgresql:5432/main_db
+      - DATABASE_URL=${FEATURE_REGISTRY_DATABASE_URL:-postgresql://user:pass@postgresql:5432/main_db}
     volumes:
       - ./feature-registry:/app
     ports:
@@ -257,7 +257,7 @@ services:
     environment:
       - POSTGRES_DB=main_db
       - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=pass
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-pass}
     ports:
       - "0.0.0.0:54432:5432"
     volumes:

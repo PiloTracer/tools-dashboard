@@ -1,6 +1,6 @@
 # NEXT - planning backlog
 
-**Updated:** YYYY-MM-DD
+**Updated:** 2025-07-14
 
 ---
 
@@ -16,6 +16,7 @@
 | Session expiry redirect | Admin root loader redirects expired sessions to sign-in |
 | Test suite architecture | pytest per service + smoke tests + `bin/test.sh` + start.sh wiring |
 | Agent OS bootstrap | `.work/` skeleton, `.cursorrules` from template |
+| Credential hardening + env sync | Production-ready credentials in `.env`/`.env.prd`; start.sh shell cleanup; compose fixes for dev+prd; Redis AOF, nginx limits, migration ordering |
 
 ---
 
@@ -31,9 +32,10 @@
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| **1** | Admin app-user access UI | Build UI to assign `only_specified` mode with user IDs; type bug is fixed, user-creation endpoint exists |
-| **2** | Priority 1B & 1D | Public cookie audit + nginx API routing documentation table |
-| **3** | Extend test suite | Add tests for remaining services (websockets, feature-registry), add frontend tests |
+| **🔴 1** | **Deploy to production** | See HANDOFF § Production deployment checklist. Preflight → build → up → verify. **Not yet completed.** |
+| 2 | Admin app-user access UI | Build UI to assign `only_specified` mode with user IDs; type bug is fixed, user-creation endpoint exists |
+| 3 | Priority 1B & 1D | Public cookie audit + nginx API routing documentation table |
+| 4 | Extend test suite | Add tests for remaining services (websockets, feature-registry), add frontend tests |
 
 ---
 

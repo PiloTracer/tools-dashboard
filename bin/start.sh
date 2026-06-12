@@ -348,6 +348,18 @@ fi
 
 td_apply_stack_env || exit 1
 
+# Shell env vars take precedence over .env file values in docker compose.
+# Unset known credential vars so the .env file is the sole source of truth.
+td_clean_shell_env() {
+  unset POSTGRES_PASSWORD BACK_API_DATABASE_URL BACK_AUTH_DATABASE_URL
+  unset FEATURE_REGISTRY_DATABASE_URL BACK_POSTGRES_SERVICE_DATABASE_URL
+  unset DATABASE_URL JWT_SECRET_KEY OAUTH_CONSENT_SERVICE_SECRET
+  unset SEAWEED_S3_ACCESS_KEY SEAWEED_S3_SECRET_KEY DEFAULT_ADMIN_PASSWORD
+  unset REDIS_PASSWORD REDIS_URL BACK_AUTH_REDIS_URL CELERY_BROKER_URL
+  unset GOOGLE_OAUTH_CLIENT_ID GOOGLE_OAUTH_CLIENT_SECRET
+}
+td_clean_shell_env
+
 if [ ! -f "$TD_COMPOSE_PATH" ]; then
   echo "Compose file missing: $TD_COMPOSE_PATH"
   exit 1
@@ -615,8 +627,20 @@ print_stack_urls() {
   echo ""
 }
 
+td_init_seaweedfs_config() {
+  local script="$TD_PROJECT_ROOT/scripts/init-seaweedfs-config.sh"
+  if [ -f "$script" ]; then
+    if [ -n "${TD_ENV_FILE:-}" ]; then
+      bash "$script" "$TD_ENV_FILE"
+    else
+      bash "$script"
+    fi
+  fi
+}
+
 cmd_up_quick() {
   echo "Starting stack (no image rebuild)..."
+  td_init_seaweedfs_config
   td_docker_compose up -d
   td_prune_unused_volumes_for_project
   if ! wait_for_stack_ready; then
@@ -633,6 +657,7 @@ cmd_up_build() {
     return 1
   fi
   echo "Starting stack (containers)..."
+  td_init_seaweedfs_config
   td_docker_compose up -d
   td_prune_unused_volumes_for_project
   if ! wait_for_stack_ready; then
