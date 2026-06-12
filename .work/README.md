@@ -13,6 +13,12 @@
 | `.work/prompts/` | Decision questionnaires; optional user scratch (`initial.md` - **not read by skills** unless user names it) |
 | `.work/decisions/` | ADRs (`YYYYMMDD-NNN-*.md`) |
 | `.work/context/` | `HANDOFF.md` - read/write via `@session-control` |
+| `.work/fixes/` | Error fixes and bug reports |
+| `.work/implementations/` | Feature implementation logs |
+| `.work/agents/` | Agent role definitions |
+| `.work/docs/` | Integration docs and guides |
+| `.work/role-cards/` | Agent role cards |
+| `.work/scripts/` | Markdown runbooks for operational scripts |
 
 ## Placeholder map
 

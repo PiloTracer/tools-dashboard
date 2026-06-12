@@ -1,0 +1,36 @@
+name: google-auth
+version: 1.0.1
+description: Google OAuth helpers on back-auth (scaffold) plus user-registration integration
+status: active
+owner: Engineering Team
+
+services:
+  back-auth:
+    router_prefix: /auth/google
+    endpoints:
+      - path: /auth/google/start
+        method: GET
+        description: Returns a static Google authorize URL template (scaffold)
+        auth_required: false
+
+    implementation:
+      - back-auth/features/google-auth/api.py
+      - back-auth/features/google-auth/domain.py
+
+  front-public:
+    notes:
+      - There is no `front-public/app/features/google-auth/` package. Google sign-in UX and callback handling live under **user-registration** (`app/features/user-registration/routes/index.tsx`, `verify.tsx`) which calls back-auth routes such as `/user-registration/providers/google/callback`.
+
+links:
+  planning_docs:
+    - .work/features/google-auth/README.md
+
+  implementation_docs:
+    - back-auth/features/google-auth/feature.yaml
+
+---
+
+Metadata:
+- Last Updated: April 22, 2026
+- Maintainer: Engineering Team
+- Status: Active

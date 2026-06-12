@@ -1,0 +1,35 @@
+name: email-auth
+version: 1.0.1
+description: Email + password login API (JWT access/refresh) on back-auth
+status: active
+owner: Engineering Team
+
+services:
+  back-auth:
+    router_prefix: /email
+    endpoints:
+      - path: /email/login
+        method: POST
+        description: Email/password authentication; returns bearer tokens and user summary
+        auth_required: false
+
+    implementation:
+      - back-auth/features/email-auth/api.py
+
+notes:
+  - There is no `front-public/app/features/email-auth/` tree. Cookie-based registration, login, and logout for the public app live under the **user-registration** feature (see `front-public/app/features/user-registration/` and `back-auth/features/user-registration/api.py`).
+  - This router issues JWT-style tokens; it is distinct from the session-cookie flows on `/user-registration/*`.
+
+links:
+  planning_docs:
+    - .work/features/email-auth/README.md
+
+  implementation_docs:
+    - back-auth/features/email-auth/feature.yaml
+
+---
+
+Metadata:
+- Last Updated: April 22, 2026
+- Maintainer: Engineering Team
+- Status: Active

@@ -1,0 +1,73 @@
+name: users
+version: 1.0.0
+description: Core user data and profile management
+status: active
+owner: Engineering Team
+
+services:
+  back-api:
+    endpoints:
+      - path: /api/users
+        method: GET
+        description: List users with pagination
+        auth_required: true
+        file: features/users/api.py
+
+      - path: /api/users/{user_id}
+        method: GET
+        description: Get user details
+        auth_required: true
+        file: features/users/api.py
+
+      - path: /api/users/{user_id}
+        method: PUT
+        description: Update user profile
+        auth_required: true
+        file: features/users/api.py
+
+    implementation:
+      - back-api/features/users/api.py
+      - back-api/features/users/domain.py
+
+  back-auth:
+    implementation:
+      - back-auth/features/users/api.py
+
+  shared:
+    contracts:
+      - contracts/users/user_models.json
+
+database:
+  postgres:
+    tables:
+      - name: users
+        description: Core user data
+        schema: |
+          id (PK)
+          email (UNIQUE)
+          password_hash
+          first_name
+          last_name
+          role
+          status
+          created_at
+          updated_at
+
+links:
+  planning_docs:
+    - .work/features/users/README.md
+
+  implementation_docs:
+    - back-api/features/users/feature.yaml
+
+service_dependencies:
+  internal:
+    - back-auth (authentication)
+    - back-postgres (primary storage)
+
+---
+
+Metadata:
+- Last Updated: June 11, 2026
+- Maintainer: Engineering Team
+- Status: Active

@@ -119,6 +119,23 @@ td_backup_archive_vol() {
   fi
 }
 
+td_backup_env_files() {
+  local OUT="$1"
+  local env_dir="$OUT/config"
+  mkdir -p "$env_dir"
+  local f backed=0
+  for f in "$TD_PROJECT_ROOT/.env" "$TD_PROJECT_ROOT/.env.dev" "$TD_PROJECT_ROOT/.env.prd" "$TD_PROJECT_ROOT/.env.stg"; do
+    if [ -f "$f" ]; then
+      cp "$f" "$env_dir/"
+      echo "[backup] env file: $(basename "$f")"
+      backed=1
+    fi
+  done
+  if [ "$backed" -eq 0 ]; then
+    echo "[backup] no .env files found at project root"
+  fi
+}
+
 td_run_backup() {
   local BACKUP_ROOT="${1:-}" TS OUT pg_logical_ok
   if [ -z "$BACKUP_ROOT" ]; then
@@ -149,8 +166,190 @@ td_run_backup() {
   td_backup_archive_vol "$TD_VOLUME_REDIS" "redis" "$OUT" "$TS"
   td_backup_archive_vol "$TD_VOLUME_CASSANDRA" "cassandra" "$OUT" "$TS"
   td_backup_archive_vol "$TD_VOLUME_SEAWEED" "seaweedfs" "$OUT" "$TS"
+  td_backup_env_files "$OUT"
+  # Create manifest
+  cat >"$OUT/manifest.txt" <<EOF
+Tools Dashboard Backup Manifest
+===============================
+Timestamp: $TS
+Environment: $TD_ENV
+Project: $TD_PROJ
+Compose file: $TD_COMPOSE_FILE
+Backup directory: $OUT
+
+Contents:
+EOF
+  for f in "$OUT"/*; do
+    if [ -f "$f" ]; then
+      echo "  - $(basename "$f") ($(stat -c%s "$f" 2>/dev/null || echo unknown) bytes)" >> "$OUT/manifest.txt"
+    fi
+  done
+  if [ -d "$OUT/config" ]; then
+    echo "" >> "$OUT/manifest.txt"
+    echo "Config files:" >> "$OUT/manifest.txt"
+    for f in "$OUT/config"/*; do
+      if [ -f "$f" ]; then
+        echo "  - $(basename "$f")" >> "$OUT/manifest.txt"
+      fi
+    done
+  fi
   ln -sfn "$OUT" "$BACKUP_ROOT/$TD_ENV/latest"
   echo "[backup] done: $OUT"
+}
+
+td_restore_volume_from_archive() {
+  local vol="$1" archive="$2"
+  if [ ! -f "$archive" ]; then
+    echo "[restore] archive missing: $archive"
+    return 1
+  fi
+  echo "[restore] removing volume $vol (if exists)..."
+  docker volume rm "$vol" 2>/dev/null || true
+  echo "[restore] creating volume $vol..."
+  docker volume create "$vol"
+  echo "[restore] extracting $(basename "$archive") into $vol..."
+  docker run --rm -v "${vol}:/v" -v "$(dirname "$archive"):/src:ro" busybox tar xzf "/src/$(basename "$archive")" -C /v
+  echo "[restore] volume $vol restored"
+}
+
+td_restore_postgres_dump() {
+  local dump="$1"
+  if [ ! -f "$dump" ]; then
+    echo "[restore] postgres dump missing: $dump"
+    return 1
+  fi
+  echo "[restore] restoring PostgreSQL from logical dump..."
+  docker volume rm "$TD_VOLUME_POSTGRES" 2>/dev/null || true
+  docker volume create "$TD_VOLUME_POSTGRES"
+  td_docker_compose up -d postgresql
+  local max_attempts=60 attempt=0
+  echo "[restore] waiting for postgresql to be ready..."
+  while [ "$attempt" -lt "$max_attempts" ]; do
+    if td_docker_compose exec -T postgresql pg_isready -U user -d main_db >/dev/null 2>&1; then
+      break
+    fi
+    sleep 1
+    attempt=$((attempt + 1))
+  done
+  if [ "$attempt" -ge "$max_attempts" ]; then
+    echo "[restore] postgresql failed to become ready" >&2
+    return 1
+  fi
+  local dump_name
+  dump_name="$(basename "$dump")"
+  td_docker_compose cp "$dump" postgresql:/tmp/"$dump_name"
+  echo "[restore] running pg_restore..."
+  if ! td_docker_compose exec -T postgresql pg_restore -U user -d main_db -c --if-exists /tmp/"$dump_name"; then
+    echo "[restore] pg_restore completed with warnings (common for pre-existing objects)" >&2
+  fi
+  td_docker_compose exec -T postgresql rm -f /tmp/"$dump_name"
+  echo "[restore] PostgreSQL restored from logical dump"
+}
+
+td_restore_env_files() {
+  local config_dir="$1"
+  if [ ! -d "$config_dir" ]; then
+    echo "[restore] no config directory in backup; skipping env files"
+    return 0
+  fi
+  local f dest
+  for f in "$config_dir"/.env*; do
+    [ -f "$f" ] || continue
+    dest="$TD_PROJECT_ROOT/$(basename "$f")"
+    if [ -f "$dest" ]; then
+      cp "$dest" "$dest.backup.$(date +%Y%m%d_%H%M%S)"
+      echo "[restore] backed up current $(basename "$f")"
+    fi
+    cp "$f" "$dest"
+    echo "[restore] restored $(basename "$f")"
+  done
+}
+
+td_run_restore() {
+  local BACKUP_DIR="${1:-}"
+  if [ -z "$BACKUP_DIR" ]; then
+    if [ -d "/mnt/data" ]; then
+      BACKUP_DIR="/mnt/data/backups/${TD_PROJ}"
+    else
+      BACKUP_DIR="/var/tmp/backups/${TD_PROJ}"
+    fi
+    if [ -L "$BACKUP_DIR/$TD_ENV/latest" ]; then
+      BACKUP_DIR="$(readlink -f "$BACKUP_DIR/$TD_ENV/latest")"
+    fi
+  fi
+  if [ -z "$BACKUP_DIR" ] || [ ! -d "$BACKUP_DIR" ]; then
+    echo "[restore] backup directory not found: $BACKUP_DIR" >&2
+    return 1
+  fi
+  echo "[restore] using backup: $BACKUP_DIR"
+  if [ -f "$BACKUP_DIR/manifest.txt" ]; then
+    echo "[restore] manifest:"
+    cat "$BACKUP_DIR/manifest.txt"
+  fi
+  echo ""
+  read -r -p "This will STOP the stack, DESTROY existing volumes, and restore from backup. Type 'yes' to continue: " confirm
+  if [ "$confirm" != "yes" ]; then
+    echo "[restore] cancelled."
+    return 0
+  fi
+  echo "[restore] stopping stack..."
+  td_docker_compose down --remove-orphans
+  local pg_dump_file pg_archive
+  pg_dump_file=""
+  pg_archive=""
+  for f in "$BACKUP_DIR"/postgres.dump; do
+    [ -f "$f" ] && pg_dump_file="$f" && break
+  done
+  for f in "$BACKUP_DIR"/postgres_data_*.tar.gz; do
+    [ -f "$f" ] && pg_archive="$f" && break
+  done
+  if [ -n "$pg_dump_file" ]; then
+    td_restore_postgres_dump "$pg_dump_file"
+  elif [ -n "$pg_archive" ]; then
+    td_restore_volume_from_archive "$TD_VOLUME_POSTGRES" "$pg_archive"
+  else
+    echo "[restore] WARNING: no PostgreSQL backup found" >&2
+  fi
+  local redis_archive
+  redis_archive=""
+  for f in "$BACKUP_DIR"/redis_*.tar.gz; do
+    [ -f "$f" ] && redis_archive="$f" && break
+  done
+  if [ -n "$redis_archive" ]; then
+    td_restore_volume_from_archive "$TD_VOLUME_REDIS" "$redis_archive"
+  else
+    echo "[restore] WARNING: no Redis backup found" >&2
+  fi
+  local cassandra_archive
+  cassandra_archive=""
+  for f in "$BACKUP_DIR"/cassandra_*.tar.gz; do
+    [ -f "$f" ] && cassandra_archive="$f" && break
+  done
+  if [ -n "$cassandra_archive" ]; then
+    td_restore_volume_from_archive "$TD_VOLUME_CASSANDRA" "$cassandra_archive"
+  else
+    echo "[restore] WARNING: no Cassandra backup found" >&2
+  fi
+  local seaweed_archive
+  seaweed_archive=""
+  for f in "$BACKUP_DIR"/seaweedfs_*.tar.gz; do
+    [ -f "$f" ] && seaweed_archive="$f" && break
+  done
+  if [ -n "$seaweed_archive" ]; then
+    td_restore_volume_from_archive "$TD_VOLUME_SEAWEED" "$seaweed_archive"
+  else
+    echo "[restore] WARNING: no SeaweedFS backup found" >&2
+  fi
+  if [ -d "$BACKUP_DIR/config" ]; then
+    echo ""
+    read -r -p "Restore .env files from backup? (current files will be backed up first) [y/N]: " restore_env
+    if [ "$restore_env" = "y" ] || [ "$restore_env" = "Y" ]; then
+      td_restore_env_files "$BACKUP_DIR/config"
+    else
+      echo "[restore] skipping env files"
+    fi
+  fi
+  echo "[restore] restore complete. You can now start the stack with: $0 $TD_ENV up"
 }
 
 td_container_project_label() {
@@ -221,7 +420,8 @@ EOF
   echo "  build      docker compose build only (CI / catch image errors before up)"
   echo "  config     docker compose config (validates compose + env interpolation)"
   echo "  preflight  config + quick sanity checks for prd/stg"
-  echo "  backup [dir]  pg_dump + volume archives (default: /mnt/data/backups/\$TD_PROJ)"
+  echo "  backup [dir]  pg_dump + volume archives + env files (default: /mnt/data/backups/\$TD_PROJ)"
+  echo "  restore [dir] restore all data + env files from backup (default: /mnt/data/backups/\$TD_ENV/latest)"
   echo "  free-ports    dev only: down + remove this project's containers on dev ports"
   echo "  menu       Interactive menu (same as env-only)"
 }
@@ -247,7 +447,7 @@ if [ "${#}" -ge 2 ]; then
   export TD_ENV="$_e"
   TD_CLI_CMD="$(echo "$2" | tr '[:upper:]' '[:lower:]')"
   case "$TD_CLI_CMD" in
-    menu | up | up-build | down | logs | status | restart | rebuild | reset | build | config | preflight | backup | free-ports) ;;
+    menu | up | up-build | down | logs | status | restart | rebuild | reset | build | config | preflight | backup | restore | free-ports) ;;
     -h | --help | help)
       usage
       exit 0
@@ -727,6 +927,14 @@ run_backup() {
   td_run_backup "$root"
 }
 
+run_restore() {
+  local _default_broot="/mnt/data/backups/${TD_PROJ}"
+  local _default_latest="$_default_broot/$TD_ENV/latest"
+  read -r -p "Backup directory [$_default_latest]: " root
+  root=${root:-"$_default_latest"}
+  td_run_restore "$root"
+}
+
 # ----- non-interactive CLI -----
 if [ -n "${TD_CLI_CMD:-}" ] && [ "$TD_CLI_CMD" != "menu" ]; then
   case "$TD_CLI_CMD" in
@@ -742,6 +950,7 @@ if [ -n "${TD_CLI_CMD:-}" ] && [ "$TD_CLI_CMD" != "menu" ]; then
     config) cmd_compose_config "$@" ;;
     preflight) cmd_preflight || exit 1 ;;
     backup) td_run_backup "${1:-}" ;;
+    restore) td_run_restore "${1:-}" ;;
     free-ports) td_free_dev_ports ;;
   esac
   exit 0
@@ -763,14 +972,15 @@ while true; do
   echo " 6) Restart (rolling — compose restart)"
   echo " 7) Rebuild stack (down → build → up, keeps data)"
   echo " 8) Reset data (down -v → build → up) ⚠️  destructive"
-  echo " 9) Backup (pg_dump + volume archives)"
-  echo "10) Logs (follow)"
-  echo "11) Full cleanup (down --rmi local)"
-  echo "12) Status / volume check"
-  echo "13) Free dev host ports (this project only; TD_ENV=dev)"
+   echo " 9) Restore (full data + env files from backup)"
+  echo "10) Backup (pg_dump + volume archives + env files)"
+  echo "11) Logs (follow)"
+  echo "12) Full cleanup (down --rmi local)"
+  echo "13) Status / volume check"
+  echo "14) Free dev host ports (this project only; TD_ENV=dev)"
   echo " 0) Exit"
   echo "========================================="
-  echo "CLI: $0 $TD_ENV up | backup [dir] | free-ports | build | config | preflight | down | ..."
+  echo "CLI: $0 $TD_ENV up | backup [dir] | restore [dir] | free-ports | build | config | preflight | down | ..."
   echo "========================================="
   read -r -p "Select: " opt
   case "$opt" in
@@ -815,25 +1025,29 @@ while true; do
       pause
       ;;
     9)
+      run_restore
+      pause
+      ;;
+    10)
       run_backup
       pause
       ;;
-    10) cmd_logs || true
-      pause
-      ;;
-    11)
-      run_full_cleanup
+    11) cmd_logs || true
       pause
       ;;
     12)
-      cmd_status
+      run_full_cleanup
       pause
       ;;
     13)
+      cmd_status
+      pause
+      ;;
+    14)
       if [ "$TD_ENV" = "dev" ]; then
         td_free_dev_ports || true
       else
-        echo "Option 13 is dev-only (current TD_ENV=$TD_ENV)." >&2
+        echo "Option 14 is dev-only (current TD_ENV=$TD_ENV)." >&2
       fi
       pause
       ;;

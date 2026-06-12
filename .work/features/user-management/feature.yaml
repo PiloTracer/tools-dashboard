@@ -1,0 +1,221 @@
+name: user-management
+version: 1.0.0
+description: Admin user management, roles, and permissions
+status: active
+owner: Engineering Team
+
+services:
+  front-admin:
+    routes:
+      - path: /admin/features/user-management
+        file: app/features/user-management/routes/index.tsx
+        description: User management dashboard
+        authentication_required: true
+        admin_only: true
+        methods: [GET]
+
+    components:
+      - app/features/user-management/ui/UserTable.tsx
+      - app/features/user-management/ui/UserForm.tsx
+
+    routes_extra:
+      - path: /admin/features/user-management/edit
+        file: app/features/user-management/routes/edit.tsx
+        description: Edit user profile (loader/action call `/api/admin/users/{id}`)
+        methods: [GET, POST]
+
+  back-api:
+    endpoints:
+      - path: /api/admin/users
+        method: GET
+        description: List users with pagination and filters
+        auth_required: true
+        admin_only: true
+        file: features/user-management/api.py
+        query_params:
+          - page (integer, default 1)
+          - page_size (integer, default 20, max 100)
+          - search (string, search by email)
+          - role (string, filter by role)
+          - status (string, filter by status)
+          - sort_by (string, default created_at)
+          - sort_order (string, asc or desc)
+
+      - path: /api/admin/users/{user_id}
+        method: GET
+        description: Get detailed user information
+        auth_required: true
+        admin_only: true
+        file: features/user-management/api.py
+
+      - path: /api/admin/users/{user_id}
+        method: PUT
+        description: Update user information
+        auth_required: true
+        admin_only: true
+        file: features/user-management/api.py
+        request_body: UserUpdateRequest
+        side_effects:
+          - Updates PostgreSQL (core fields)
+          - Syncs to Cassandra (extended fields)
+          - Creates audit log entry
+
+      - path: /api/admin/users/{user_id}/role
+        method: PATCH
+        description: Update user role and permissions
+        auth_required: true
+        admin_only: true
+        file: features/user-management/api.py
+        request_body: UserRoleUpdateRequest
+        side_effects:
+          - Updates PostgreSQL
+          - Syncs to Cassandra
+          - Invalidates user sessions (back-auth)
+          - Creates audit log entry
+
+      - path: /api/admin/users/{user_id}/status
+        method: PATCH
+        description: Update user account status
+        auth_required: true
+        admin_only: true
+        file: features/user-management/api.py
+        request_body: UserStatusUpdateRequest
+
+      - path: /api/admin/users/bulk
+        method: POST
+        description: Perform bulk operations on users
+        auth_required: true
+        admin_only: true
+        file: features/user-management/api.py
+        supported_operations:
+          - update_role: Bulk role updates
+
+    implementation:
+      - back-api/features/user-management/api.py
+      - back-api/features/user-management/domain.py
+      - back-api/features/user-management/infrastructure.py
+
+  back-auth:
+    implementation:
+      - back-auth/features/user-management/api.py
+
+  shared:
+    contracts:
+      - contracts/user-management/feature.yaml
+      - contracts/user-management/user_models.json
+
+    types:
+      - types/user-management.ts
+
+database:
+  postgres:
+    tables:
+      - name: users
+        description: Core user data
+        schema: |
+          user_id (PK)
+          email (UNIQUE)
+          first_name
+          last_name
+          role (user, admin, super_admin)
+          created_at
+          updated_at
+          created_by (admin user)
+
+  cassandra:
+    tables:
+      - name: user_profiles
+        description: Extended user profiles
+        schema: |
+          user_id (PK)
+          email
+          full_name
+          role
+          preferences (JSON)
+          metadata (JSON)
+          updated_at
+
+      - name: audit_logs
+        description: User management audit trail
+        schema: |
+          timestamp (clustering key)
+          admin_id
+          user_id
+          action (update_profile, update_role, update_status)
+          changes (JSON)
+          ip_address
+          user_agent
+          status (success, failure)
+
+external_dependencies:
+  - none specific to this feature
+
+configuration:
+  environment_variables:
+    - MAX_BULK_OPERATION_SIZE: Max users per bulk op (default 100)
+    - AUDIT_LOG_RETENTION_DAYS: Audit log retention (default 730)
+
+  feature_flags:
+    - user_management_enabled: Enable feature (default true)
+    - bulk_operations_enabled: Enable bulk ops (default false)
+
+links:
+  planning_docs:
+    - .work/features/user-management/README.md
+
+  implementation_docs:
+    - back-api/features/user-management/feature.yaml
+    - front-admin/app/features/user-management/feature.yaml
+
+service_dependencies:
+  internal:
+    - back-auth (session invalidation)
+    - back-api (user management logic)
+    - back-postgres (primary storage)
+    - back-cassandra (audit logs)
+
+testing:
+  unit_tests:
+    - back-api/features/user-management/tests/test_user_service.py
+    - back-api/features/user-management/tests/test_role_service.py
+
+  integration_tests:
+    - back-api/features/user-management/tests/test_user_update.py
+    - back-api/features/user-management/tests/test_role_change.py
+
+  e2e_tests:
+    - front-admin/e2e/user-management.spec.ts
+
+security:
+  authentication:
+    - All endpoints require valid JWT token
+    - Admin role required for all operations
+
+  authorization:
+    - Self-modification prevention
+    - Permission checks enforced
+    - Super-admin only operations separated
+
+  audit:
+    - All changes logged to Cassandra
+    - Includes admin_id, user_id, action, changes, timestamp
+    - Cannot be modified after creation
+
+  data_protection:
+    - Dual database sync ensures consistency
+    - Session invalidation on role/status changes
+    - Graceful degradation if back-auth unavailable
+
+deployment:
+  required_services:
+    - back-api
+    - back-auth
+    - back-postgres
+    - back-cassandra
+
+---
+
+Metadata:
+- Last Updated: April 22, 2026
+- Maintainer: Engineering Team
+- Status: Active
