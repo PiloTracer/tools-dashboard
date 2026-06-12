@@ -119,23 +119,6 @@ td_backup_archive_vol() {
   fi
 }
 
-td_backup_env_files() {
-  local OUT="$1"
-  local env_dir="$OUT/config"
-  mkdir -p "$env_dir"
-  local f backed=0
-  for f in "$TD_PROJECT_ROOT/.env" "$TD_PROJECT_ROOT/.env.dev" "$TD_PROJECT_ROOT/.env.prd" "$TD_PROJECT_ROOT/.env.stg"; do
-    if [ -f "$f" ]; then
-      cp "$f" "$env_dir/"
-      echo "[backup] env file: $(basename "$f")"
-      backed=1
-    fi
-  done
-  if [ "$backed" -eq 0 ]; then
-    echo "[backup] no .env files found at project root"
-  fi
-}
-
 td_run_backup() {
   local BACKUP_ROOT="${1:-}" TS OUT pg_logical_ok
   if [ -z "$BACKUP_ROOT" ]; then
@@ -166,33 +149,6 @@ td_run_backup() {
   td_backup_archive_vol "$TD_VOLUME_REDIS" "redis" "$OUT" "$TS"
   td_backup_archive_vol "$TD_VOLUME_CASSANDRA" "cassandra" "$OUT" "$TS"
   td_backup_archive_vol "$TD_VOLUME_SEAWEED" "seaweedfs" "$OUT" "$TS"
-  td_backup_env_files "$OUT"
-  # Create manifest
-  cat >"$OUT/manifest.txt" <<EOF
-Tools Dashboard Backup Manifest
-===============================
-Timestamp: $TS
-Environment: $TD_ENV
-Project: $TD_PROJ
-Compose file: $TD_COMPOSE_FILE
-Backup directory: $OUT
-
-Contents:
-EOF
-  for f in "$OUT"/*; do
-    if [ -f "$f" ]; then
-      echo "  - $(basename "$f") ($(stat -c%s "$f" 2>/dev/null || echo unknown) bytes)" >> "$OUT/manifest.txt"
-    fi
-  done
-  if [ -d "$OUT/config" ]; then
-    echo "" >> "$OUT/manifest.txt"
-    echo "Config files:" >> "$OUT/manifest.txt"
-    for f in "$OUT/config"/*; do
-      if [ -f "$f" ]; then
-        echo "  - $(basename "$f")" >> "$OUT/manifest.txt"
-      fi
-    done
-  fi
   ln -sfn "$OUT" "$BACKUP_ROOT/$TD_ENV/latest"
   echo "[backup] done: $OUT"
 }
@@ -246,25 +202,6 @@ td_restore_postgres_dump() {
   echo "[restore] PostgreSQL restored from logical dump"
 }
 
-td_restore_env_files() {
-  local config_dir="$1"
-  if [ ! -d "$config_dir" ]; then
-    echo "[restore] no config directory in backup; skipping env files"
-    return 0
-  fi
-  local f dest
-  for f in "$config_dir"/.env*; do
-    [ -f "$f" ] || continue
-    dest="$TD_PROJECT_ROOT/$(basename "$f")"
-    if [ -f "$dest" ]; then
-      cp "$dest" "$dest.backup.$(date +%Y%m%d_%H%M%S)"
-      echo "[restore] backed up current $(basename "$f")"
-    fi
-    cp "$f" "$dest"
-    echo "[restore] restored $(basename "$f")"
-  done
-}
-
 td_run_restore() {
   local BACKUP_DIR="${1:-}"
   if [ -z "$BACKUP_DIR" ]; then
@@ -282,10 +219,6 @@ td_run_restore() {
     return 1
   fi
   echo "[restore] using backup: $BACKUP_DIR"
-  if [ -f "$BACKUP_DIR/manifest.txt" ]; then
-    echo "[restore] manifest:"
-    cat "$BACKUP_DIR/manifest.txt"
-  fi
   echo ""
   read -r -p "This will STOP the stack, DESTROY existing volumes, and restore from backup. Type 'yes' to continue: " confirm
   if [ "$confirm" != "yes" ]; then
@@ -339,15 +272,6 @@ td_run_restore() {
     td_restore_volume_from_archive "$TD_VOLUME_SEAWEED" "$seaweed_archive"
   else
     echo "[restore] WARNING: no SeaweedFS backup found" >&2
-  fi
-  if [ -d "$BACKUP_DIR/config" ]; then
-    echo ""
-    read -r -p "Restore .env files from backup? (current files will be backed up first) [y/N]: " restore_env
-    if [ "$restore_env" = "y" ] || [ "$restore_env" = "Y" ]; then
-      td_restore_env_files "$BACKUP_DIR/config"
-    else
-      echo "[restore] skipping env files"
-    fi
   fi
   echo "[restore] restore complete. You can now start the stack with: $0 $TD_ENV up"
 }
