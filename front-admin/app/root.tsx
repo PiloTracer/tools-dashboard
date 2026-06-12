@@ -1,10 +1,12 @@
 ﻿import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData, useLocation } from "@remix-run/react";
 
 import stylesheet from "./app.css?url";
 import { AdminLayout } from "./components/layout/AdminLayout";
 import { getAdminSession } from "./utils/admin-session.server";
+
+const SIGNIN_PATH = "/admin/features/admin-signin";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -12,6 +14,17 @@ export const links: LinksFunction = () => [
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { accessToken, email } = await getAdminSession(request);
+
+  // Expired / missing session on a protected page → redirect to sign-in
+  // instead of silently hiding the sidebar and leaving a broken page.
+  // Exclude sign-in (needs to load without session) and logout (clears cookies).
+  const url = new URL(request.url);
+  const isPublicPath =
+    url.pathname.includes("admin-signin") || url.pathname.endsWith("/admin/logout");
+  if (!accessToken && !isPublicPath) {
+    throw redirect(SIGNIN_PATH);
+  }
+
   return json({ userEmail: email, hasAdminSession: Boolean(accessToken) });
 }
 

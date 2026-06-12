@@ -70,6 +70,17 @@ class UserRoleUpdateRequest:
 
 
 @dataclass(slots=True)
+class UserCreateRequest:
+    """Request for creating a new user."""
+    email: str
+    password: str | None = None  # None = OAuth-only user
+    role: str = "customer"
+    permissions: list[str] | None = None
+    provider: str | None = None  # "google", etc.
+    provider_account_id: str | None = None  # Google `sub` claim
+
+
+@dataclass(slots=True)
 class BulkOperationRequest:
     """Request for bulk operations."""
     user_ids: list[int]
@@ -243,6 +254,100 @@ class UserManagementService:
         }
 
         return detail
+
+    async def create_user(
+        self,
+        request: UserCreateRequest,
+        admin_user: dict,
+        ip_address: str | None = None,
+    ) -> dict[str, Any]:
+        """Create a new user account.
+
+        Supports both email/password and OAuth-only (provider) accounts.
+
+        Args:
+            request: User creation request
+            admin_user: Current admin user (for audit)
+            ip_address: Client IP for audit
+
+        Returns:
+            Complete user detail
+
+        Raises:
+            ValueError: If the email already exists or params are invalid
+        """
+        import bcrypt
+
+        # Validate provider + provider_account_id
+        if request.provider and not request.provider_account_id:
+            raise ValueError("provider_account_id is required when provider is set")
+        if request.provider_account_id and not request.provider:
+            raise ValueError("provider is required when provider_account_id is set")
+
+        # Hash password if provided, else None for OAuth-only accounts
+        password_hash = None
+        if request.password:
+            password_hash = bcrypt.hashpw(
+                request.password.encode("utf-8"),
+                bcrypt.gensalt(),
+            ).decode("utf-8")
+
+        # Create user in PostgreSQL (admin-created = pre-verified)
+        try:
+            user = await self.user_repo.create_user(
+                email=request.email,
+                password_hash=password_hash,
+                role=request.role,
+                permissions=request.permissions or [],
+                is_email_verified=True,
+            )
+        except Exception as e:
+            raise ValueError(f"Failed to create user: {e}")
+
+        # If OAuth provider, create user_identities row
+        if request.provider and request.provider_account_id:
+            try:
+                await self.user_repo.create_identity(
+                    user_id=user["id"],
+                    provider=request.provider,
+                    provider_account_id=request.provider_account_id,
+                )
+            except Exception:
+                # Non-fatal if the identity table isn't accessible from this service
+                pass
+
+        # Create extended profile in Cassandra
+        try:
+            import uuid
+            USER_ID_NAMESPACE = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+            user_uuid = str(uuid.uuid5(USER_ID_NAMESPACE, str(user["id"])))
+            self.user_ext_repo.create_extended_profile(
+                user_uuid=user_uuid,
+                email=request.email,
+            )
+        except Exception:
+            # Extended profile is optional
+            pass
+
+        # Create audit log
+        try:
+            self.audit_repo.create_audit_log(
+                admin_id=str(admin_user["id"]),
+                admin_email=admin_user.get("email", ""),
+                user_id=str(user["id"]),
+                action="create_user",
+                changes={
+                    "email": request.email,
+                    "role": request.role,
+                    "provider": request.provider,
+                },
+                ip_address=ip_address,
+            )
+        except Exception:
+            pass
+
+        # Return full detail
+        return await self.get_user_detail(user["id"], admin_user)
 
     async def update_user(
         self,

@@ -150,6 +150,16 @@ class UserPasswordUpdateRequestModel(BaseModel):
     password: str = Field(..., min_length=8, description="New password (min 8 characters)")
 
 
+class UserCreateRequestModel(BaseModel):
+    """Request model for creating a new user."""
+    email: EmailStr = Field(..., description="User email address")
+    password: str | None = Field(None, min_length=8, description="Password (min 8 chars, omit for OAuth-only)")
+    role: str = Field("customer", description="User role")
+    permissions: list[str] = Field(default_factory=list, description="Initial permissions")
+    provider: str | None = Field(None, description="OAuth provider (e.g. 'google')")
+    provider_account_id: str | None = Field(None, description="Provider account ID (e.g. Google 'sub')")
+
+
 class UserRoleUpdateRequestModel(BaseModel):
     """Request model for updating user role."""
     role: str = Field(..., description="New role (admin, customer, moderator, support)")
@@ -252,6 +262,60 @@ def get_client_ip(request: Request) -> str | None:
 
 
 # ========== ENDPOINTS ==========
+
+@router.post(
+    "",
+    summary="Create a new user",
+    response_model=UserDetailResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_user(
+    request_body: UserCreateRequestModel,
+    request: Request,
+    service: UserManagementService = Depends(get_service),
+    admin: dict = Depends(get_current_admin),
+) -> UserDetailResponse:
+    """Create a new user account.
+
+    Supports both email/password and OAuth-only accounts.
+
+    **Permissions**: Requires admin role
+
+    **Process**:
+    - Password is hashed with bcrypt
+    - OAuth-only users get a user_identities row created
+    - Extended profile created in Cassandra
+    - Audit log entry is created
+    """
+    from .domain import UserCreateRequest
+
+    create_request = UserCreateRequest(
+        email=request_body.email,
+        password=request_body.password,
+        role=request_body.role,
+        permissions=request_body.permissions,
+        provider=request_body.provider,
+        provider_account_id=request_body.provider_account_id,
+    )
+
+    try:
+        detail = await service.create_user(
+            create_request,
+            admin,
+            ip_address=get_client_ip(request),
+        )
+        return UserDetailResponse(**detail)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create user",
+        )
+
 
 @router.get(
     "",

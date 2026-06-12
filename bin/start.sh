@@ -347,6 +347,7 @@ EOF
   echo "  backup [dir]  pg_dump + volume archives + env files (default: /mnt/data/backups/\$TD_PROJ)"
   echo "  restore [dir] restore all data + env files from backup (default: /mnt/data/backups/\$TD_ENV/latest)"
   echo "  free-ports    dev only: down + remove this project's containers on dev ports"
+  echo "  test          Run the test suite (./bin/test.sh)"
   echo "  menu       Interactive menu (same as env-only)"
 }
 
@@ -371,7 +372,7 @@ if [ "${#}" -ge 2 ]; then
   export TD_ENV="$_e"
   TD_CLI_CMD="$(echo "$2" | tr '[:upper:]' '[:lower:]')"
   case "$TD_CLI_CMD" in
-    menu | up | up-build | down | logs | status | restart | rebuild | reset | build | config | preflight | backup | restore | free-ports) ;;
+    menu | up | up-build | down | logs | status | restart | rebuild | reset | build | config | preflight | backup | restore | free-ports | test) ;;
     -h | --help | help)
       usage
       exit 0
@@ -724,6 +725,11 @@ cmd_status() {
   docker volume inspect "$TD_VOLUME_REDIS" >/dev/null 2>&1 && echo "  redis_data: present" || echo "  redis_data: not created yet"
 }
 
+cmd_test() {
+  shift
+  bash bin/test.sh "$@"
+}
+
 cmd_restart_rolling() {
   echo "Rolling restart (compose restart)..."
   td_docker_compose restart
@@ -876,6 +882,7 @@ if [ -n "${TD_CLI_CMD:-}" ] && [ "$TD_CLI_CMD" != "menu" ]; then
     backup) td_run_backup "${1:-}" ;;
     restore) td_run_restore "${1:-}" ;;
     free-ports) td_free_dev_ports ;;
+    test) cmd_test "$@" ;;
   esac
   exit 0
 fi
@@ -902,6 +909,7 @@ while true; do
   echo "12) Full cleanup (down --rmi local)"
   echo "13) Status / volume check"
   echo "14) Free dev host ports (this project only; TD_ENV=dev)"
+  echo "15) Run tests"
   echo " 0) Exit"
   echo "========================================="
   echo "CLI: $0 $TD_ENV up | backup [dir] | restore [dir] | free-ports | build | config | preflight | down | ..."
@@ -973,6 +981,10 @@ while true; do
       else
         echo "Option 14 is dev-only (current TD_ENV=$TD_ENV)." >&2
       fi
+      pause
+      ;;
+    15)
+      bash bin/test.sh
       pause
       ;;
     0) exit 0 ;;

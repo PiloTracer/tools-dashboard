@@ -6,12 +6,19 @@
 
 ## Session status
 
-**Closed:** 2025-07-11 — fixed 3 bugs + 2 auth gaps (OAuth client_secret verification, admin session hardening)
+**Open:** 2025-07-11 — goal: build test suite, fix pending issues, complete admin user creation
 **Updated:** 2025-07-11
 
 ---
 
 ## Recently landed (2025-07-11)
+
+| Area | What changed |
+|------|----------------|
+| **Admin user-creation endpoint** | `POST /admin/users` — supports email/password and OAuth (Google) accounts via `provider` + `provider_account_id`. Repository `create_user` fixed to accept nullable `password_hash` + `is_email_verified=True` for admin-created users. |
+| **Create User UI** | New `front-admin/app/routes/admin.features.user-management.create.tsx` — matches app-library/new design (Tailwind cards, breadcrumb, account type toggle). "Create User" button added to user management list header. |
+| **Session expiry redirect** | `front-admin/app/root.tsx` — expired admin sessions now redirect to sign-in instead of silently hiding the sidebar. Excludes `/admin/logout` and sign-in path. |
+| **Test suite architecture** | pytest + pytest-asyncio + httpx added to 4 Python services. Root smoke tests (`tests/test_smoke.py`) hit all health endpoints. Per-service tests for back-api (health, users, app library) and back-auth (health). Runner: `bin/test.sh` + wired into `bin/start.sh dev test` + interactive menu option 15. |
 
 | Area | What changed |
 |------|----------------|
@@ -291,7 +298,7 @@ Preflight **warns** on placeholder secrets in `.env.prd` — expected until oper
 
 ## Open / follow-up (not blocking compose build)
 
-- **Completed this session:** 1A admin session hardening (signed Remix session), 1C `print`/logging on `back-api` users path, OAuth `client_secret` verification at token endpoint. Remaining Priority 1: 1B public cookie audit, 1D nginx API routing table.
+- **Completed this session (continued):** Admin user-creation endpoint + UI, session expiry redirect fix, full test suite architecture (pytest per service + smoke tests + runner). Remaining: 1B public cookie audit, 1D nginx API routing table.
 - **Rizervox plan:** add `.ai/plan/multi-tenant-headless-cms` to this repo (or link) so bootstrap checklist can match product spec.
 - **Postgres migrations ledger:** `main.py` still replays every `schema/*.sql` each boot — consider Flyway/Alembic-style tracking for DDL-only files; bootstrap **data** for seeded clients is now insert-only (`DO NOTHING`).
 - **Rizervox plan:** add `.ai/plan/multi-tenant-headless-cms` to this repo (or link) so bootstrap checklist can match product spec.

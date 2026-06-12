@@ -139,6 +139,25 @@ export default function UserManagementIndex() {
         }}>
           Manage user accounts, roles, and permissions. <span style={{ color: "#9ca3af" }}>Total users: {data.total}</span>
         </p>
+        <div style={{ marginTop: 12 }}>
+          <a
+            href="/admin/features/user-management/create"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 18px",
+              background: "#4f46e5",
+              color: "#fff",
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+          >
+            + Create User
+          </a>
+        </div>
       </div>
 
       {/* Search & Filter Controls */}

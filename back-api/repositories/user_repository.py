@@ -62,9 +62,10 @@ class UserRepository:
     async def create_user(
         self,
         email: str,
-        password_hash: str,
+        password_hash: str | None,
         role: str = "customer",
         permissions: list[str] | None = None,
+        is_email_verified: bool = False,
     ) -> dict[str, Any]:
         """Create a new user account.
 
@@ -87,15 +88,41 @@ class UserRepository:
             row = await conn.fetchrow(
                 """
                 INSERT INTO users (email, password_hash, role, permissions, is_email_verified)
-                VALUES ($1, $2, $3, $4::jsonb, false)
+                VALUES ($1, $2, $3, $4::jsonb, $5)
                 RETURNING id, email, role, permissions, created_at, updated_at
                 """,
                 email,
                 password_hash,
                 role,
                 permissions,
+                is_email_verified,
             )
             return dict(row)
+
+    async def create_identity(
+        self,
+        user_id: int,
+        provider: str,
+        provider_account_id: str,
+    ) -> None:
+        """Link an OAuth identity (Google, etc.) to a user account.
+
+        Args:
+            user_id: User ID
+            provider: Identity provider name ('google', 'email', etc.)
+            provider_account_id: Provider's unique account ID (Google 'sub' claim)
+        """
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO user_identities (user_id, provider, provider_account_id)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (provider, provider_account_id) DO NOTHING
+                """,
+                user_id,
+                provider,
+                provider_account_id,
+            )
 
     async def update_role(
         self,
