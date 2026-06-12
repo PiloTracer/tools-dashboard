@@ -120,37 +120,22 @@ td_backup_archive_vol() {
 }
 
 td_run_backup() {
-  local BACKUP_ROOT="${1:-}" TS OUT pg_logical_ok
+  local BACKUP_ROOT="${1:-}" TS
   if [ -z "$BACKUP_ROOT" ]; then
     if [ -d "/mnt/data" ]; then
-      BACKUP_ROOT="/mnt/data/backups/${TD_PROJ}"
+      BACKUP_ROOT="/mnt/data/backup_${TD_PROJ}"
     else
-      BACKUP_ROOT="/var/tmp/backups/${TD_PROJ}"
+      BACKUP_ROOT="/var/tmp/backup_${TD_PROJ}"
     fi
   fi
   TS="$(date +%Y%m%d_%H%M%S)"
-  OUT="$BACKUP_ROOT/$TD_ENV/$TS"
-  mkdir -p "$OUT"
-  echo "[backup] TD_ENV=$TD_ENV compose=$TD_COMPOSE_FILE project=$TD_PROJ -> $OUT"
-  pg_logical_ok=0
-  if td_docker_compose ps -q postgresql 2>/dev/null | grep -q .; then
-    if td_docker_compose exec -T postgresql pg_dump -U user -d main_db -Fc >"$OUT/postgres.dump"; then
-      pg_logical_ok=1
-    else
-      echo "[backup] pg_dump failed" >&2
-      return 1
-    fi
-  else
-    echo "[backup] WARNING: postgresql not running; skipping pg_dump (volume archive fallback)" >&2
-  fi
-  if [ "$pg_logical_ok" -ne 1 ]; then
-    td_backup_archive_vol "$TD_VOLUME_POSTGRES" "postgres_data" "$OUT" "$TS"
-  fi
-  td_backup_archive_vol "$TD_VOLUME_REDIS" "redis" "$OUT" "$TS"
-  td_backup_archive_vol "$TD_VOLUME_CASSANDRA" "cassandra" "$OUT" "$TS"
-  td_backup_archive_vol "$TD_VOLUME_SEAWEED" "seaweedfs" "$OUT" "$TS"
-  ln -sfn "$OUT" "$BACKUP_ROOT/$TD_ENV/latest"
-  echo "[backup] done: $OUT"
+  mkdir -p "$BACKUP_ROOT"
+  echo "[backup] project=$TD_PROJ -> $BACKUP_ROOT/"
+  td_backup_archive_vol "$TD_VOLUME_POSTGRES" "postgres_data" "$BACKUP_ROOT" "$TS"
+  td_backup_archive_vol "$TD_VOLUME_REDIS" "redis" "$BACKUP_ROOT" "$TS"
+  td_backup_archive_vol "$TD_VOLUME_CASSANDRA" "cassandra" "$BACKUP_ROOT" "$TS"
+  td_backup_archive_vol "$TD_VOLUME_SEAWEED" "seaweedfs" "$BACKUP_ROOT" "$TS"
+  echo "[backup] done: $BACKUP_ROOT/"
 }
 
 td_restore_volume_from_archive() {
@@ -168,50 +153,13 @@ td_restore_volume_from_archive() {
   echo "[restore] volume $vol restored"
 }
 
-td_restore_postgres_dump() {
-  local dump="$1"
-  if [ ! -f "$dump" ]; then
-    echo "[restore] postgres dump missing: $dump"
-    return 1
-  fi
-  echo "[restore] restoring PostgreSQL from logical dump..."
-  docker volume rm "$TD_VOLUME_POSTGRES" 2>/dev/null || true
-  docker volume create "$TD_VOLUME_POSTGRES"
-  td_docker_compose up -d postgresql
-  local max_attempts=60 attempt=0
-  echo "[restore] waiting for postgresql to be ready..."
-  while [ "$attempt" -lt "$max_attempts" ]; do
-    if td_docker_compose exec -T postgresql pg_isready -U user -d main_db >/dev/null 2>&1; then
-      break
-    fi
-    sleep 1
-    attempt=$((attempt + 1))
-  done
-  if [ "$attempt" -ge "$max_attempts" ]; then
-    echo "[restore] postgresql failed to become ready" >&2
-    return 1
-  fi
-  local dump_name
-  dump_name="$(basename "$dump")"
-  td_docker_compose cp "$dump" postgresql:/tmp/"$dump_name"
-  echo "[restore] running pg_restore..."
-  if ! td_docker_compose exec -T postgresql pg_restore -U user -d main_db -c --if-exists /tmp/"$dump_name"; then
-    echo "[restore] pg_restore completed with warnings (common for pre-existing objects)" >&2
-  fi
-  td_docker_compose exec -T postgresql rm -f /tmp/"$dump_name"
-  echo "[restore] PostgreSQL restored from logical dump"
-}
-
 td_run_restore() {
   local BACKUP_DIR="${1:-}"
   if [ -z "$BACKUP_DIR" ]; then
     if [ -d "/mnt/data" ]; then
-      BACKUP_DIR="/mnt/data/backups/${TD_PROJ}"
+      BACKUP_DIR="/mnt/data/backup_${TD_PROJ}"
     else
-      BACKUP_DIR="/var/tmp/backups/${TD_PROJ}"
-    fi
-    if [ -L "$BACKUP_DIR/$TD_ENV/latest" ]; then
-      BACKUP_DIR="$(readlink -f "$BACKUP_DIR/$TD_ENV/latest")"
+      BACKUP_DIR="/var/tmp/backup_${TD_PROJ}"
     fi
   fi
   if [ -z "$BACKUP_DIR" ] || [ ! -d "$BACKUP_DIR" ]; then
@@ -227,18 +175,11 @@ td_run_restore() {
   fi
   echo "[restore] stopping stack..."
   td_docker_compose down --remove-orphans
-  local pg_dump_file pg_archive
-  pg_dump_file=""
-  pg_archive=""
-  for f in "$BACKUP_DIR"/postgres.dump; do
-    [ -f "$f" ] && pg_dump_file="$f" && break
-  done
+  local pg_archive=""
   for f in "$BACKUP_DIR"/postgres_data_*.tar.gz; do
     [ -f "$f" ] && pg_archive="$f" && break
   done
-  if [ -n "$pg_dump_file" ]; then
-    td_restore_postgres_dump "$pg_dump_file"
-  elif [ -n "$pg_archive" ]; then
+  if [ -n "$pg_archive" ]; then
     td_restore_volume_from_archive "$TD_VOLUME_POSTGRES" "$pg_archive"
   else
     echo "[restore] WARNING: no PostgreSQL backup found" >&2
@@ -344,8 +285,8 @@ EOF
   echo "  build      docker compose build only (CI / catch image errors before up)"
   echo "  config     docker compose config (validates compose + env interpolation)"
   echo "  preflight  config + quick sanity checks for prd/stg"
-  echo "  backup [dir]  pg_dump + volume archives + env files (default: /mnt/data/backups/\$TD_PROJ)"
-  echo "  restore [dir] restore all data + env files from backup (default: /mnt/data/backups/\$TD_ENV/latest)"
+  echo "  backup [dir]  volume archives: postgres, redis, cassandra, seaweedfs (default: /mnt/data/backup_\$TD_PROJ)"
+  echo "  restore [dir] restore volumes: postgres, redis, cassandra, seaweedfs (default: /mnt/data/backup_\$TD_PROJ)"
   echo "  free-ports    dev only: down + remove this project's containers on dev ports"
   echo "  test          Run the test suite (./bin/test.sh)"
   echo "  menu       Interactive menu (same as env-only)"
@@ -851,17 +792,16 @@ run_force_rebuild() {
 }
 
 run_backup() {
-  local _default_broot="/mnt/data/backups/${TD_PROJ}"
+  local _default_broot="/mnt/data/backup_${TD_PROJ}"
   read -r -p "Backup root directory [$_default_broot]: " root
   root=${root:-"$_default_broot"}
   td_run_backup "$root"
 }
 
 run_restore() {
-  local _default_broot="/mnt/data/backups/${TD_PROJ}"
-  local _default_latest="$_default_broot/$TD_ENV/latest"
-  read -r -p "Backup directory [$_default_latest]: " root
-  root=${root:-"$_default_latest"}
+  local _default_broot="/mnt/data/backup_${TD_PROJ}"
+  read -r -p "Backup directory [$_default_broot]: " root
+  root=${root:-"$_default_broot"}
   td_run_restore "$root"
 }
 
@@ -903,8 +843,8 @@ while true; do
   echo " 6) Restart (rolling — compose restart)"
   echo " 7) Rebuild stack (down → build → up, keeps data)"
   echo " 8) Reset data (down -v → build → up) ⚠️  destructive"
-   echo " 9) Restore (full data + env files from backup)"
-  echo "10) Backup (pg_dump + volume archives + env files)"
+   echo " 9) Restore (volumes: postgres, redis, cassandra, seaweedfs)"
+  echo "10) Backup (volumes: postgres, redis, cassandra, seaweedfs)"
   echo "11) Logs (follow)"
   echo "12) Full cleanup (down --rmi local)"
   echo "13) Status / volume check"
