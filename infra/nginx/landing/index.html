@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tools Dashboard</title>
+  <meta name="description" content="Tools Dashboard — choose the public portal or the admin console." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #0f1c1a;
+      --paper: #e8f0ec;
+      --mist: rgba(232, 240, 236, 0.78);
+      --accent: #1f8a70;
+      --accent-deep: #0d5c4d;
+      --admin: #c45c26;
+      --admin-deep: #8f3d12;
+      --line: rgba(15, 28, 26, 0.12);
+      --shadow: 0 24px 60px rgba(8, 20, 18, 0.28);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { min-height: 100%; }
+
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 700px at 12% 18%, rgba(31, 138, 112, 0.35), transparent 55%),
+        radial-gradient(900px 600px at 88% 72%, rgba(196, 92, 38, 0.22), transparent 50%),
+        linear-gradient(155deg, #0b1614 0%, #14302b 42%, #1a3d36 70%, #0f1c1a 100%);
+      overflow-x: hidden;
+    }
+
+    .grain {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.08;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      animation: grain-shift 8s steps(6) infinite;
+    }
+
+    @keyframes grain-shift {
+      0%, 100% { transform: translate(0, 0); }
+      33% { transform: translate(-1.5%, 1%); }
+      66% { transform: translate(1%, -1.5%); }
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: clamp(1.5rem, 4vw, 3rem);
+    }
+
+    .panel {
+      width: min(720px, 100%);
+      padding: clamp(2rem, 5vw, 3.25rem);
+      border: 1px solid rgba(232, 240, 236, 0.14);
+      border-radius: 28px;
+      background: linear-gradient(165deg, rgba(232, 240, 236, 0.12), rgba(232, 240, 236, 0.04));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      animation: rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(28px) scale(0.98); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .brand {
+      font-family: Fraunces, Georgia, serif;
+      font-size: clamp(2.4rem, 7vw, 3.6rem);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      color: var(--paper);
+      animation: rise 1s 0.08s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .lede {
+      margin-top: 1rem;
+      max-width: 34rem;
+      font-size: clamp(1.05rem, 2.4vw, 1.2rem);
+      line-height: 1.55;
+      color: var(--mist);
+      animation: rise 1s 0.16s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .actions {
+      display: grid;
+      gap: 1rem;
+      margin-top: clamp(2rem, 5vw, 2.75rem);
+      animation: rise 1s 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    @media (min-width: 640px) {
+      .actions { grid-template-columns: 1fr 1fr; }
+    }
+
+    .card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      min-height: 100%;
+      padding: 1.35rem 1.4rem 1.45rem;
+      text-decoration: none;
+      color: inherit;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: var(--paper);
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+
+    .card:hover,
+    .card:focus-visible {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 36px rgba(8, 20, 18, 0.22);
+      outline: none;
+    }
+
+    .card:focus-visible {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(31, 138, 112, 0.35), 0 16px 36px rgba(8, 20, 18, 0.22);
+    }
+
+    .card .eyebrow {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+
+    .card.admin .eyebrow { color: var(--admin-deep); }
+
+    .card h2 {
+      font-family: Fraunces, Georgia, serif;
+      font-size: 1.55rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .card p {
+      flex: 1;
+      font-size: 0.98rem;
+      line-height: 1.45;
+      color: rgba(15, 28, 26, 0.72);
+    }
+
+    .card .go {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 0.35rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--accent-deep);
+    }
+
+    .card.admin .go { color: var(--admin-deep); }
+
+    .card .go span {
+      transition: transform 0.2s ease;
+    }
+
+    .card:hover .go span,
+    .card:focus-visible .go span {
+      transform: translateX(4px);
+    }
+
+    .foot {
+      margin-top: 1.75rem;
+      font-size: 0.85rem;
+      color: rgba(232, 240, 236, 0.45);
+      animation: rise 1s 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+  </style>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <main class="shell">
+    <section class="panel" aria-labelledby="brand">
+      <h1 id="brand" class="brand">Tools Dashboard</h1>
+      <p class="lede">Choose where you need to go. Public tools for everyday use, or the admin console for operators.</p>
+      <div class="actions">
+        <a class="card" href="/app/">
+          <div class="eyebrow">End users</div>
+          <h2>Public portal</h2>
+          <p>Register, sign in, and open the app library.</p>
+          <div class="go">Continue <span aria-hidden="true">→</span></div>
+        </a>
+        <a class="card admin" href="/admin/">
+          <div class="eyebrow">Administrators</div>
+          <h2>Admin console</h2>
+          <p>Manage users, apps, and platform settings.</p>
+          <div class="go">Sign in <span aria-hidden="true">→</span></div>
+        </a>
+      </div>
+      <p class="foot">tools.datawork.top</p>
+    </section>
+  </main>
+</body>
+</html>
