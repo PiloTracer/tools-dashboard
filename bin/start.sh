@@ -639,16 +639,118 @@ td_init_seaweedfs_config() {
   fi
 }
 
-cmd_up_quick() {
-  echo "Starting stack (no image rebuild)..."
+# Fail prd/stg when critical secrets are still placeholders (apps would boot broken).
+td_assert_deploy_db_secrets() {
+  case "$TD_ENV" in
+    prd | stg) ;;
+    *) return 0 ;;
+  esac
+  local pw jwt admin
+  pw="$(td_read_env_key POSTGRES_PASSWORD 2>/dev/null || true)"
+  jwt="$(td_read_env_key JWT_SECRET_KEY 2>/dev/null || true)"
+  admin="$(td_read_env_key DEFAULT_ADMIN_PASSWORD 2>/dev/null || true)"
+  if [ -z "$pw" ] || printf '%s' "$pw" | grep -qE '^CHANGE_ME'; then
+    echo "ERROR: POSTGRES_PASSWORD in ${TD_ENV_FILE} is missing or still CHANGE_ME_*." >&2
+    echo "Set a real password in .env.${TD_ENV}; compose builds all DB URLs from it." >&2
+    return 1
+  fi
+  if [ -z "$jwt" ] || printf '%s' "$jwt" | grep -qE '^CHANGE_ME'; then
+    echo "ERROR: JWT_SECRET_KEY in ${TD_ENV_FILE} is missing or still CHANGE_ME_*." >&2
+    return 1
+  fi
+  if [ -z "$admin" ] || printf '%s' "$admin" | grep -qE '^CHANGE_ME'; then
+    echo "ERROR: DEFAULT_ADMIN_PASSWORD in ${TD_ENV_FILE} is missing or still CHANGE_ME_*." >&2
+    return 1
+  fi
+  if printf '%s' "$pw" | grep -qE '[@:/?#\[\]%]'; then
+    echo "ERROR: POSTGRES_PASSWORD contains URL-reserved characters; pick an alphanumeric password" >&2
+    echo "(compose embeds it in postgresql:// URLs)." >&2
+    return 1
+  fi
+  return 0
+}
+
+td_wait_postgres_ready() {
+  local max_attempts=60 attempt=0
+  local user db
+  user="$(td_read_env_key POSTGRES_USER 2>/dev/null || true)"
+  db="$(td_read_env_key POSTGRES_DB 2>/dev/null || true)"
+  [ -n "$user" ] || user=user
+  [ -n "$db" ] || db=main_db
+  echo "Waiting for postgresql (pg_isready, up to ${max_attempts}s)..."
+  while [ "$attempt" -lt "$max_attempts" ]; do
+    if td_docker_compose exec -T postgresql pg_isready -U "$user" -d "$db" >/dev/null 2>&1; then
+      echo "PostgreSQL is ready."
+      return 0
+    fi
+    sleep 1
+    attempt=$((attempt + 1))
+  done
+  echo "Timeout waiting for postgresql." >&2
+  td_docker_compose logs --tail 40 postgresql || true
+  return 1
+}
+
+# Official postgres image allows local socket "trust". Align role password to .env
+# on every prd/stg start so existing volumes match POSTGRES_PASSWORD without manual SQL.
+td_ensure_postgres_role_password() {
+  case "$TD_ENV" in
+    prd | stg) ;;
+    *) return 0 ;;
+  esac
+  local user pass db pass_sql
+  user="$(td_read_env_key POSTGRES_USER 2>/dev/null || true)"
+  pass="$(td_read_env_key POSTGRES_PASSWORD 2>/dev/null || true)"
+  db="$(td_read_env_key POSTGRES_DB 2>/dev/null || true)"
+  [ -n "$user" ] || user=user
+  [ -n "$db" ] || db=main_db
+  [ -n "$pass" ] || {
+    echo "ERROR: POSTGRES_PASSWORD empty; cannot align Postgres role." >&2
+    return 1
+  }
+  pass_sql=$(printf '%s' "$pass" | sed "s/'/''/g")
+  echo "Aligning Postgres role '${user}' password to ${TD_ENV_FILE}..."
+  if ! td_docker_compose exec -T postgresql \
+    psql -U "$user" -d "$db" -v ON_ERROR_STOP=1 \
+    -c "ALTER ROLE \"${user}\" WITH PASSWORD '${pass_sql}';" >/dev/null; then
+    echo "ERROR: failed to align Postgres role password (is postgresql up?)." >&2
+    td_docker_compose logs --tail 30 postgresql || true
+    return 1
+  fi
+  # Prove TCP auth works with the same password apps will use.
+  if ! td_docker_compose exec -T -e PGPASSWORD="$pass" postgresql \
+    psql -h 127.0.0.1 -U "$user" -d "$db" -v ON_ERROR_STOP=1 -c 'SELECT 1' >/dev/null; then
+    echo "ERROR: Postgres TCP auth still fails after password align." >&2
+    return 1
+  fi
+  echo "Postgres password aligns with .env.${TD_ENV}."
+  return 0
+}
+
+# Bring stack up with DB credential alignment (prd/stg).
+td_stack_up_aligned() {
+  td_assert_deploy_db_secrets || return 1
   td_init_seaweedfs_config
-  td_docker_compose up -d
+  echo "Starting postgresql first..."
+  td_docker_compose up -d postgresql || return 1
+  td_wait_postgres_ready || return 1
+  td_ensure_postgres_role_password || return 1
+  echo "Starting remaining services..."
+  td_docker_compose up -d || return 1
+  # APIs may have crashed before password align; force recreate so they pick env + healthy DB.
+  td_docker_compose up -d --force-recreate back-api back-auth back-postgres-service feature-registry || return 1
   td_prune_unused_volumes_for_project
   if ! wait_for_stack_ready; then
     echo "Stack did not become healthy in time." >&2
+    echo "Hint: docker compose logs back-auth back-api postgresql" >&2
     return 1
   fi
   print_stack_urls
+}
+
+cmd_up_quick() {
+  echo "Starting stack (no image rebuild)..."
+  td_stack_up_aligned
 }
 
 cmd_up_build() {
@@ -658,14 +760,7 @@ cmd_up_build() {
     return 1
   fi
   echo "Starting stack (containers)..."
-  td_init_seaweedfs_config
-  td_docker_compose up -d
-  td_prune_unused_volumes_for_project
-  if ! wait_for_stack_ready; then
-    echo "Stack did not become healthy in time." >&2
-    return 1
-  fi
-  print_stack_urls
+  td_stack_up_aligned
 }
 
 cmd_down() {
@@ -720,13 +815,7 @@ cmd_rebuild_stack() {
     echo "Build failed — see terminal and build.log" >&2
     return 1
   fi
-  td_docker_compose up -d
-  td_prune_unused_volumes_for_project
-  if ! wait_for_stack_ready; then
-    echo "Stack did not become healthy in time." >&2
-    return 1
-  fi
-  print_stack_urls
+  td_stack_up_aligned
 }
 
 cmd_compose_build() {
@@ -753,16 +842,12 @@ cmd_preflight() {
   fi
   echo "compose config: OK"
   if [ "$TD_ENV" = "prd" ] || [ "$TD_ENV" = "stg" ]; then
-    if ! grep -qE '^JWT_SECRET_KEY=.' "$TD_ENV_FILE" 2>/dev/null; then
-      echo "Warning: JWT_SECRET_KEY looks empty or missing in $TD_ENV_FILE" >&2
-    elif grep -qE '^JWT_SECRET_KEY=CHANGE_ME' "$TD_ENV_FILE" 2>/dev/null; then
-      echo "Warning: replace placeholder JWT_SECRET_KEY in $TD_ENV_FILE before real production traffic." >&2
+    if ! td_assert_deploy_db_secrets; then
+      echo "Preflight failed: fix secrets in $TD_ENV_FILE" >&2
+      return 1
     fi
-    if ! grep -qE '^POSTGRES_PASSWORD=.' "$TD_ENV_FILE" 2>/dev/null; then
-      echo "Warning: POSTGRES_PASSWORD looks empty or missing in $TD_ENV_FILE" >&2
-    elif grep -qE '^POSTGRES_PASSWORD=CHANGE_ME' "$TD_ENV_FILE" 2>/dev/null; then
-      echo "Warning: replace placeholder POSTGRES_PASSWORD in $TD_ENV_FILE (and matching DB URLs)." >&2
-    fi
+    echo "Deploy secrets: OK (POSTGRES_PASSWORD / JWT / DEFAULT_ADMIN_PASSWORD)"
+    echo "Note: app DB URLs are derived from POSTGRES_* in docker-compose.${TD_ENV}.yml"
   fi
   echo "Preflight complete."
 }
@@ -780,13 +865,7 @@ cmd_reset_stack() {
     echo "Build failed — see terminal and build.log" >&2
     return 1
   fi
-  td_docker_compose up -d
-  td_prune_unused_volumes_for_project
-  if ! wait_for_stack_ready; then
-    echo "Stack did not become healthy in time." >&2
-    return 1
-  fi
-  print_stack_urls
+  td_stack_up_aligned
 }
 
 run_cleanup() {
@@ -831,13 +910,7 @@ run_force_rebuild() {
     echo "Build failed — see errors above."
     return 1
   fi
-  td_docker_compose up -d
-  td_prune_unused_volumes_for_project
-  if ! wait_for_stack_ready; then
-    echo "Stack did not become healthy in time." >&2
-    return 1
-  fi
-  print_stack_urls
+  td_stack_up_aligned
 }
 
 run_backup() {

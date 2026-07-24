@@ -5,6 +5,10 @@
 #   cp .env.prd.example .env.prd   # then set JWT_SECRET_KEY, POSTGRES_PASSWORD, etc.
 #   docker compose -f docker-compose.prd.yml --env-file .env.prd up -d --build
 #
+# DB auth: app DATABASE_URL values are built from POSTGRES_USER / POSTGRES_PASSWORD /
+# POSTGRES_DB so they cannot drift from the database container. bin/start.sh prd up
+# aligns the Postgres role password to .env.prd on every start (local socket).
+#
 # TLS: terminate on host nginx (ports 80/443); compose nginx-proxy binds localhost only.
 # See infra/nginx/host-setup/prd/ and scripts/vps-deploy-datawork.sh.
 
@@ -92,7 +96,7 @@ services:
       context: .
       dockerfile: back-api/Dockerfile.prd
     environment:
-      - DATABASE_URL=${BACK_API_DATABASE_URL:-postgresql://user:pass@postgresql:5432/main_db}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD}@postgresql:5432/${POSTGRES_DB:-main_db}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - SEAWEED_S3_ACCESS_KEY=${SEAWEED_S3_ACCESS_KEY:-seaweedadmin}
       - SEAWEED_S3_SECRET_KEY=${SEAWEED_S3_SECRET_KEY:-^seaweedadmin!changeme!}
@@ -127,7 +131,7 @@ services:
       context: ./back-auth
       dockerfile: Dockerfile.prd
     environment:
-      - DATABASE_URL=${BACK_AUTH_DATABASE_URL:-postgresql+asyncpg://user:pass@postgresql:5432/main_db}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD}@postgresql:5432/${POSTGRES_DB:-main_db}
       - REDIS_URL=${BACK_AUTH_REDIS_URL:-redis://redis:6379/1}
       - PUBLIC_APP_BASE_URL=${PUBLIC_APP_BASE_URL:-https://tools.datawork.top/app}
       - VERIFICATION_PATH=${VERIFICATION_PATH:-/features/user-registration/verify}
@@ -228,7 +232,7 @@ services:
       context: ./back-postgres
       dockerfile: Dockerfile.prd
     environment:
-      - DATABASE_URL=${BACK_POSTGRES_SERVICE_DATABASE_URL:-postgresql://user:pass@postgresql:5432/main_db}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD}@postgresql:5432/${POSTGRES_DB:-main_db}
     depends_on:
       postgresql:
         condition: service_healthy
@@ -253,7 +257,7 @@ services:
       context: ./feature-registry
       dockerfile: Dockerfile.prd
     environment:
-      - DATABASE_URL=${FEATURE_REGISTRY_DATABASE_URL:-postgresql://user:pass@postgresql:5432/main_db}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD}@postgresql:5432/${POSTGRES_DB:-main_db}
       - PYTHONUNBUFFERED=1
     healthcheck:
       test:
@@ -304,6 +308,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
+      # Process readiness only. Role password is aligned to .env.prd by bin/start.sh
+      # (local socket trust) before API containers are relied upon.
       test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
       interval: 5s
       timeout: 5s
