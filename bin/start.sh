@@ -672,14 +672,10 @@ td_assert_deploy_db_secrets() {
 
 td_wait_postgres_ready() {
   local max_attempts=60 attempt=0
-  local user db
-  user="$(td_read_env_key POSTGRES_USER 2>/dev/null || true)"
-  db="$(td_read_env_key POSTGRES_DB 2>/dev/null || true)"
-  [ -n "$user" ] || user=user
-  [ -n "$db" ] || db=main_db
   echo "Waiting for postgresql (pg_isready, up to ${max_attempts}s)..."
   while [ "$attempt" -lt "$max_attempts" ]; do
-    if td_docker_compose exec -T postgresql pg_isready -U "$user" -d "$db" >/dev/null 2>&1; then
+    # Do not pass -U from .env — the volume may have been init with a different role.
+    if td_docker_compose exec -T postgresql pg_isready -q >/dev/null 2>&1; then
       echo "PostgreSQL is ready."
       return 0
     fi
@@ -691,14 +687,34 @@ td_wait_postgres_ready() {
   return 1
 }
 
-# Official postgres image allows local socket "trust". Align role password to .env
-# on every prd/stg start so existing volumes match POSTGRES_PASSWORD without manual SQL.
+# Find a DB role we can use over local socket trust (volume may predate current POSTGRES_USER).
+td_postgres_find_login_role() {
+  local candidate
+  for candidate in \
+    "$(td_read_env_key POSTGRES_USER 2>/dev/null || true)" \
+    postgres \
+    toolsdash \
+    user
+  do
+    [ -n "$candidate" ] || continue
+    if td_docker_compose exec -T postgresql \
+      psql -U "$candidate" -d postgres -v ON_ERROR_STOP=1 -c 'SELECT 1' >/dev/null 2>&1; then
+      printf '%s' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Official postgres image allows local socket "trust". Ensure POSTGRES_USER exists with
+# POSTGRES_PASSWORD and owns POSTGRES_DB — even when the volume was first created with
+# a different role name (common after .env.prd user changes).
 td_ensure_postgres_role_password() {
   case "$TD_ENV" in
     prd | stg) ;;
     *) return 0 ;;
   esac
-  local user pass db pass_sql
+  local user pass db pass_sql super exists
   user="$(td_read_env_key POSTGRES_USER 2>/dev/null || true)"
   pass="$(td_read_env_key POSTGRES_PASSWORD 2>/dev/null || true)"
   db="$(td_read_env_key POSTGRES_DB 2>/dev/null || true)"
@@ -709,21 +725,53 @@ td_ensure_postgres_role_password() {
     return 1
   }
   pass_sql=$(printf '%s' "$pass" | sed "s/'/''/g")
-  echo "Aligning Postgres role '${user}' password to ${TD_ENV_FILE}..."
-  if ! td_docker_compose exec -T postgresql \
-    psql -U "$user" -d "$db" -v ON_ERROR_STOP=1 \
-    -c "ALTER ROLE \"${user}\" WITH PASSWORD '${pass_sql}';" >/dev/null; then
-    echo "ERROR: failed to align Postgres role password (is postgresql up?)." >&2
+
+  super="$(td_postgres_find_login_role)" || {
+    echo "ERROR: cannot log into Postgres over local socket as any known role." >&2
+    echo "Tried POSTGRES_USER, postgres, toolsdash, user." >&2
     td_docker_compose logs --tail 30 postgresql || true
     return 1
+  }
+  echo "Aligning Postgres to ${TD_ENV_FILE} (login via role '${super}' → target '${user}' / db '${db}')..."
+
+  if ! td_docker_compose exec -T postgresql \
+    psql -U "$super" -d postgres -v ON_ERROR_STOP=1 \
+    -c "DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${user}') THEN
+    CREATE ROLE \"${user}\" LOGIN SUPERUSER PASSWORD '${pass_sql}';
+  ELSE
+    ALTER ROLE \"${user}\" WITH LOGIN SUPERUSER PASSWORD '${pass_sql}';
+  END IF;
+END
+\$\$;"; then
+    echo "ERROR: failed to create/align Postgres role '${user}'." >&2
+    return 1
   fi
+
+  exists="$(td_docker_compose exec -T postgresql \
+    psql -U "$super" -d postgres -Atc "SELECT 1 FROM pg_database WHERE datname='${db}'" 2>/dev/null | tr -d '\r' || true)"
+  if [ "$exists" != "1" ]; then
+    echo "Creating database '${db}' owned by '${user}'..."
+    if ! td_docker_compose exec -T postgresql \
+      psql -U "$super" -d postgres -v ON_ERROR_STOP=1 \
+      -c "CREATE DATABASE \"${db}\" OWNER \"${user}\";"; then
+      echo "ERROR: failed to create database '${db}'." >&2
+      return 1
+    fi
+  else
+    td_docker_compose exec -T postgresql \
+      psql -U "$super" -d postgres -v ON_ERROR_STOP=1 \
+      -c "ALTER DATABASE \"${db}\" OWNER TO \"${user}\";" >/dev/null || true
+  fi
+
   # Prove TCP auth works with the same password apps will use.
   if ! td_docker_compose exec -T -e PGPASSWORD="$pass" postgresql \
     psql -h 127.0.0.1 -U "$user" -d "$db" -v ON_ERROR_STOP=1 -c 'SELECT 1' >/dev/null; then
-    echo "ERROR: Postgres TCP auth still fails after password align." >&2
+    echo "ERROR: Postgres TCP auth still fails for '${user}' after align." >&2
     return 1
   fi
-  echo "Postgres password aligns with .env.${TD_ENV}."
+  echo "Postgres role/password/db align with .env.${TD_ENV}."
   return 0
 }
 
