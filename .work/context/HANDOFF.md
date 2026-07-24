@@ -6,8 +6,10 @@
 
 ## Session status
 
-**Closed:** 2026-07-24 — prepared production deploy for `tools.datawork.top` / `s3.datawork.top` (compose localhost binds, host nginx templates, VPS deploy script, env URL defaults). VPS go-live still owner-run (DNS + `scripts/vps-deploy-datawork.sh`).
+**Open:** 2026-07-24 — goal: not specified (recommended pick-up: VPS go-live for `tools.datawork.top` / `s3.datawork.top`)
 **Updated:** 2026-07-24
+
+**Prior closed:** 2026-07-24 — prepared production deploy for `tools.datawork.top` / `s3.datawork.top` (compose localhost binds, host nginx templates, VPS deploy script, env URL defaults). VPS go-live still owner-run (DNS + `scripts/vps-deploy-datawork.sh`).
 
 **Prior closed:** 2025-07-17 — goal: review and upgrade option 4 "Cleanup" in `bin/start.sh`
 

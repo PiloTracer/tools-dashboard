@@ -14,26 +14,52 @@ from .database import users
 logger = logging.getLogger(__name__)
 
 
+def _read_admin_credentials() -> tuple[str, str]:
+    """Load bootstrap admin email/password from the process environment."""
+    email = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@example.com").strip()
+    password = (os.getenv("DEFAULT_ADMIN_PASSWORD") or "Admin123!ChangeMe").strip()
+    return email, password
+
+
+def _hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def _password_matches(stored_hash: str | None, password: str) -> bool:
+    if not stored_hash or not password:
+        return False
+    try:
+        return bcrypt.checkpw(
+            password.encode("utf-8"),
+            stored_hash.encode("utf-8"),
+        )
+    except (ValueError, TypeError):
+        return False
+
+
 async def create_default_admin(session: AsyncSession) -> None:
-    """Create default admin user if it doesn't exist.
+    """Ensure the bootstrap admin user exists and matches DEFAULT_ADMIN_* env vars.
 
-    This function should be called during application startup to ensure
-    there is always at least one admin user available to access the system.
+    Called during back-auth startup. ``DEFAULT_ADMIN_EMAIL`` and
+    ``DEFAULT_ADMIN_PASSWORD`` are the source of truth:
 
-    The admin credentials are read from environment variables:
-    - DEFAULT_ADMIN_EMAIL: Admin email address (default: admin@example.com)
-    - DEFAULT_ADMIN_PASSWORD: Admin password (default: Admin123!ChangeMe)
-
-    Security Notes:
-    - Password is hashed using bcrypt with default cost factor (12+)
-    - Admin is created with role='admin' and permissions=['*'] (all permissions)
-    - Email is marked as verified (is_email_verified=True)
-    - A warning is logged to change the default password
+    - Missing row → create admin with a bcrypt hash of the env password.
+    - Existing admin with a different hash → update hash from env (e.g. after
+      ``.env.prd`` change or a fresh Postgres volume from an old image).
+    - Existing non-admin with the same email → promote only when
+      ``SEED_ADMIN_PROMOTE_TO_ADMIN=1``.
     """
-    admin_email = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@example.com")
-    admin_password = os.getenv("DEFAULT_ADMIN_PASSWORD", "Admin123!ChangeMe")
+    admin_email, admin_password = _read_admin_credentials()
 
-    logger.info("Checking for default admin user...")
+    if not admin_email:
+        logger.error("DEFAULT_ADMIN_EMAIL is empty; cannot seed default admin")
+        return
+
+    if not admin_password:
+        logger.error("DEFAULT_ADMIN_PASSWORD is empty; cannot seed default admin")
+        return
+
+    logger.info("Checking default admin user for %s", admin_email)
 
     result = await session.execute(
         select(users).where(users.c.email == admin_email)
@@ -42,50 +68,77 @@ async def create_default_admin(session: AsyncSession) -> None:
 
     if row:
         if row["role"] == "admin":
-            logger.info("Admin user already exists: %s", admin_email)
+            if _password_matches(row["password_hash"], admin_password):
+                logger.info("Default admin credentials already match env: %s", admin_email)
+                return
+
+            password_hash = _hash_password(admin_password)
+            await session.execute(
+                update(users)
+                .where(users.c.email == admin_email)
+                .values(
+                    password_hash=password_hash,
+                    is_email_verified=True,
+                )
+            )
+            await session.commit()
+            logger.warning(
+                "Default admin password for %s did not match DEFAULT_ADMIN_PASSWORD; "
+                "updated hash from env on startup.",
+                admin_email,
+            )
             return
+
         promote = os.getenv("SEED_ADMIN_PROMOTE_TO_ADMIN", "0").strip().lower() in (
             "1",
             "true",
             "yes",
         )
         if promote:
+            password_hash = _hash_password(admin_password)
             await session.execute(
                 update(users)
                 .where(users.c.email == admin_email)
-                .values(role="admin", permissions=["*"], is_email_verified=True)
+                .values(
+                    role="admin",
+                    permissions=["*"],
+                    is_email_verified=True,
+                    password_hash=password_hash,
+                )
             )
             await session.commit()
             logger.warning(
-                "Promoted %s to admin (SEED_ADMIN_PROMOTE_TO_ADMIN). Rotate password in production.",
+                "Promoted %s to admin and set password from DEFAULT_ADMIN_PASSWORD "
+                "(SEED_ADMIN_PROMOTE_TO_ADMIN). Rotate password after first login.",
                 admin_email,
             )
             return
+
         logger.warning(
             "User %s exists with role %r; default admin seed skipped. "
-            "Use matching credentials, set SEED_ADMIN_PROMOTE_TO_ADMIN=1 in dev, or change DEFAULT_ADMIN_EMAIL.",
+            "Use matching credentials, set SEED_ADMIN_PROMOTE_TO_ADMIN=1 in dev, "
+            "or change DEFAULT_ADMIN_EMAIL.",
             admin_email,
             row["role"],
         )
         return
 
-    # Hash password using bcrypt
-    password_hash = bcrypt.hashpw(admin_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    password_hash = _hash_password(admin_password)
 
-    # Create admin user
     await session.execute(
         users.insert().values(
             email=admin_email,
             password_hash=password_hash,
             role="admin",
-            permissions=["*"],  # All permissions
-            is_email_verified=True,  # Admin is pre-verified
+            permissions=["*"],
+            is_email_verified=True,
         )
     )
     await session.commit()
 
-    logger.info(f"✅ Default admin user created: {admin_email}")
+    logger.info("Default admin user created: %s", admin_email)
     logger.warning(
-        f"⚠️  SECURITY WARNING: Default admin user created with email '{admin_email}'. "
-        "Please change the password immediately after first login!"
+        "Default admin user created for %s from DEFAULT_ADMIN_* env vars. "
+        "Change DEFAULT_ADMIN_PASSWORD after first login if this is production.",
+        admin_email,
     )
