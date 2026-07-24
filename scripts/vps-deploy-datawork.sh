@@ -150,9 +150,10 @@ ensure_env() {
 init_seaweed_and_stack() {
   echo "==> SeaweedFS config + stack up"
   bash "${REPO_ROOT}/scripts/init-seaweedfs-config.sh" "${REPO_ROOT}/.env.prd"
-  ./bin/start.sh prd preflight
-  ./bin/start.sh prd up-build
-  ./bin/start.sh prd status || true
+  # Use bash explicitly — sync/checkout may drop the executable bit.
+  bash "${REPO_ROOT}/bin/start.sh" prd preflight
+  bash "${REPO_ROOT}/bin/start.sh" prd up-build
+  bash "${REPO_ROOT}/bin/start.sh" prd status || true
 }
 
 verify() {

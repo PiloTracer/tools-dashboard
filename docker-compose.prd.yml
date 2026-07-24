@@ -314,14 +314,16 @@ services:
     image: cassandra:4
     environment:
       - CASSANDRA_CLUSTER_NAME=${CASSANDRA_CLUSTER_NAME:-tools_cluster}
+      - MAX_HEAP_SIZE=512M
+      - HEAP_NEWSIZE=128M
     volumes:
       - cassandra_data:/var/lib/cassandra
     healthcheck:
       test: ["CMD-SHELL", "cqlsh -e 'describe cluster'"]
       interval: 15s
       timeout: 10s
-      retries: 15
-      start_period: 240s
+      retries: 20
+      start_period: 300s
     restart: unless-stopped
     mem_limit: 2048m
 
