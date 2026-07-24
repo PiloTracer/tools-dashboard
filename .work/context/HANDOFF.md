@@ -6,8 +6,41 @@
 
 ## Session status
 
-**Closed:** 2025-07-17 — goal: review and upgrade option 4 "Cleanup" in bin/start.sh
-**Updated:** 2025-07-17
+**Closed:** 2026-07-24 — prepared production deploy for `tools.datawork.top` / `s3.datawork.top` (compose localhost binds, host nginx templates, VPS deploy script, env URL defaults). VPS go-live still owner-run (DNS + `scripts/vps-deploy-datawork.sh`).
+**Updated:** 2026-07-24
+
+**Prior closed:** 2025-07-17 — goal: review and upgrade option 4 "Cleanup" in `bin/start.sh`
+
+---
+
+## Repository state
+
+- **Code:** Production edge retargeted to datawork.top; Docker nginx/S3 ports bind `127.0.0.1` only.
+- **Ops:** Namecheap A records + VPS script run remain with owner (no agent SSH by request).
+- **Planning:** No master plan / no active iteration.
+
+**Recommended pick-up:** `.work/plans/NEXT.md`
+
+---
+
+## What this cycle produced (2026-07-24)
+
+| Area | Artifact |
+|------|----------|
+| Compose localhost binds | `docker-compose.prd.yml` — nginx `127.0.0.1:8082`, Seaweed S3 `127.0.0.1:8333` |
+| Docker nginx hostname | `infra/nginx/default.prd.conf` — `tools.datawork.top` |
+| Host nginx + DNS docs | `infra/nginx/host-setup/prd/*`, `05-install-prd-datawork-host-nginx.sh` |
+| VPS one-shot deploy | `scripts/vps-deploy-datawork.sh` |
+| Env URL defaults | `.env.prd.example` (+ local `.env.prd` gitignored) |
+
+---
+
+## Explicit unknowns / open owner actions
+
+- Namecheap A: `tools` / `s3` / `www` → VPS public IPv4
+- Sync repo to `/opt/tools-dashboard` and run `sudo bash scripts/vps-deploy-datawork.sh`
+- Google OAuth redirect URI + SMTP for `tools.datawork.top`
+- Confirm public IP with `curl -4 -s ifconfig.me` on VPS before DNS
 
 ---
 
@@ -168,13 +201,20 @@ Use this as the **exit checklist** for the first mergeable chunk (can be 1A only
 
 | Item | Value |
 |------|--------|
-| Public app URL | `https://tools.aiepic.app` |
-| Compose file | `docker-compose.prd.yml` |
+| Public app URL | `https://tools.datawork.top` |
+| Public S3 URL | `https://s3.datawork.top` |
+| Compose file | `docker-compose.prd.yml` (nginx `127.0.0.1:8082`, Seaweed S3 `127.0.0.1:8333`) |
 | Env file (not in git) | `.env.prd` (required for `prd`; use `.env.prd.example` as template) |
-| Nginx config (in repo) | `infra/nginx/default.prd.conf` |
-| Host reverse-proxy example | `infra/nginx/system-port80-to-docker-8082.example.conf` |
+| Docker nginx | `infra/nginx/default.prd.conf` (`server_name tools.datawork.top`) |
+| Host nginx templates | `infra/nginx/host-setup/prd/` |
+| VPS deploy script | `scripts/vps-deploy-datawork.sh` |
+| DNS checklist | `infra/nginx/host-setup/prd/NAMECHEAP_DNS.md` |
+| VPS install root | `/opt/tools-dashboard` |
+| VPS public IPv4 (verify) | `169.58.4.85` |
 
-WebSockets: clients use `wss://tools.aiepic.app/ws/` when the site is HTTPS (same host as the app; no extra public subdomain required for WS).
+WebSockets: clients use `wss://tools.datawork.top/ws/` when the site is HTTPS.
+
+**Deploy status (2026-07-24):** Repo-side compose/nginx/env URL changes done. Namecheap A records for `tools`/`s3` not yet present. Agent has no SSH key to the VPS — run `sudo bash scripts/vps-deploy-datawork.sh` on the server after DNS, or add workstation pubkey to `root` authorized_keys.
 
 ---
 

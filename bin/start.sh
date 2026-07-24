@@ -454,7 +454,7 @@ td_read_nginx_http_port() {
 # Official dev public app URL (browser); override via PUBLIC_APP_BASE_URL / TD_PUBLIC_BASE_URL in .env.
 TD_OFFICIAL_DEV_PUBLIC_APP_URL="https://dev.aiepic.app/app"
 
-# Optional in .env.prd: TD_PUBLIC_BASE_URL=https://tools.aiepic.app (no trailing slash)
+# Optional in .env.prd: TD_PUBLIC_BASE_URL=https://tools.datawork.top (no trailing slash)
 td_read_public_base_url() {
   local f line val
   for f in "${TD_ENV_FILE:-}" "$TD_PROJECT_ROOT/.env.prd" "$TD_PROJECT_ROOT/.env.$TD_ENV"; do
@@ -619,7 +619,7 @@ print_stack_urls() {
     echo ""
     echo "Set NGINX_HTTP_PORT in .env.prd if not using ${NPORT}. Override print host: TD_URL_HOST=your.ip $0 $TD_ENV up"
     if [ -z "$PBASE" ]; then
-      echo "Tip: set TD_PUBLIC_BASE_URL=https://tools.aiepic.app in .env.prd to print HTTPS URLs after up."
+      echo "Tip: set TD_PUBLIC_BASE_URL=https://tools.datawork.top in .env.prd to print HTTPS URLs after up."
     fi
     td_docker_compose ps
   fi
