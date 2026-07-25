@@ -6,15 +6,24 @@
 
 ## Session status
 
-**Open:** —
+**Closed:** 2026-07-25 — thin-client context verified, optimized, committed (`616c2f0`), and pushed to `origin/main`
 
-**Last closed:** 2026-07-25 — thin-client context verified and optimized
-
-**Recommended pick-up:** VPS go-live (`tools.datawork.top`) — see **Open owner actions**
+**Recommended pick-up:** `.work/plans/NEXT.md` — VPS go-live (`tools.datawork.top`)
 
 ---
 
-## Repository state
+## What this cycle produced (2026-07-25)
+
+| Area | Artifact |
+|------|----------|
+| Thin-client bootstrap | `.cursorrules` + `.work/` + `.work.ui/` + `opencode.json`; no local `.ai/` or `.ai.ui/` |
+| Context slimming | HANDOFF 123 lines; `AGENTS.md` 38-line index; archive at `.work/context/archives/` |
+| Rule fixes | Host smoke test exception; UI typecheck gate; conditional read routing; MCP disabled |
+| Commits | `6e26a63` (bootstrap), `616c2f0` (context optimization) — both on `main` |
+
+**Local cleanup (optional):** delete `.ai.back/` and `.ai.ui.back/` (~86 MB) when ready.
+
+---
 
 | Area | State |
 |------|-------|
