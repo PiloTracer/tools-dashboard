@@ -67,8 +67,8 @@ phase0_inventory() {
     PUB="$(curl -4 -s --max-time 10 ifconfig.me 2>/dev/null || true)"
     echo "ifconfig.me=${PUB:-unknown}"
     echo "route_src=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{print $7; exit}')"
-    echo "--- listeners 80/443/8082/8333 ---"
-    ss -tlnp | grep -E ':80 |:443 |:8082 |:8333 ' || true
+    echo "--- listeners 80/443/8333 + prd host upstream ports ---"
+    ss -tlnp | grep -E ':80 |:443 |:8333 |:13001 |:13002 |:18000 |:18001 |:18010 |:18888 ' || true
     echo "--- docker / nginx ---"
     command -v docker; docker --version 2>/dev/null || true
     docker compose version 2>/dev/null || true
@@ -159,21 +159,21 @@ init_seaweed_and_stack() {
 verify() {
   echo "==> Verification"
   local fail=0
-  echo "--- localhost binds ---"
-  if ss -tlnp | grep -E '127\.0\.0\.1:8082'; then
-    echo "OK 127.0.0.1:8082"
-  else
-    echo "FAIL missing 127.0.0.1:8082"; fail=1
-  fi
-  if ss -tlnp | grep -E '127\.0\.0\.1:8333'; then
-    echo "OK 127.0.0.1:8333"
-  else
-    echo "FAIL missing 127.0.0.1:8333"; fail=1
-  fi
-  if ss -tlnp | grep -E '0\.0\.0\.0:8082|0\.0\.0\.0:8333'; then
+  echo "--- localhost binds (prd host upstream ports) ---"
+  for port in 13001 13002 18000 18001 18010 18888 8333; do
+    if ss -tlnp | grep -E "127\.0\.0\.1:${port}"; then
+      echo "OK 127.0.0.1:${port}"
+    else
+      echo "FAIL missing 127.0.0.1:${port}"; fail=1
+    fi
+  done
+  if ss -tlnp | grep -E '0\.0\.0\.0:(13001|13002|18000|18001|18010|18888|8333)'; then
     echo "FAIL Docker ports published on 0.0.0.0 (must be localhost only)"; fail=1
   else
-    echo "OK no public 8082/8333"
+    echo "OK no public prd upstream ports"
+  fi
+  if ss -tlnp | grep -E '127\.0\.0\.1:8082'; then
+    echo "WARN 127.0.0.1:8082 still listening (legacy nginx-proxy — remove after host nginx cutover)"
   fi
   echo "--- HTTPS tools ---"
   if curl -fsSI --max-time 20 https://tools.datawork.top/app/ | head -5; then

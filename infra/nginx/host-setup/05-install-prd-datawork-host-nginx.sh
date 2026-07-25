@@ -1,15 +1,26 @@
 #!/usr/bin/env bash
-# Install host nginx site configs for tools / s3 / www.datawork.top (HTTP only).
-# Run on the production VPS as root (or with sudo).
-# After DNS points here: certbot --nginx -d tools.datawork.top -d s3.datawork.top -d www.datawork.top --redirect
+# Install host nginx site configs for tools / s3 / www.datawork.top.
+# Production routing lives on the HOST — docker-compose.prd.yml does not run nginx-proxy.
 #
-# Requires: nginx installed; Docker stack will bind 127.0.0.1:8082 and :8333
+# Run on the production VPS as root (or with sudo):
+#   cd /opt/tools-dashboard
+#   sudo bash infra/nginx/host-setup/05-install-prd-datawork-host-nginx.sh
+#
+# After DNS points here:
+#   sudo certbot --nginx -d tools.datawork.top -d s3.datawork.top -d www.datawork.top --redirect
+#
+# Requires: nginx installed; Docker stack publishing 127.0.0.1 TD_HOST_* ports (see .env.prd.example).
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 PRD_DIR="${SCRIPT_DIR}/prd"
 CONF_D="/etc/nginx/conf.d"
+SNIPPETS="/etc/nginx/snippets"
+LANDING_SRC="${REPO_ROOT}/infra/nginx/landing"
+LANDING_DST="/var/www/tools-dashboard-landing"
+TOOLS_CERT="/etc/letsencrypt/live/tools.datawork.top/fullchain.pem"
 
 if [[ "$(id -u)" -ne 0 ]]; then
   echo "ERROR: run as root (or sudo $0)" >&2
@@ -26,14 +37,24 @@ if [[ ! -d "$PRD_DIR" ]]; then
   exit 1
 fi
 
-mkdir -p "$CONF_D"
+mkdir -p "$CONF_D" "$SNIPPETS" "$LANDING_DST"
 
-# Avoid duplicate map{} if tools conf is re-installed while another map exists.
-# tools.datawork.top.conf includes a map block — if nginx already has
-# $connection_upgrade, strip the map from the installed copy.
+echo "Installing landing page → $LANDING_DST"
+cp -f "${LANDING_SRC}/index.html" "${LANDING_DST}/index.html"
+
+echo "Installing routing snippet → ${SNIPPETS}/tools-dashboard-routing.conf"
+cp -f "${PRD_DIR}/tools.datawork.top.routing.conf" "${SNIPPETS}/tools-dashboard-routing.conf"
+
 install_tools_conf() {
-  local src="${PRD_DIR}/tools.datawork.top.conf"
   local dst="${CONF_D}/tools.datawork.top.conf"
+  local src
+
+  if [[ -f "$TOOLS_CERT" ]]; then
+    src="${PRD_DIR}/tools.datawork.top.conf"
+  else
+    src="${PRD_DIR}/tools.datawork.top.http-only.conf"
+  fi
+
   if nginx -T 2>/dev/null | grep -q 'map \$http_upgrade \$connection_upgrade'; then
     echo "Existing \$connection_upgrade map found — installing tools conf without map block"
     awk '
@@ -51,7 +72,6 @@ install_tools_conf
 cp -f "${PRD_DIR}/s3.datawork.top.conf" "${CONF_D}/s3.datawork.top.conf"
 cp -f "${PRD_DIR}/www.datawork.top.conf" "${CONF_D}/www.datawork.top.conf"
 
-# Drop legacy sites-* duplicates if present
 for site in tools.datawork.top s3.datawork.top www.datawork.top; do
   rm -f "/etc/nginx/sites-enabled/${site}" "/etc/nginx/sites-available/${site}" 2>/dev/null || true
 done
@@ -60,5 +80,9 @@ echo "Testing nginx config..."
 nginx -t
 echo "Reloading nginx..."
 systemctl reload nginx
-echo "Done. HTTP vhosts installed for tools / s3 / www.datawork.top"
-echo "Next: wait for DNS, then certbot --nginx -d tools.datawork.top -d s3.datawork.top -d www.datawork.top --redirect"
+echo "Done. Host nginx routes tools.datawork.top (no Docker nginx-proxy)."
+echo "Published upstream ports (127.0.0.1): front-admin 13001, front-public 13002, back-api 18000,"
+echo "  back-auth 18001, back-websockets 18010, seaweed filer 18888, seaweed S3 8333"
+if [[ ! -f "$TOOLS_CERT" ]]; then
+  echo "Next: certbot --nginx -d tools.datawork.top -d s3.datawork.top -d www.datawork.top --redirect"
+fi

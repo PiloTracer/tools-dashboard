@@ -1,6 +1,7 @@
 # Production-oriented stack: baked images, no bind-mounts, no MailHog.
-# Target hostname: tools.datawork.top (see .env.prd.example + infra/nginx/default.prd.conf).
+# Target hostname: tools.datawork.top (host nginx — see infra/nginx/host-setup/prd/).
 # Seaweed S3 public hostname: s3.datawork.top (host nginx → 127.0.0.1:8333).
+# No nginx-proxy in prd: host nginx proxies to 127.0.0.1 TD_HOST_* ports below.
 #
 #   cp .env.prd.example .env.prd   # then set JWT_SECRET_KEY, POSTGRES_PASSWORD, etc.
 #   docker compose -f docker-compose.prd.yml --env-file .env.prd up -d --build
@@ -9,8 +10,7 @@
 # POSTGRES_DB so they cannot drift from the database container. bin/start.sh prd up
 # aligns the Postgres role password to .env.prd on every start (local socket).
 #
-# TLS: terminate on host nginx (ports 80/443); compose nginx-proxy binds localhost only.
-# See infra/nginx/host-setup/prd/ and scripts/vps-deploy-datawork.sh.
+# TLS: terminate on host nginx (ports 80/443). See infra/nginx/host-setup/prd/.
 
 x-logging: &json-file-logging
   logging:
@@ -20,31 +20,6 @@ x-logging: &json-file-logging
       max-file: "5"
 
 services:
-  nginx-proxy:
-    image: nginx:alpine
-    <<: *json-file-logging
-    ports:
-      # Localhost only — host nginx terminates TLS and proxies here (do not publish on 0.0.0.0).
-      - "127.0.0.1:${NGINX_HTTP_PORT:-8082}:80"
-    volumes:
-      - ./infra/nginx/default.prd.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./infra/nginx/landing:/usr/share/nginx/html/landing:ro
-    depends_on:
-      front-admin:
-        condition: service_healthy
-      front-public:
-        condition: service_healthy
-      back-api:
-        condition: service_healthy
-      back-auth:
-        condition: service_healthy
-      back-websockets:
-        condition: service_healthy
-      feature-registry:
-        condition: service_healthy
-    restart: unless-stopped
-    mem_limit: 256m
-
   front-admin:
     <<: *json-file-logging
     build:
@@ -56,6 +31,9 @@ services:
       - BACKEND_API_URL=${FRONT_INTERNAL_BACK_API_URL:-http://back-api:8000}
       - AUTH_API_URL=${FRONT_INTERNAL_BACK_AUTH_URL:-http://back-auth:8001}
       - WEBSOCKET_URL=${FRONT_INTERNAL_WEBSOCKET_URL:-ws://back-websockets:8010}
+    ports:
+      # Host nginx upstream (127.0.0.1 only). Avoid teleprompt on 8000/9080.
+      - "127.0.0.1:${TD_HOST_FRONT_ADMIN_PORT:-13001}:3000"
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/admin/"]
       interval: 15s
@@ -81,6 +59,8 @@ services:
       - PUBLIC_APP_BASE_PATH=${PUBLIC_APP_BASE_PATH:-/app}
       - OAUTH_CONSENT_SERVICE_SECRET=${OAUTH_CONSENT_SERVICE_SECRET:-}
       - OAUTH_REQUIRE_INTERACTIVE_CONSENT_UI=${OAUTH_REQUIRE_INTERACTIVE_CONSENT_UI:-}
+    ports:
+      - "127.0.0.1:${TD_HOST_FRONT_PUBLIC_PORT:-13002}:3000"
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/app/"]
       interval: 15s
@@ -115,6 +95,8 @@ services:
       timeout: 5s
       retries: 4
       start_period: 30s
+    ports:
+      - "127.0.0.1:${TD_HOST_BACK_API_PORT:-18000}:8000"
     depends_on:
       postgresql:
         condition: service_healthy
@@ -176,6 +158,8 @@ services:
       timeout: 5s
       retries: 6
       start_period: 40s
+    ports:
+      - "127.0.0.1:${TD_HOST_BACK_AUTH_PORT:-18001}:8001"
     depends_on:
       postgresql:
         condition: service_healthy
@@ -206,6 +190,8 @@ services:
       timeout: 5s
       retries: 4
       start_period: 15s
+    ports:
+      - "127.0.0.1:${TD_HOST_BACK_WS_PORT:-18010}:8010"
     depends_on:
       redis:
         condition: service_healthy
@@ -337,8 +323,9 @@ services:
   seaweedfs:
     image: chrislusf/seaweedfs
     ports:
-      # Localhost only — host nginx proxies s3.datawork.top → this port (never expose publicly).
+      # Localhost only — host nginx proxies s3.datawork.top → S3; tools /storage/ → filer.
       - "127.0.0.1:8333:8333"
+      - "127.0.0.1:${TD_HOST_SEAWEED_FILER_PORT:-18888}:8888"
     volumes:
       - seaweed-data:/data
       - ./seaweedfs-config/s3-config.json:/etc/seaweedfs/s3-config.json:ro

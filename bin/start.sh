@@ -573,8 +573,7 @@ print_stack_urls() {
     echo "  docker compose -p $TD_PROJ -f $TD_COMPOSE_FILE exec -it cassandra cqlsh"
     print_dev_public_url_guide
   else
-    local NPORT PBASE WSBASE
-    NPORT="$(td_read_nginx_http_port)"
+    local PBASE WSBASE
     PBASE="$(td_read_public_base_url)"
     WSBASE=""
     if [ -n "$PBASE" ]; then
@@ -584,11 +583,13 @@ print_stack_urls() {
       esac
     fi
     echo ""
+    echo "— Production edge: HOST nginx (not Docker nginx-proxy) —"
+    echo "  Install/reload: sudo bash infra/nginx/host-setup/05-install-prd-datawork-host-nginx.sh"
+    echo ""
     if [ -n "$PBASE" ]; then
-      echo "— Canonical public URL (set TD_PUBLIC_BASE_URL in .env.prd; TLS at CDN/LB) —"
+      echo "— Canonical public URL (TD_PUBLIC_BASE_URL) —"
       echo "  ${PBASE}/"
       echo ""
-      echo "— Same paths behind HTTPS —"
       echo "  Public app:     ${PBASE}/app/"
       echo "  Admin app:      ${PBASE}/admin/"
       echo "  Main API:       ${PBASE}/api/"
@@ -601,25 +602,17 @@ print_stack_urls() {
       fi
       echo ""
     fi
-    echo "— Docker host: nginx HTTP (published port ${NPORT}) —"
-    echo "  http://${H}:${NPORT}/"
+    echo "— Localhost upstream ports (host nginx → Docker; 127.0.0.1 only) —"
+    echo "  front-admin:     13001"
+    echo "  front-public:    13002"
+    echo "  back-api:        18000  (not 8000 — teleprompt uses host :8000)"
+    echo "  back-auth:       18001"
+    echo "  back-websockets: 18010"
+    echo "  seaweed filer:   18888  (/storage/)"
+    echo "  seaweed S3:      8333   (s3.datawork.top)"
     echo ""
-    echo "— Same paths on host port ${NPORT} —"
-    echo "  Public app:     http://${H}:${NPORT}/app/"
-    echo "  Admin app:      http://${H}:${NPORT}/admin/"
-    echo "  Main API:       http://${H}:${NPORT}/api/"
-    echo "  Auth API:       http://${H}:${NPORT}/auth/"
-    echo "  OAuth:          http://${H}:${NPORT}/oauth/"
-    echo "  Well-known:     http://${H}:${NPORT}/.well-known/"
-    echo "  Public storage: http://${H}:${NPORT}/storage/"
-    echo "  WebSocket:      ws://${H}:${NPORT}/ws/"
-    echo ""
-    echo "— Internal-only (no host port; use docker exec or add an ingress) —"
-    echo "  back-api, back-auth, feature-registry, databases, SeaweedFS, workers"
-    echo ""
-    echo "Set NGINX_HTTP_PORT in .env.prd if not using ${NPORT}. Override print host: TD_URL_HOST=your.ip $0 $TD_ENV up"
     if [ -z "$PBASE" ]; then
-      echo "Tip: set TD_PUBLIC_BASE_URL=https://tools.datawork.top in .env.prd to print HTTPS URLs after up."
+      echo "Tip: set TD_PUBLIC_BASE_URL=https://tools.datawork.top in .env.prd"
     fi
     td_docker_compose ps
   fi
@@ -784,10 +777,9 @@ td_stack_up_aligned() {
   td_wait_postgres_ready || return 1
   td_ensure_postgres_role_password || return 1
   echo "Starting remaining services..."
-  td_docker_compose up -d || return 1
+  td_docker_compose up -d --remove-orphans || return 1
   # APIs may have crashed before password align; force recreate so they pick env + healthy DB.
-  # Recreate nginx-proxy too so it re-resolves Docker DNS (see default.prd.conf resolver).
-  td_docker_compose up -d --force-recreate back-api back-auth back-postgres-service feature-registry nginx-proxy || return 1
+  td_docker_compose up -d --force-recreate back-api back-auth back-postgres-service feature-registry || return 1
   td_prune_unused_volumes_for_project
   if ! wait_for_stack_ready; then
     echo "Stack did not become healthy in time." >&2
