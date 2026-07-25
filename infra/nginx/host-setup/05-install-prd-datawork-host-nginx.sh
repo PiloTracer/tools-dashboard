@@ -41,6 +41,15 @@ mkdir -p "$CONF_D" "$SNIPPETS" "$LANDING_DST"
 
 echo "Installing landing page → $LANDING_DST"
 cp -f "${LANDING_SRC}/index.html" "${LANDING_DST}/index.html"
+# Future assets (locales, images) can live under infra/nginx/landing/ — copy if present.
+if compgen -G "${LANDING_SRC}/*" >/dev/null 2>&1; then
+  for asset in "${LANDING_SRC}"/*; do
+  base="$(basename "$asset")"
+  if [[ "$base" != "index.html" && -e "$asset" ]]; then
+    cp -a "$asset" "${LANDING_DST}/"
+  fi
+  done
+fi
 
 echo "Installing routing snippet → ${SNIPPETS}/tools-dashboard-routing.conf"
 cp -f "${PRD_DIR}/tools.datawork.top.routing.conf" "${SNIPPETS}/tools-dashboard-routing.conf"

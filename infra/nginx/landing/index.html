@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Tools Dashboard</title>
-  <meta name="description" content="Tools Dashboard — choose the public portal or the admin console." />
+  <meta name="description" content="Tools Dashboard — unified portal for apps, authentication, and platform operations." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
@@ -13,26 +13,32 @@
       --ink: #0f1c1a;
       --paper: #e8f0ec;
       --mist: rgba(232, 240, 236, 0.78);
+      --muted: rgba(232, 240, 236, 0.55);
       --accent: #1f8a70;
       --accent-deep: #0d5c4d;
+      --accent-soft: rgba(31, 138, 112, 0.18);
       --admin: #c45c26;
       --admin-deep: #8f3d12;
-      --line: rgba(15, 28, 26, 0.12);
+      --admin-soft: rgba(196, 92, 38, 0.16);
+      --line: rgba(232, 240, 236, 0.14);
+      --line-dark: rgba(15, 28, 26, 0.12);
       --shadow: 0 24px 60px rgba(8, 20, 18, 0.28);
+      --rail-width: 320px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html, body { min-height: 100%; }
+    html { scroll-behavior: smooth; }
 
     body {
       font-family: "DM Sans", system-ui, sans-serif;
-      color: var(--ink);
+      color: var(--paper);
       background:
         radial-gradient(1200px 700px at 12% 18%, rgba(31, 138, 112, 0.35), transparent 55%),
         radial-gradient(900px 600px at 88% 72%, rgba(196, 92, 38, 0.22), transparent 50%),
         linear-gradient(155deg, #0b1614 0%, #14302b 42%, #1a3d36 70%, #0f1c1a 100%);
       overflow-x: hidden;
+      min-height: 100vh;
     }
 
     .grain {
@@ -40,6 +46,7 @@
       inset: 0;
       pointer-events: none;
       opacity: 0.08;
+      z-index: 0;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
       animation: grain-shift 8s steps(6) infinite;
     }
@@ -50,90 +57,318 @@
       66% { transform: translate(1%, -1.5%); }
     }
 
-    .shell {
+    .page {
       position: relative;
       z-index: 1;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: clamp(1.5rem, 4vw, 3rem);
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(1rem, 3vw, 2rem) clamp(1rem, 3vw, 2.5rem) 7.5rem;
     }
 
-    .panel {
-      width: min(720px, 100%);
-      padding: clamp(2rem, 5vw, 3.25rem);
-      border: 1px solid rgba(232, 240, 236, 0.14);
-      border-radius: 28px;
-      background: linear-gradient(165deg, rgba(232, 240, 236, 0.12), rgba(232, 240, 236, 0.04));
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(18px);
+    @media (min-width: 960px) {
+      .page {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) var(--rail-width);
+        gap: clamp(1.5rem, 3vw, 2.5rem);
+        align-items: start;
+        padding-bottom: 3rem;
+      }
+    }
+
+    .topbar {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: clamp(1.5rem, 4vw, 2.5rem);
+      animation: rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .brand-mark {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--paper);
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+      box-shadow: 0 8px 24px rgba(31, 138, 112, 0.35);
+    }
+
+    .brand-text strong {
+      display: block;
+      font-family: Fraunces, Georgia, serif;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-text span {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .lang-switch {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .lang-switch select {
+      appearance: none;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(232, 240, 236, 0.08);
+      color: var(--paper);
+      padding: 0.45rem 2rem 0.45rem 0.85rem;
+      font: inherit;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 20 20' fill='%23e8f0ec'%3E%3Cpath d='M5.5 7.5L10 12l4.5-4.5' stroke='%23e8f0ec' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.65rem center;
+    }
+
+    .lang-switch select:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    main { min-width: 0; }
+
+    .hero {
+      margin-bottom: clamp(2rem, 5vw, 3rem);
+      animation: rise 0.9s 0.05s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .hero .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(232, 240, 236, 0.06);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--mist);
+      margin-bottom: 1rem;
+    }
+
+    .hero h1 {
+      font-family: Fraunces, Georgia, serif;
+      font-size: clamp(2.2rem, 6vw, 3.4rem);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+      max-width: 16ch;
+    }
+
+    .hero .lede {
+      margin-top: 1rem;
+      max-width: 42rem;
+      font-size: clamp(1.05rem, 2.2vw, 1.18rem);
+      line-height: 1.6;
+      color: var(--mist);
+    }
+
+    .section {
+      margin-bottom: clamp(2rem, 4vw, 2.75rem);
+      padding: clamp(1.25rem, 3vw, 1.75rem);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: linear-gradient(165deg, rgba(232, 240, 236, 0.08), rgba(232, 240, 236, 0.03));
+      backdrop-filter: blur(12px);
       animation: rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
-    @keyframes rise {
-      from { opacity: 0; transform: translateY(28px) scale(0.98); }
-      to { opacity: 1; transform: none; }
-    }
+    .section:nth-of-type(2) { animation-delay: 0.08s; }
+    .section:nth-of-type(3) { animation-delay: 0.12s; }
+    .section:nth-of-type(4) { animation-delay: 0.16s; }
+    .section:nth-of-type(5) { animation-delay: 0.2s; }
+    .section:nth-of-type(6) { animation-delay: 0.24s; }
 
-    .brand {
+    .section h2 {
       font-family: Fraunces, Georgia, serif;
-      font-size: clamp(2.4rem, 7vw, 3.6rem);
-      font-weight: 600;
-      letter-spacing: -0.03em;
-      line-height: 1.05;
-      color: var(--paper);
-      animation: rise 1s 0.08s cubic-bezier(0.22, 1, 0.36, 1) both;
+      font-size: clamp(1.35rem, 3vw, 1.75rem);
+      letter-spacing: -0.02em;
+      margin-bottom: 0.65rem;
     }
 
-    .lede {
-      margin-top: 1rem;
-      max-width: 34rem;
-      font-size: clamp(1.05rem, 2.4vw, 1.2rem);
-      line-height: 1.55;
+    .section > p {
       color: var(--mist);
-      animation: rise 1s 0.16s cubic-bezier(0.22, 1, 0.36, 1) both;
+      line-height: 1.6;
+      max-width: 52rem;
+    }
+
+    .pill-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .pill {
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      border: 1px solid var(--line);
+      background: rgba(232, 240, 236, 0.06);
+      color: var(--paper);
+    }
+
+    .pill.accent { background: var(--accent-soft); border-color: rgba(31, 138, 112, 0.35); }
+    .pill.admin { background: var(--admin-soft); border-color: rgba(196, 92, 38, 0.35); }
+    .pill.soon { background: rgba(232, 240, 236, 0.1); color: var(--muted); }
+
+    .grid-2 {
+      display: grid;
+      gap: 0.85rem;
+      margin-top: 1.1rem;
+    }
+
+    @media (min-width: 640px) {
+      .grid-2 { grid-template-columns: 1fr 1fr; }
+    }
+
+    .tile {
+      padding: 1rem 1.05rem;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(8, 20, 18, 0.22);
+    }
+
+    .tile h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+
+    .tile p {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .steps {
+      display: grid;
+      gap: 0.75rem;
+      margin-top: 1.1rem;
+      counter-reset: step;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      padding: 0.85rem 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .step:first-child { border-top: none; padding-top: 0; }
+
+    .step-num {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--accent-deep);
+      background: var(--paper);
+    }
+
+    .step h3 {
+      font-size: 0.98rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .step p {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .entry-rail {
+      position: relative;
+    }
+
+    @media (min-width: 960px) {
+      .entry-rail {
+        position: sticky;
+        top: 1.25rem;
+      }
+    }
+
+    .entry-panel {
+      padding: 1.25rem;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: linear-gradient(165deg, rgba(232, 240, 236, 0.12), rgba(232, 240, 236, 0.05));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      animation: rise 1s 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .entry-panel h2 {
+      font-family: Fraunces, Georgia, serif;
+      font-size: 1.2rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .entry-panel > p {
+      font-size: 0.88rem;
+      line-height: 1.45;
+      color: var(--muted);
+      margin-bottom: 1rem;
     }
 
     .actions {
       display: grid;
-      gap: 1rem;
-      margin-top: clamp(2rem, 5vw, 2.75rem);
-      animation: rise 1s 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
-    }
-
-    @media (min-width: 640px) {
-      .actions { grid-template-columns: 1fr 1fr; }
+      gap: 0.85rem;
     }
 
     .card {
       display: flex;
       flex-direction: column;
-      gap: 0.65rem;
-      min-height: 100%;
-      padding: 1.35rem 1.4rem 1.45rem;
+      gap: 0.55rem;
+      padding: 1.15rem 1.2rem;
       text-decoration: none;
-      color: inherit;
-      border-radius: 18px;
-      border: 1px solid var(--line);
+      color: var(--ink);
+      border-radius: 16px;
+      border: 1px solid var(--line-dark);
       background: var(--paper);
-      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+      transition: transform 0.22s ease, box-shadow 0.22s ease;
     }
 
     .card:hover,
     .card:focus-visible {
-      transform: translateY(-4px);
-      box-shadow: 0 16px 36px rgba(8, 20, 18, 0.22);
+      transform: translateY(-3px);
+      box-shadow: 0 14px 32px rgba(8, 20, 18, 0.22);
       outline: none;
     }
 
     .card:focus-visible {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(31, 138, 112, 0.35), 0 16px 36px rgba(8, 20, 18, 0.22);
+      box-shadow: 0 0 0 3px rgba(31, 138, 112, 0.35), 0 14px 32px rgba(8, 20, 18, 0.22);
     }
 
     .card .eyebrow {
-      font-size: 0.78rem;
-      font-weight: 600;
+      font-size: 0.72rem;
+      font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--accent-deep);
@@ -141,16 +376,16 @@
 
     .card.admin .eyebrow { color: var(--admin-deep); }
 
-    .card h2 {
+    .card h3 {
       font-family: Fraunces, Georgia, serif;
-      font-size: 1.55rem;
+      font-size: 1.25rem;
       font-weight: 600;
       letter-spacing: -0.02em;
     }
 
     .card p {
       flex: 1;
-      font-size: 0.98rem;
+      font-size: 0.9rem;
       line-height: 1.45;
       color: rgba(15, 28, 26, 0.72);
     }
@@ -158,54 +393,441 @@
     .card .go {
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
-      margin-top: 0.35rem;
-      font-size: 0.95rem;
-      font-weight: 600;
+      gap: 0.35rem;
+      font-size: 0.9rem;
+      font-weight: 700;
       color: var(--accent-deep);
     }
 
     .card.admin .go { color: var(--admin-deep); }
 
-    .card .go span {
-      transition: transform 0.2s ease;
+    .card:hover .go span { transform: translateX(4px); }
+    .card .go span { transition: transform 0.2s ease; display: inline-block; }
+
+    .site-foot {
+      grid-column: 1 / -1;
+      margin-top: 1rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--line);
+      font-size: 0.82rem;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.25rem;
+      justify-content: space-between;
     }
 
-    .card:hover .go span,
-    .card:focus-visible .go span {
-      transform: translateX(4px);
+    .mobile-dock {
+      display: none;
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 20;
+      padding: 0.65rem clamp(0.75rem, 3vw, 1rem) calc(0.65rem + env(safe-area-inset-bottom));
+      background: rgba(11, 22, 20, 0.92);
+      border-top: 1px solid var(--line);
+      backdrop-filter: blur(14px);
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
     }
 
-    .foot {
-      margin-top: 1.75rem;
-      font-size: 0.85rem;
-      color: rgba(232, 240, 236, 0.45);
-      animation: rise 1s 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+    @media (max-width: 959px) {
+      .entry-rail { display: none; }
+      .mobile-dock { display: grid; }
+      .page { padding-bottom: 6.5rem; }
+    }
+
+    .dock-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.15rem;
+      min-height: 3.25rem;
+      padding: 0.5rem 0.65rem;
+      border-radius: 12px;
+      text-decoration: none;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.2;
+      border: 1px solid var(--line);
+      background: rgba(232, 240, 236, 0.08);
+      color: var(--paper);
+    }
+
+    .dock-btn.public { background: var(--accent-soft); border-color: rgba(31, 138, 112, 0.4); }
+    .dock-btn.admin { background: var(--admin-soft); border-color: rgba(196, 92, 38, 0.4); }
+
+    .dock-btn span {
+      font-size: 0.68rem;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(22px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto;
+      }
     }
   </style>
 </head>
 <body>
   <div class="grain" aria-hidden="true"></div>
-  <main class="shell">
-    <section class="panel" aria-labelledby="brand">
-      <h1 id="brand" class="brand">Tools Dashboard</h1>
-      <p class="lede">Choose where you need to go. Public tools for everyday use, or the admin console for operators.</p>
-      <div class="actions">
-        <a class="card" href="/app/">
-          <div class="eyebrow">End users</div>
-          <h2>Public portal</h2>
-          <p>Register, sign in, and open the app library.</p>
-          <div class="go">Continue <span aria-hidden="true">→</span></div>
-        </a>
-        <a class="card admin" href="/admin/">
-          <div class="eyebrow">Administrators</div>
-          <h2>Admin console</h2>
-          <p>Manage users, apps, and platform settings.</p>
-          <div class="go">Sign in <span aria-hidden="true">→</span></div>
-        </a>
+
+  <div class="page">
+    <header class="topbar">
+      <div class="brand-mark">
+        <div class="brand-logo" aria-hidden="true">TD</div>
+        <div class="brand-text">
+          <strong data-i18n="brand.name">Tools Dashboard</strong>
+          <span data-i18n="brand.tagline">Unified tools platform</span>
+        </div>
       </div>
-      <p class="foot">tools.datawork.top</p>
-    </section>
-  </main>
+      <div class="lang-switch">
+        <label for="lang-select" data-i18n="lang.label">Language</label>
+        <select id="lang-select" aria-label="Language">
+          <option value="en">English</option>
+          <option value="es">Español</option>
+        </select>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="eyebrow" data-i18n="hero.eyebrow">Platform gateway</div>
+        <h1 id="hero-title" data-i18n="hero.title">One home for your apps, users, and operations</h1>
+        <p class="lede" data-i18n="hero.lede">Tools Dashboard connects a polished public experience with a secure admin console — so teams can onboard users, launch integrations, and run the platform from a single place.</p>
+      </section>
+
+      <section class="section" aria-labelledby="what-title">
+        <h2 id="what-title" data-i18n="what.title">What it does</h2>
+        <p data-i18n="what.body">Tools Dashboard is a modular admin platform that hosts your application library, handles user registration and sign-in, and gives operators full control over apps, access, and automation — all behind one domain.</p>
+        <div class="grid-2">
+          <article class="tile">
+            <h3 data-i18n="what.tile1.title">Public portal</h3>
+            <p data-i18n="what.tile1.body">End users browse apps, create accounts, complete profiles, and connect OAuth-powered tools.</p>
+          </article>
+          <article class="tile">
+            <h3 data-i18n="what.tile2.title">Admin console</h3>
+            <p data-i18n="what.tile2.body">Operators manage users, configure the app library, and schedule background tasks.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="why-title">
+        <h2 id="why-title" data-i18n="why.title">Why teams use it</h2>
+        <p data-i18n="why.body">Instead of stitching together separate login pages, admin panels, and integration glue, you get a consistent gateway with shared authentication, storage, and APIs — faster to ship and easier to operate.</p>
+        <div class="pill-list" role="list">
+          <span class="pill accent" role="listitem" data-i18n="why.pill1">Single sign-on experience</span>
+          <span class="pill accent" role="listitem" data-i18n="why.pill2">Centralized app catalog</span>
+          <span class="pill accent" role="listitem" data-i18n="why.pill3">Operator-grade controls</span>
+          <span class="pill accent" role="listitem" data-i18n="why.pill4">Production-ready stack</span>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="how-title">
+        <h2 id="how-title" data-i18n="how.title">How it works</h2>
+        <p data-i18n="how.intro">A lightweight gateway routes traffic to dedicated services — frontends for people, APIs for data, and real-time channels where needed.</p>
+        <div class="steps">
+          <article class="step">
+            <div class="step-num" aria-hidden="true">1</div>
+            <div>
+              <h3 data-i18n="how.step1.title">You arrive at the gateway</h3>
+              <p data-i18n="how.step1.body">This page sends you to the public portal or admin console. Nginx terminates TLS and forwards requests to the right app.</p>
+            </div>
+          </article>
+          <article class="step">
+            <div class="step-num" aria-hidden="true">2</div>
+            <div>
+              <h3 data-i18n="how.step2.title">Auth service issues sessions</h3>
+              <p data-i18n="how.step2.body">Registration and login flow through a dedicated auth service. Sessions are stored securely and validated on each request.</p>
+            </div>
+          </article>
+          <article class="step">
+            <div class="step-num" aria-hidden="true">3</div>
+            <div>
+              <h3 data-i18n="how.step3.title">APIs power apps and admin</h3>
+              <p data-i18n="how.step3.body">The main API serves app metadata, user management, and integrations. Object storage handles uploads; websockets deliver live updates.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="auth-title">
+        <h2 id="auth-title" data-i18n="auth.title">Authentication options</h2>
+        <p data-i18n="auth.body">Flexible sign-in for end users and hardened sessions for administrators — with OAuth ready for third-party app connections.</p>
+        <div class="grid-2">
+          <article class="tile">
+            <h3 data-i18n="auth.public.title">Public users</h3>
+            <p data-i18n="auth.public.body">Google OAuth or email + password, email verification, and secure session cookies scoped to the public app.</p>
+          </article>
+          <article class="tile">
+            <h3 data-i18n="auth.admin.title">Administrators</h3>
+            <p data-i18n="auth.admin.body">Dedicated admin sign-in with signed Remix session storage and JWT-backed API access.</p>
+          </article>
+          <article class="tile">
+            <h3 data-i18n="auth.apps.title">App integrations</h3>
+            <p data-i18n="auth.apps.body">OAuth 2.0 flows for connected apps in the library — redirect URIs managed per application.</p>
+          </article>
+          <article class="tile">
+            <h3 data-i18n="auth.security.title">Security posture</h3>
+            <p data-i18n="auth.security.body">HttpOnly cookies, rate limiting at the edge, and secrets kept out of source control.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="services-title">
+        <h2 id="services-title" data-i18n="services.title">Services included</h2>
+        <p data-i18n="services.body">The platform runs as a composed stack — each service has a clear boundary so you can scale or replace parts independently.</p>
+        <div class="pill-list" role="list">
+          <span class="pill" role="listitem" data-i18n="services.pill1">Public &amp; admin web apps</span>
+          <span class="pill" role="listitem" data-i18n="services.pill2">REST API</span>
+          <span class="pill" role="listitem" data-i18n="services.pill3">Auth service</span>
+          <span class="pill" role="listitem" data-i18n="services.pill4">WebSockets</span>
+          <span class="pill" role="listitem" data-i18n="services.pill5">PostgreSQL</span>
+          <span class="pill" role="listitem" data-i18n="services.pill6">Redis</span>
+          <span class="pill" role="listitem" data-i18n="services.pill7">S3-compatible storage</span>
+          <span class="pill" role="listitem" data-i18n="services.pill8">Task scheduler</span>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="subs-title">
+        <h2 id="subs-title" data-i18n="subs.title">Plans &amp; subscriptions</h2>
+        <p data-i18n="subs.body">The public portal includes a pricing area and account tiers (such as Free) today. Full subscription billing — upgrades, renewals, and payment flows — is actively being built and is not yet available for production use.</p>
+        <div class="pill-list" role="list">
+          <span class="pill soon" role="listitem" data-i18n="subs.pill">Billing &amp; paid tiers — coming soon</span>
+        </div>
+      </section>
+    </main>
+
+    <aside class="entry-rail" aria-labelledby="entry-rail-title">
+      <div class="entry-panel">
+        <h2 id="entry-rail-title" data-i18n="entry.title">Get started</h2>
+        <p data-i18n="entry.hint">These entry points are always available — pick the experience that matches your role.</p>
+        <div class="actions">
+          <a class="card" href="/app/">
+            <div class="eyebrow" data-i18n="entry.public.eyebrow">End users</div>
+            <h3 data-i18n="entry.public.title">Public portal</h3>
+            <p data-i18n="entry.public.body">Register, sign in, and open the app library.</p>
+            <div class="go"><span data-i18n="entry.public.cta">Continue</span> <span aria-hidden="true">→</span></div>
+          </a>
+          <a class="card admin" href="/admin/">
+            <div class="eyebrow" data-i18n="entry.admin.eyebrow">Administrators</div>
+            <h3 data-i18n="entry.admin.title">Admin console</h3>
+            <p data-i18n="entry.admin.body">Manage users, apps, and platform settings.</p>
+            <div class="go"><span data-i18n="entry.admin.cta">Sign in</span> <span aria-hidden="true">→</span></div>
+          </a>
+        </div>
+      </div>
+    </aside>
+
+    <footer class="site-foot">
+      <span>tools.datawork.top</span>
+      <span data-i18n="footer.note">Tools Dashboard · datawork.top</span>
+    </footer>
+  </div>
+
+  <nav class="mobile-dock" aria-label="Quick entry">
+    <a class="dock-btn public" href="/app/">
+      <span data-i18n="entry.public.title">Public portal</span>
+      <span data-i18n="entry.public.cta">Continue</span>
+    </a>
+    <a class="dock-btn admin" href="/admin/">
+      <span data-i18n="entry.admin.title">Admin console</span>
+      <span data-i18n="entry.admin.cta">Sign in</span>
+    </a>
+  </nav>
+
+  <script>
+    (function () {
+      var SUPPORTED = ["en", "es"];
+      var FALLBACK = "en";
+      var COOKIE = "i18next";
+
+      var MESSAGES = {
+        en: {
+          "meta.description": "Tools Dashboard — unified portal for apps, authentication, and platform operations.",
+          "brand.name": "Tools Dashboard",
+          "brand.tagline": "Unified tools platform",
+          "lang.label": "Language",
+          "hero.eyebrow": "Platform gateway",
+          "hero.title": "One home for your apps, users, and operations",
+          "hero.lede": "Tools Dashboard connects a polished public experience with a secure admin console — so teams can onboard users, launch integrations, and run the platform from a single place.",
+          "what.title": "What it does",
+          "what.body": "Tools Dashboard is a modular admin platform that hosts your application library, handles user registration and sign-in, and gives operators full control over apps, access, and automation — all behind one domain.",
+          "what.tile1.title": "Public portal",
+          "what.tile1.body": "End users browse apps, create accounts, complete profiles, and connect OAuth-powered tools.",
+          "what.tile2.title": "Admin console",
+          "what.tile2.body": "Operators manage users, configure the app library, and schedule background tasks.",
+          "why.title": "Why teams use it",
+          "why.body": "Instead of stitching together separate login pages, admin panels, and integration glue, you get a consistent gateway with shared authentication, storage, and APIs — faster to ship and easier to operate.",
+          "why.pill1": "Single sign-on experience",
+          "why.pill2": "Centralized app catalog",
+          "why.pill3": "Operator-grade controls",
+          "why.pill4": "Production-ready stack",
+          "how.title": "How it works",
+          "how.intro": "A lightweight gateway routes traffic to dedicated services — frontends for people, APIs for data, and real-time channels where needed.",
+          "how.step1.title": "You arrive at the gateway",
+          "how.step1.body": "This page sends you to the public portal or admin console. Nginx terminates TLS and forwards requests to the right app.",
+          "how.step2.title": "Auth service issues sessions",
+          "how.step2.body": "Registration and login flow through a dedicated auth service. Sessions are stored securely and validated on each request.",
+          "how.step3.title": "APIs power apps and admin",
+          "how.step3.body": "The main API serves app metadata, user management, and integrations. Object storage handles uploads; websockets deliver live updates.",
+          "auth.title": "Authentication options",
+          "auth.body": "Flexible sign-in for end users and hardened sessions for administrators — with OAuth ready for third-party app connections.",
+          "auth.public.title": "Public users",
+          "auth.public.body": "Google OAuth or email + password, email verification, and secure session cookies scoped to the public app.",
+          "auth.admin.title": "Administrators",
+          "auth.admin.body": "Dedicated admin sign-in with signed Remix session storage and JWT-backed API access.",
+          "auth.apps.title": "App integrations",
+          "auth.apps.body": "OAuth 2.0 flows for connected apps in the library — redirect URIs managed per application.",
+          "auth.security.title": "Security posture",
+          "auth.security.body": "HttpOnly cookies, rate limiting at the edge, and secrets kept out of source control.",
+          "services.title": "Services included",
+          "services.body": "The platform runs as a composed stack — each service has a clear boundary so you can scale or replace parts independently.",
+          "services.pill1": "Public & admin web apps",
+          "services.pill2": "REST API",
+          "services.pill3": "Auth service",
+          "services.pill4": "WebSockets",
+          "services.pill5": "PostgreSQL",
+          "services.pill6": "Redis",
+          "services.pill7": "S3-compatible storage",
+          "services.pill8": "Task scheduler",
+          "subs.title": "Plans & subscriptions",
+          "subs.body": "The public portal includes a pricing area and account tiers (such as Free) today. Full subscription billing — upgrades, renewals, and payment flows — is actively being built and is not yet available for production use.",
+          "subs.pill": "Billing & paid tiers — coming soon",
+          "entry.title": "Get started",
+          "entry.hint": "These entry points are always available — pick the experience that matches your role.",
+          "entry.public.eyebrow": "End users",
+          "entry.public.title": "Public portal",
+          "entry.public.body": "Register, sign in, and open the app library.",
+          "entry.public.cta": "Continue",
+          "entry.admin.eyebrow": "Administrators",
+          "entry.admin.title": "Admin console",
+          "entry.admin.body": "Manage users, apps, and platform settings.",
+          "entry.admin.cta": "Sign in",
+          "footer.note": "Tools Dashboard · datawork.top"
+        },
+        es: {
+          "meta.description": "Tools Dashboard — portal unificado para aplicaciones, autenticación y operaciones de la plataforma.",
+          "brand.name": "Tools Dashboard",
+          "brand.tagline": "Plataforma unificada de herramientas",
+          "lang.label": "Idioma",
+          "hero.eyebrow": "Puerta de entrada",
+          "hero.title": "Un solo lugar para tus apps, usuarios y operaciones",
+          "hero.lede": "Tools Dashboard conecta una experiencia pública pulida con una consola de administración segura — para que los equipos incorporen usuarios, lancen integraciones y operen la plataforma desde un único sitio.",
+          "what.title": "Qué hace",
+          "what.body": "Tools Dashboard es una plataforma modular que aloja tu biblioteca de aplicaciones, gestiona el registro e inicio de sesión de usuarios y da a los operadores control total sobre apps, accesos y automatización — todo bajo un mismo dominio.",
+          "what.tile1.title": "Portal público",
+          "what.tile1.body": "Los usuarios exploran apps, crean cuentas, completan perfiles y conectan herramientas con OAuth.",
+          "what.tile2.title": "Consola de administración",
+          "what.tile2.body": "Los operadores gestionan usuarios, configuran la biblioteca de apps y programan tareas en segundo plano.",
+          "why.title": "Por qué usarlo",
+          "why.body": "En lugar de unir páginas de login, paneles de admin e integraciones por separado, obtienes una puerta de entrada coherente con autenticación, almacenamiento y APIs compartidos — más rápido de lanzar y más fácil de operar.",
+          "why.pill1": "Experiencia de acceso unificada",
+          "why.pill2": "Catálogo centralizado de apps",
+          "why.pill3": "Controles de nivel operador",
+          "why.pill4": "Stack listo para producción",
+          "how.title": "Cómo funciona",
+          "how.intro": "Un gateway ligero enruta el tráfico a servicios dedicados — frontends para personas, APIs para datos y canales en tiempo real cuando hace falta.",
+          "how.step1.title": "Llegas al gateway",
+          "how.step1.body": "Esta página te envía al portal público o a la consola de admin. Nginx termina TLS y reenvía las peticiones a la app correcta.",
+          "how.step2.title": "El servicio de auth emite sesiones",
+          "how.step2.body": "El registro y el login pasan por un servicio de autenticación dedicado. Las sesiones se guardan de forma segura y se validan en cada petición.",
+          "how.step3.title": "Las APIs impulsan apps y admin",
+          "how.step3.body": "La API principal sirve metadatos de apps, gestión de usuarios e integraciones. El almacenamiento de objetos gestiona subidas; los websockets entregan actualizaciones en vivo.",
+          "auth.title": "Opciones de autenticación",
+          "auth.body": "Inicio de sesión flexible para usuarios finales y sesiones reforzadas para administradores — con OAuth listo para conexiones con apps de terceros.",
+          "auth.public.title": "Usuarios públicos",
+          "auth.public.body": "Google OAuth o correo + contraseña, verificación por email y cookies de sesión seguras en la app pública.",
+          "auth.admin.title": "Administradores",
+          "auth.admin.body": "Inicio de sesión dedicado con almacenamiento de sesión firmado en Remix y acceso a la API respaldado por JWT.",
+          "auth.apps.title": "Integraciones de apps",
+          "auth.apps.body": "Flujos OAuth 2.0 para apps conectadas en la biblioteca — URIs de redirección gestionadas por aplicación.",
+          "auth.security.title": "Postura de seguridad",
+          "auth.security.body": "Cookies HttpOnly, limitación de tasa en el borde y secretos fuera del control de versiones.",
+          "services.title": "Servicios incluidos",
+          "services.body": "La plataforma se ejecuta como un stack compuesto — cada servicio tiene un límite claro para escalar o reemplazar partes de forma independiente.",
+          "services.pill1": "Apps web públicas y de admin",
+          "services.pill2": "API REST",
+          "services.pill3": "Servicio de auth",
+          "services.pill4": "WebSockets",
+          "services.pill5": "PostgreSQL",
+          "services.pill6": "Redis",
+          "services.pill7": "Almacenamiento compatible S3",
+          "services.pill8": "Programador de tareas",
+          "subs.title": "Planes y suscripciones",
+          "subs.body": "El portal público incluye hoy un área de precios y niveles de cuenta (como Free). La facturación completa — mejoras, renovaciones y pagos — está en desarrollo activo y aún no está disponible en producción.",
+          "subs.pill": "Facturación y planes de pago — próximamente",
+          "entry.title": "Comenzar",
+          "entry.hint": "Estos accesos están siempre disponibles — elige la experiencia según tu rol.",
+          "entry.public.eyebrow": "Usuarios finales",
+          "entry.public.title": "Portal público",
+          "entry.public.body": "Regístrate, inicia sesión y abre la biblioteca de apps.",
+          "entry.public.cta": "Continuar",
+          "entry.admin.eyebrow": "Administradores",
+          "entry.admin.title": "Consola de admin",
+          "entry.admin.body": "Gestiona usuarios, apps y ajustes de la plataforma.",
+          "entry.admin.cta": "Iniciar sesión",
+          "footer.note": "Tools Dashboard · datawork.top"
+        }
+      };
+
+      function readCookie(name) {
+        var match = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/[.$?*|{}()[\]\\/+^]/g, "\\$&") + "=([^;]*)"));
+        return match ? decodeURIComponent(match[1]) : "";
+      }
+
+      function writeCookie(name, value) {
+        document.cookie = name + "=" + encodeURIComponent(value) + "; path=/; max-age=31536000; samesite=lax";
+      }
+
+      function normalizeLang(raw) {
+        if (!raw) return FALLBACK;
+        var base = String(raw).split("-")[0].toLowerCase();
+        return SUPPORTED.indexOf(base) >= 0 ? base : FALLBACK;
+      }
+
+      function detectLang() {
+        return normalizeLang(readCookie(COOKIE) || localStorage.getItem("i18nextLng") || navigator.language || FALLBACK);
+      }
+
+      function t(lang, key) {
+        var table = MESSAGES[lang] || MESSAGES[FALLBACK];
+        return table[key] || MESSAGES[FALLBACK][key] || key;
+      }
+
+      function applyLang(lang) {
+        var lng = normalizeLang(lang);
+        document.documentElement.lang = lng;
+        document.querySelectorAll("[data-i18n]").forEach(function (el) {
+          var key = el.getAttribute("data-i18n");
+          if (key) el.textContent = t(lng, key);
+        });
+        var meta = document.querySelector('meta[name="description"]');
+        if (meta) meta.setAttribute("content", t(lng, "meta.description"));
+        var select = document.getElementById("lang-select");
+        if (select && select.value !== lng) select.value = lng;
+        writeCookie(COOKIE, lng);
+        try { localStorage.setItem("i18nextLng", lng); } catch (e) { /* ignore */ }
+      }
+
+      var initial = detectLang();
+      applyLang(initial);
+
+      document.getElementById("lang-select").addEventListener("change", function (e) {
+        applyLang(e.target.value);
+      });
+    })();
+  </script>
 </body>
 </html>

@@ -4,6 +4,21 @@
 
 **Updated:** 2026-07-25 · **Mode:** thin-client
 
+## Cross-framework action (@x-director)
+**Date:** 2026-07-25
+**Request:** "Add bilingual informational mini-website at https://tools.datawork.top/ root; keep public/admin entry cards always visible; EN/ES like current i18n."
+**Frameworks involved:** .ai (engineering), .ai.ui (degraded — design applied natively)
+**Classified bucket(s):** cross-framework (ui + engineering)
+**Routing confidence:** high
+**Preflight:** .ai yes · .ai.ui yes · .ai.biz no · .ai.soc no
+**Executed:**
+1. Expanded `infra/nginx/landing/index.html` — informational sections + sticky entry rail (desktop) + fixed dock (mobile); inline EN/ES via `i18next` cookie alignment.
+2. Updated `infra/nginx/host-setup/05-install-prd-datawork-host-nginx.sh` to copy optional landing assets.
+**Blockers:** none — redeploy landing to VPS required.
+**Next recommended:** On VPS: `sudo cp` landing or re-run host nginx install script after `git pull`.
+
+---
+
 ## Session status
 
 **Open:** 2026-07-25 — goal: VPS go-live (`tools.datawork.top`) / tactical backlog per NEXT.md
