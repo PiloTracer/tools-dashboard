@@ -1,4 +1,4 @@
-﻿import { Form, NavLink } from "@remix-run/react";
+﻿import { Form, NavLink, useNavigation } from "@remix-run/react";
 import type { ReactNode } from "react";
 
 type AdminLayoutProps = {
@@ -100,6 +100,26 @@ const styles = {
     backgroundColor: "rgba(99,102,241,0.22)",
     color: "#fff",
   } as const,
+  navLinkPending: {
+    opacity: 0.72,
+    backgroundColor: "rgba(99,102,241,0.12)",
+  } as const,
+  contentLoading: {
+    opacity: 0.55,
+    pointerEvents: "none" as const,
+    transition: "opacity 0.15s ease",
+  } as const,
+  navProgress: {
+    position: "fixed" as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "3px",
+    background: "linear-gradient(90deg, #6366f1, #818cf8)",
+    transformOrigin: "left center",
+    animation: "admin-nav-progress 1.1s ease-in-out infinite",
+    zIndex: 1000,
+  } as const,
   footer: {
     fontSize: "12px",
     color: "rgba(248,250,252,0.65)",
@@ -174,9 +194,18 @@ const styles = {
 
 export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
   const username = userEmail?.includes("@") ? userEmail.split("@")[0] : userEmail?.trim() || null;
+  const navigation = useNavigation();
+  const isNavigating = navigation.state === "loading";
+  const pendingPath = navigation.location?.pathname ?? null;
 
   return (
     <div style={styles.shell}>
+      {isNavigating ? (
+        <>
+          <style>{`@keyframes admin-nav-progress { 0% { transform: scaleX(0.12); } 50% { transform: scaleX(0.72); } 100% { transform: scaleX(0.2); } }`}</style>
+          <div style={styles.navProgress} aria-hidden="true" />
+        </>
+      ) : null}
       <aside style={styles.sidebar}>
         <div style={styles.brand}>
           <div style={styles.badge}>TD</div>
@@ -190,10 +219,12 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
             <NavLink
               key={item.to}
               to={item.to}
-              prefetch="intent"
-              style={({ isActive }) => ({
+              prefetch="render"
+              aria-busy={isNavigating && pendingPath === item.to}
+              style={({ isActive, isPending }) => ({
                 ...styles.navLink,
                 ...(isActive ? styles.navLinkActive : {}),
+                ...(isPending || (isNavigating && pendingPath === item.to) ? styles.navLinkPending : {}),
               })}
             >
               {item.icon}
@@ -271,7 +302,9 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
             </span>
           </div>
         </header>
-        <div style={styles.content}>{children}</div>
+        <div style={isNavigating ? { ...styles.content, ...styles.contentLoading } : styles.content} aria-busy={isNavigating}>
+          {children}
+        </div>
         <div style={styles.footerNote}>© {new Date().getFullYear()} Tools Dashboard Platform</div>
       </main>
     </div>

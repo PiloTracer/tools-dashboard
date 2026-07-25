@@ -6,9 +6,11 @@
 
 ## Session status
 
-**Closed:** 2026-07-25 — thin-client context verified, optimized, committed (`616c2f0`), and pushed to `origin/main`
+**Open:** 2026-07-25 — goal: VPS go-live (`tools.datawork.top`) / tactical backlog per NEXT.md
 
-**Recommended pick-up:** `.work/plans/NEXT.md` — VPS go-live (`tools.datawork.top`)
+**Updated:** 2026-07-25
+
+Treat prior closed sessions as historical only; see "What this cycle produced" below.
 
 ---
 

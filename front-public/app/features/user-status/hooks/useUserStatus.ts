@@ -22,11 +22,10 @@ export function useUserStatus() {
     return unsubscribe;
   }, [store]);
 
-  // Initialize/refresh status when location changes
-  // This ensures status updates after login redirects
+  // Initialize/refresh status when navigation changes (including same-path redirects).
   useEffect(() => {
     store.initialize();
-  }, [store, location.pathname]);
+  }, [store, location.pathname, location.key]);
 
   const setNextLocation = useCallback(
     (path: string) => {
@@ -46,19 +45,23 @@ export function useUserStatus() {
     store.clearNextLocation();
   }, [store]);
 
-  const logout = useCallback(async () => {
-    try {
-      await fetch("/app/features/user-logout", {
-        method: "POST",
-        credentials: "include",
-      });
-      store.clearAuthentication();
-      // Full URL + trailing slash: avoids Remix/nginx edge cases on `/app` vs `/app/` and wrong host.
-      window.location.replace(`${window.location.origin}/app/`);
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  }, [store]);
+  const logout = useCallback(
+    async (logoutPath = "/app/features/user-logout", homePath = "/app/") => {
+      try {
+        await fetch(logoutPath, {
+          method: "POST",
+          credentials: "include",
+        });
+        store.clearAuthentication();
+        // Full URL + trailing slash: avoids Remix/nginx edge cases on `/app` vs `/app/` and wrong host.
+        const normalizedHome = homePath.endsWith("/") ? homePath : `${homePath}/`;
+        window.location.replace(`${window.location.origin}${normalizedHome}`);
+      } catch (error) {
+        console.error("Logout failed:", error);
+      }
+    },
+    [store]
+  );
 
   const getRedirectPath = useCallback(() => {
     return store.getRedirectPath();

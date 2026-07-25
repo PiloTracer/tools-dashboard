@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, type FC } from "react";
-import { Form, NavLink } from "@remix-run/react";
+import { NavLink } from "@remix-run/react";
 import { useTranslation } from "react-i18next";
 import { useUserStatus } from "../hooks/useUserStatus";
 
@@ -27,8 +27,9 @@ function InitialsAvatar({ label }: { label: string }) {
 
 export const UserMenu: FC<UserMenuProps> = ({ basePath }) => {
   const { t } = useTranslation();
-  const { isAuthenticated, user } = useUserStatus();
+  const { isAuthenticated, user, logout } = useUserStatus();
   const [hydrated, setHydrated] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     setHydrated(true);
@@ -36,7 +37,15 @@ export const UserMenu: FC<UserMenuProps> = ({ basePath }) => {
 
   const loginHref = `${basePath}/features/user-registration?mode=login`;
   const registerHref = `${basePath}/features/user-registration`;
-  const logoutAction = `${basePath}/features/user-logout`;
+  const logoutPath = `${basePath}/features/user-logout`;
+  const homePath = `${basePath}/`;
+
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    await logout(logoutPath, homePath);
+    setLoggingOut(false);
+  };
 
   const guestChrome = (
     <>
@@ -73,11 +82,16 @@ export const UserMenu: FC<UserMenuProps> = ({ basePath }) => {
             </span>
           ) : null}
         </div>
-        <Form method="post" action={logoutAction} className="logout-form">
-          <button type="submit" className="btn-header-logout">
-            {t("header.actions.logout")}
+        <div className="logout-form">
+          <button
+            type="button"
+            className="btn-header-logout"
+            disabled={loggingOut}
+            onClick={handleLogout}
+          >
+            {loggingOut ? t("header.actions.loggingOut", { defaultValue: "Logging out…" }) : t("header.actions.logout")}
           </button>
-        </Form>
+        </div>
       </div>
     );
   }
