@@ -4,6 +4,7 @@
  */
 
 import type { FC, ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { useProtectedRoute } from "../hooks/useProtectedRoute";
 
 type ProtectedRouteProps = {
@@ -12,6 +13,7 @@ type ProtectedRouteProps = {
 };
 
 export const ProtectedRoute: FC<ProtectedRouteProps> = ({ children, fallback }) => {
+  const { t } = useTranslation();
   const { isLoading, isAuthenticated, isProtected } = useProtectedRoute();
 
   // Show loading state while checking authentication
@@ -19,7 +21,7 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({ children, fallback }) 
     return (
       <div className="loading-container" style={{ padding: "40px", textAlign: "center" }}>
         <div className="loading-spinner" style={{ fontSize: "18px", color: "var(--color-text-secondary)" }}>
-          Loading...
+          {t("common.loading")}
         </div>
       </div>
     );

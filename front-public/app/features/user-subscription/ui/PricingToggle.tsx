@@ -1,4 +1,5 @@
 import type { FC } from "react";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   billingCycle: "monthly" | "yearly";
@@ -6,6 +7,8 @@ type Props = {
 };
 
 export const PricingToggle: FC<Props> = ({ billingCycle, onToggle }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="inline-flex rounded-lg bg-gray-100 p-1 shadow-inner">
@@ -17,7 +20,7 @@ export const PricingToggle: FC<Props> = ({ billingCycle, onToggle }) => {
               : "text-gray-600 hover:text-gray-900"
           }`}
         >
-          Monthly
+          {t("subscription.toggle.monthly")}
         </button>
         <button
           onClick={() => onToggle("yearly")}
@@ -27,13 +30,11 @@ export const PricingToggle: FC<Props> = ({ billingCycle, onToggle }) => {
               : "text-gray-600 hover:text-gray-900"
           }`}
         >
-          Yearly
+          {t("subscription.toggle.yearly")}
         </button>
       </div>
       {billingCycle === "yearly" && (
-        <p className="text-sm font-medium text-green-600">
-          Save up to 17% with annual billing
-        </p>
+        <p className="text-sm font-medium text-green-600">{t("subscription.toggle.yearlySavings")}</p>
       )}
     </div>
   );

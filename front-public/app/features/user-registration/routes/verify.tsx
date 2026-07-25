@@ -1,8 +1,12 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
+import { Trans, useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { z } from "zod";
+
 import { usePublicHref } from "../../../components/layout/PublicLayout";
+import i18next from "../../../i18next.server";
 import { VerificationBanner } from "../ui/VerificationBanner";
 import { getBackAuthEnv } from "../../../utils/env.server";
 import { resolveRedirectTarget } from "../../../utils/publicPath.server";
@@ -38,13 +42,17 @@ type LoaderData = {
   message: string;
   supportUrl?: string;
   email?: string;
-  /** Google OAuth return on this route — do not show email magic-link guidance. */
   flow?: "email" | "google";
 };
 
 const SUPPORT_MAILTO = "mailto:support@tools-dashboard.io";
 
+function defaultPendingMessage(t: TFunction, email?: string) {
+  return email ? t("verify.messages.pendingWithEmail", { email }) : t("verify.messages.pendingGeneric");
+}
+
 export async function loader({ request }: LoaderFunctionArgs) {
+  const t = await i18next.getFixedT(request);
   const url = new URL(request.url);
   const parsedQuery = verificationQuerySchema.safeParse(Object.fromEntries(url.searchParams));
 
@@ -66,11 +74,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   let email = queryEmail;
-  let supportUrl: string | undefined = SUPPORT_MAILTO;
+  const supportUrl: string | undefined = SUPPORT_MAILTO;
 
-  // Google redirects to redirect_uri with ?code=...&state=... (no ?provider=google). Treat code+state as OAuth return.
-  const isGoogleOAuthReturn =
-    !token && (provider === "google" || (Boolean(code) && Boolean(state)));
+  const isGoogleOAuthReturn = !token && (provider === "google" || (Boolean(code) && Boolean(state)));
 
   if (isGoogleOAuthReturn) {
     if (!code || !state) {
@@ -78,7 +84,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         {
           status: "error",
           flow: "google",
-          message: "Missing Google authorization parameters. Please retry signing in with Google.",
+          message: t("verify.messages.googleMissingParams"),
           supportUrl: SUPPORT_MAILTO,
           email,
         },
@@ -104,7 +110,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         {
           status: "error",
           flow: "google",
-          message: "We could not reach the authentication service. Please try signing in again.",
+          message: t("verify.messages.googleServiceUnreachable"),
           supportUrl: SUPPORT_MAILTO,
           email,
         },
@@ -112,7 +118,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
       );
     }
 
-    // Get ALL Set-Cookie headers (backend may send multiple)
     const setCookieHeaders = getAllSetCookieHeaders(response);
 
     if (response.ok) {
@@ -124,7 +129,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
           {
             status: "error",
             flow: "google",
-            message: "We could not confirm your Google sign-in. Please try again.",
+            message: t("verify.messages.googleUnexpectedPayload"),
             supportUrl: SUPPORT_MAILTO,
             email,
           },
@@ -137,7 +142,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
       const resolvedRedirect = resolveRedirectTarget(parsed.data.redirectTo);
       if (resolvedRedirect) {
         const redirectResponse = redirect(resolvedRedirect);
-        // Forward all Set-Cookie headers
         for (const cookie of setCookieHeaders) {
           redirectResponse.headers.append("Set-Cookie", cookie);
         }
@@ -150,13 +154,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
         message:
           parsed.data.message ??
           (parsed.data.status === "verified"
-            ? "Your Google account is connected. You are ready to continue."
-            : "We are finalizing your account setup. You will be redirected soon."),
+            ? t("verify.messages.googleVerified")
+            : t("verify.messages.googlePending")),
         supportUrl,
         email,
       });
 
-      // Forward all Set-Cookie headers
       for (const cookie of setCookieHeaders) {
         successResponse.headers.append("Set-Cookie", cookie);
       }
@@ -171,7 +174,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         message:
           parsedError.success && parsedError.data.message
             ? parsedError.data.message
-            : "Google sign-in could not be completed. Please try again.",
+            : t("verify.messages.googleFailed"),
         supportUrl: SUPPORT_MAILTO,
         email,
       },
@@ -197,7 +200,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return json<LoaderData>(
         {
           status: "error",
-          message: "We could not verify your email right now. Please try again or request a new link.",
+          message: t("verify.messages.emailServiceUnreachable"),
           supportUrl: SUPPORT_MAILTO,
           email,
         },
@@ -205,7 +208,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
       );
     }
 
-    // Get ALL Set-Cookie headers (backend may send multiple)
     const emailSetCookieHeaders = getAllSetCookieHeaders(response);
 
     if (response.ok) {
@@ -215,7 +217,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         return json<LoaderData>(
           {
             status: "error",
-            message: "Your verification link is invalid or expired. Request a new one to continue.",
+            message: t("verify.messages.emailInvalidLink"),
             supportUrl: SUPPORT_MAILTO,
             email,
           },
@@ -228,7 +230,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
       const resolvedRedirect = resolveRedirectTarget(parsed.data.redirectTo);
       if (resolvedRedirect) {
         const redirectResponse = redirect(resolvedRedirect);
-        // Forward all Set-Cookie headers
         for (const cookie of emailSetCookieHeaders) {
           redirectResponse.headers.append("Set-Cookie", cookie);
         }
@@ -240,13 +241,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
         message:
           parsed.data.message ??
           (parsed.data.status === "verified"
-            ? "Your email is verified. You will be redirected to complete onboarding."
-            : "We are finalizing your registration. This page will update shortly."),
+            ? t("verify.messages.emailVerified")
+            : t("verify.messages.emailPending")),
         supportUrl,
         email,
       });
 
-      // Forward all Set-Cookie headers
       for (const cookie of emailSetCookieHeaders) {
         successResponse.headers.append("Set-Cookie", cookie);
       }
@@ -256,11 +256,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const parsedError = apiErrorSchema.safeParse(await safeReadJson(response));
     return json<LoaderData>(
       {
-        status: response.status === 400 ? "error" : "error",
+        status: "error",
         message:
           parsedError.success && parsedError.data.message
             ? parsedError.data.message
-            : "Your verification link is invalid or expired. Request a new one to continue.",
+            : t("verify.messages.emailInvalidLink"),
         supportUrl: SUPPORT_MAILTO,
         email,
       },
@@ -280,7 +280,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return json<LoaderData>(
       {
         status: "pending",
-        message: defaultPendingMessage(email),
+        message: defaultPendingMessage(t, email),
         supportUrl: SUPPORT_MAILTO,
         email,
       },
@@ -288,7 +288,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
     );
   }
 
-  // Get ALL Set-Cookie headers (backend may send multiple)
   const statusSetCookieHeaders = getAllSetCookieHeaders(response);
 
   if (response.ok) {
@@ -300,7 +299,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
       const resolvedRedirect = resolveRedirectTarget(parsed.data.redirectTo);
       if (resolvedRedirect && parsed.data.status === "verified") {
         const redirectResponse = redirect(resolvedRedirect);
-        // Forward all Set-Cookie headers
         for (const cookie of statusSetCookieHeaders) {
           redirectResponse.headers.append("Set-Cookie", cookie);
         }
@@ -312,13 +310,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
         message:
           parsed.data.message ??
           (parsed.data.status === "verified"
-            ? "Your account is verified and ready to use."
-            : defaultPendingMessage(email)),
+            ? t("verify.messages.accountVerified")
+            : defaultPendingMessage(t, email)),
         supportUrl,
         email,
       });
 
-      // Forward all Set-Cookie headers
       for (const cookie of statusSetCookieHeaders) {
         successResponse.headers.append("Set-Cookie", cookie);
       }
@@ -333,13 +330,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
     message:
       parsedError.success && parsedError.data.message
         ? parsedError.data.message
-        : defaultPendingMessage(email),
+        : defaultPendingMessage(t, email),
     supportUrl: SUPPORT_MAILTO,
     email,
   };
 
   const statusResponse = json<LoaderData>(responsePayload);
-  // Forward all Set-Cookie headers
   for (const cookie of statusSetCookieHeaders) {
     statusResponse.headers.append("Set-Cookie", cookie);
   }
@@ -348,7 +344,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export default function VerifyRoute() {
   const data = useLoaderData<typeof loader>();
-  const continueHref = usePublicHref("/app/features/app-library");
+  const { t } = useTranslation();
+  const continueHref = usePublicHref("/features/app-library");
   const isGoogleFlow = data.flow === "google";
 
   return (
@@ -356,26 +353,27 @@ export default function VerifyRoute() {
       <header className="space-y-3 text-center">
         {isGoogleFlow ? (
           <>
-            <h1 className="text-3xl font-semibold text-slate-900">Google sign-in</h1>
+            <h1 className="text-3xl font-semibold text-slate-900">{t("verify.google.title")}</h1>
             <p className="text-base text-slate-600">
               {data.status === "error"
-                ? "Something went wrong while connecting your Google account."
+                ? t("verify.google.subtitle.error")
                 : data.status === "verified"
-                  ? "Your Google account is linked. You can continue in the app."
-                  : "Finishing sign-in with Google…"}
+                  ? t("verify.google.subtitle.verified")
+                  : t("verify.google.subtitle.pending")}
             </p>
           </>
         ) : (
           <>
-            <h1 className="text-3xl font-semibold text-slate-900">Verify your account</h1>
+            <h1 className="text-3xl font-semibold text-slate-900">{t("verify.title")}</h1>
             <p className="text-base text-slate-600">
               {data.email ? (
-                <>
-                  We sent a secure link to <strong className="font-semibold text-slate-900">{data.email}</strong>.
-                  Complete the steps in that message to activate your access.
-                </>
+                <Trans
+                  i18nKey="verify.email.sentTo"
+                  values={{ email: data.email }}
+                  components={{ strong: <strong className="font-semibold text-slate-900" /> }}
+                />
               ) : (
-                "We sent you a secure link. Complete the steps in that message to activate your access."
+                t("verify.email.sentGeneric")
               )}
             </p>
           </>
@@ -386,16 +384,21 @@ export default function VerifyRoute() {
 
       {!isGoogleFlow ? (
         <div className="rounded-2xl border border-slate-200 bg-white/80 p-8 text-left text-sm text-slate-600 shadow-sm">
-          <h2 className="mb-3 text-lg font-semibold text-slate-900">Need a hand?</h2>
+          <h2 className="mb-3 text-lg font-semibold text-slate-900">{t("verify.help.title")}</h2>
           <ul className="list-disc space-y-2 pl-5">
-            <li>Check your spam folder if the message does not arrive within a minute.</li>
-            <li>Verification links expire after 15 minutes for your security.</li>
+            <li>{t("verify.help.spam")}</li>
+            <li>{t("verify.help.expiry")}</li>
             <li>
-              Still waiting?{" "}
-              <a href={SUPPORT_MAILTO} className="font-semibold text-blue-600 underline">
-                Contact support
-              </a>{" "}
-              for a fresh link.
+              <Trans
+                i18nKey="verify.help.contactSupport"
+                components={{
+                  1: (
+                    <a href={SUPPORT_MAILTO} className="font-semibold text-blue-600 underline">
+                      {t("common.contactSupport")}
+                    </a>
+                  ),
+                }}
+              />
             </li>
           </ul>
         </div>
@@ -407,18 +410,12 @@ export default function VerifyRoute() {
             to={continueHref}
             className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-base font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
           >
-            Continue onboarding
+            {t("verify.continueOnboarding")}
           </Link>
         </div>
       ) : null}
     </section>
   );
-}
-
-function defaultPendingMessage(email?: string) {
-  return email
-    ? `Check ${email} for your verification link. You can close this tab once you're confirmed.`
-    : "Check your inbox for the verification link we just sent.";
 }
 
 async function safeReadJson(response: Response): Promise<unknown> {
@@ -429,24 +426,16 @@ async function safeReadJson(response: Response): Promise<unknown> {
   }
 }
 
-/**
- * Extract all Set-Cookie headers from a response
- * The Fetch API headers.get() only returns the first value,
- * so we need to use getSetCookie() or parse raw headers
- */
 function getAllSetCookieHeaders(response: Response): string[] {
-  // Modern browsers support getSetCookie()
   if (typeof response.headers.getSetCookie === "function") {
     return response.headers.getSetCookie();
   }
 
-  // Fallback: try to get raw headers (Node.js)
-  const rawHeaders = (response.headers as any).raw?.();
+  const rawHeaders = (response.headers as { raw?: () => Record<string, string[]> }).raw?.();
   if (rawHeaders && Array.isArray(rawHeaders["set-cookie"])) {
     return rawHeaders["set-cookie"];
   }
 
-  // Last resort: get single header
   const singleHeader = response.headers.get("set-cookie");
   return singleHeader ? [singleHeader] : [];
 }

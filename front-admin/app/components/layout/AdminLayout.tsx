@@ -1,5 +1,8 @@
 ﻿import { Form, NavLink, useNavigation } from "@remix-run/react";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+
+import { LanguageSwitcher } from "../LanguageSwitcher";
 
 type AdminLayoutProps = {
   children: ReactNode;
@@ -10,7 +13,7 @@ type AdminLayoutProps = {
 const NAV_ITEMS = [
   {
     to: "/admin/",
-    label: "Overview",
+    labelKey: "layout.nav.overview",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" style={{ width: 18, height: 18 }}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
@@ -19,7 +22,7 @@ const NAV_ITEMS = [
   },
   {
     to: "/admin/features/app-library",
-    label: "Application library",
+    labelKey: "layout.nav.appLibrary",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" style={{ width: 18, height: 18 }}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75A2.25 2.25 0 0115.75 13.5H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25v-2.25z" />
@@ -28,7 +31,7 @@ const NAV_ITEMS = [
   },
   {
     to: "/admin/features/user-management",
-    label: "User management",
+    labelKey: "layout.nav.userManagement",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" style={{ width: 18, height: 18 }}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.127A9 9 0 1 0 4.873 9" />
@@ -41,7 +44,7 @@ const NAV_ITEMS = [
   },
   {
     to: "/admin/features/task-scheduler",
-    label: "Task scheduler",
+    labelKey: "layout.nav.taskScheduler",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" style={{ width: 18, height: 18 }}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l3 3" />
@@ -193,6 +196,7 @@ const styles = {
 };
 
 export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
+  const { t } = useTranslation();
   const username = userEmail?.includes("@") ? userEmail.split("@")[0] : userEmail?.trim() || null;
   const navigation = useNavigation();
   const isNavigating = navigation.state === "loading";
@@ -210,8 +214,8 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
         <div style={styles.brand}>
           <div style={styles.badge}>TD</div>
           <div>
-            <div style={{ fontWeight: 600, fontSize: "16px" }}>Tools Dashboard</div>
-            <div style={{ fontSize: "12px", color: "rgba(248,250,252,0.65)" }}>Admin console</div>
+            <div style={{ fontWeight: 600, fontSize: "16px" }}>{t("layout.brand")}</div>
+            <div style={{ fontSize: "12px", color: "rgba(248,250,252,0.65)" }}>{t("layout.subtitle")}</div>
           </div>
         </div>
         <nav style={styles.navList}>
@@ -228,7 +232,7 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
               })}
             >
               {item.icon}
-              <span style={{ fontSize: "14px" }}>{item.label}</span>
+              <span style={{ fontSize: "14px" }}>{t(item.labelKey)}</span>
             </NavLink>
           ))}
         </nav>
@@ -247,7 +251,7 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
                 marginBottom: "4px",
               }}
             >
-              {username ? "Signed in as" : "Session"}
+              {username ? t("layout.session.signedInAs") : t("layout.session.session")}
             </div>
             <div
               style={{
@@ -262,9 +266,10 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
               <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
                 <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
               </svg>
-              {username || "Authenticated"}
+              {username || t("layout.session.authenticated")}
             </div>
           </div>
+          <LanguageSwitcher />
           <Form method="post" action="/admin/logout" style={{ marginBottom: "14px" }}>
             <button
               type="submit"
@@ -280,32 +285,30 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
                 cursor: "pointer",
               }}
             >
-              Sign out
+              {t("layout.session.signOut")}
             </button>
           </Form>
-          Environment: <strong style={{ color: "#fff" }}>Local development</strong>
-          <br /> Connected to stack
+          {t("layout.environment.label")} <strong style={{ color: "#fff" }}>{t("layout.environment.value")}</strong>
+          <br /> {t("layout.environment.connected")}
         </div>
       </aside>
       <main style={styles.main}>
         <header style={styles.header}>
           <div>
-            <h1 style={styles.headerTitle}>Welcome back</h1>
-            <p style={styles.headerSubtitle}>
-              Manage operations, users, and automation without leaving this workspace.
-            </p>
+            <h1 style={styles.headerTitle}>{t("layout.header.welcome")}</h1>
+            <p style={styles.headerSubtitle}>{t("layout.header.subtitle")}</p>
           </div>
           <div style={styles.headerBadges}>
-            <span style={styles.badgePrimary}>Admin suite</span>
+            <span style={styles.badgePrimary}>{t("layout.header.suiteBadge")}</span>
             <span style={styles.badgeStatus}>
-              <span style={styles.dot} /> Online
+              <span style={styles.dot} /> {t("layout.header.online")}
             </span>
           </div>
         </header>
         <div style={isNavigating ? { ...styles.content, ...styles.contentLoading } : styles.content} aria-busy={isNavigating}>
           {children}
         </div>
-        <div style={styles.footerNote}>© {new Date().getFullYear()} Tools Dashboard Platform</div>
+        <div style={styles.footerNote}>{t("layout.footer.copyright", { year: new Date().getFullYear() })}</div>
       </main>
     </div>
   );

@@ -1,53 +1,74 @@
-import type { MetaFunction } from "@remix-run/node";
+import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
+import { json } from "@remix-run/node";
 import { Link } from "@remix-run/react";
+import { useTranslation } from "react-i18next";
 
 import { usePublicBasePath } from "../components/layout/PublicLayout";
+import i18next from "../i18next.server";
 import { joinBasePath } from "../utils/publicPaths";
 
-export const meta: MetaFunction = ({ matches }) => {
-  // Get parent meta tags
+type LoaderData = {
+  meta: {
+    title: string;
+    description: string;
+  };
+};
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const t = await i18next.getFixedT(request);
+
+  return json<LoaderData>({
+    meta: {
+      title: t("home.meta.title"),
+      description: t("home.meta.description"),
+    },
+  });
+}
+
+export const meta: MetaFunction<typeof loader> = ({ data, matches }) => {
   const parentMeta = matches
     .flatMap((match) => match.meta ?? [])
     .filter((meta): meta is { charset: string } | { name: string; content: string } => {
-      return 'charset' in meta || ('name' in meta && meta.name === 'viewport');
+      return "charset" in meta || ("name" in meta && meta.name === "viewport");
     });
 
   return [
     ...parentMeta,
-    { title: "Tools Dashboard - Public Portal" },
+    { title: data?.meta.title ?? "Tools Dashboard" },
     {
       name: "description",
-      content: "Welcome to the public onboarding experience for the Tools Dashboard ecosystem.",
+      content: data?.meta.description ?? "",
     },
   ];
 };
 
-const FEATURE_CARDS = [
+const FEATURE_CARD_KEYS = [
   {
-    title: "Adaptive onboarding",
-    description: "Serve contextual steps based on segment, geography, and progression stage.",
+    titleKey: "home.features.adaptiveOnboarding.title",
+    descriptionKey: "home.features.adaptiveOnboarding.description",
+    ctaKey: "home.features.adaptiveOnboarding.cta",
     to: "/features/progressive-profiling",
-    cta: "Explore profiling",
   },
   {
-    title: "Trusted authentication",
-    description: "Offer Google and email login paths with progressive security requirements.",
+    titleKey: "home.features.trustedAuth.title",
+    descriptionKey: "home.features.trustedAuth.description",
+    ctaKey: "home.features.trustedAuth.cta",
     to: "/features/user-registration",
-    cta: "Review auth flows",
   },
   {
-    title: "Telemetry & insight",
-    description: "Monitor conversion health and inform subscription recommendations in real time.",
+    titleKey: "home.features.telemetry.title",
+    descriptionKey: "home.features.telemetry.description",
+    ctaKey: "home.features.telemetry.cta",
     to: "/features/progressive-profiling",
-    cta: "See journey analytics",
   },
-];
+] as const;
 
 export default function HomePage() {
+  const { t } = useTranslation();
   const basePath = usePublicBasePath();
   const registerHref = joinBasePath(basePath, "/features/user-registration");
   const resumeHref = joinBasePath(basePath, "/features/progressive-profiling");
-  const featureCards = FEATURE_CARDS.map((card) => ({
+  const featureCards = FEATURE_CARD_KEYS.map((card) => ({
     ...card,
     href: joinBasePath(basePath, card.to),
   }));
@@ -57,29 +78,26 @@ export default function HomePage() {
       <section className="hero-section">
         <div className="hero-grid">
           <div className="hero-copy">
-            <span className="tag">Launch-ready onboarding</span>
-            <h1>Design a customer journey that learns and responds instantly</h1>
-            <p>
-              Empower visitors to register, authenticate, and complete their profile with crystal-clear steps and
-              responsive guidance. Every screen is tuned for accessibility and mobile responsiveness.
-            </p>
+            <span className="tag">{t("home.hero.tag")}</span>
+            <h1>{t("home.hero.title")}</h1>
+            <p>{t("home.hero.description")}</p>
             <div className="hero-actions">
               <Link to={registerHref} className="btn-solid">
-                Create an account
+                {t("home.hero.createAccount")}
               </Link>
               <Link to={resumeHref} className="btn-ghost">
-                Resume profile
+                {t("home.hero.resumeProfile")}
               </Link>
             </div>
           </div>
           <div className="hero-cards">
             <div className="hero-card-item">
-              <h3>One flow, all devices</h3>
-              <p>Delight users with a consistent path from welcome screen to activation in under three steps.</p>
+              <h3>{t("home.cards.oneFlow.title")}</h3>
+              <p>{t("home.cards.oneFlow.description")}</p>
             </div>
             <div className="hero-card-item">
-              <h3>Security-first foundations</h3>
-              <p>Guard sessions with rotating tokens, managed secrets, and AI-assisted alerts.</p>
+              <h3>{t("home.cards.securityFirst.title")}</h3>
+              <p>{t("home.cards.securityFirst.description")}</p>
             </div>
           </div>
         </div>
@@ -87,11 +105,11 @@ export default function HomePage() {
 
       <section className="feature-grid">
         {featureCards.map((card) => (
-          <article key={card.title} className="feature-tile">
-            <h3>{card.title}</h3>
-            <p>{card.description}</p>
+          <article key={card.titleKey} className="feature-tile">
+            <h3>{t(card.titleKey)}</h3>
+            <p>{t(card.descriptionKey)}</p>
             <Link to={card.href} className="feature-link">
-              {card.cta}
+              {t(card.ctaKey)}
               <span aria-hidden="true">-&gt;</span>
             </Link>
           </article>

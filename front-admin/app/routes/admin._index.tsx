@@ -2,6 +2,7 @@
 import { json } from "@remix-run/node";
 import { Link } from "@remix-run/react";
 import type { CSSProperties } from "react";
+import { useTranslation } from "react-i18next";
 
 import { requireAdminSession } from "../utils/admin-session.server";
 
@@ -59,37 +60,72 @@ const statCardStyles: CSSProperties = {
   boxShadow: "0 8px 18px rgba(15,23,42,0.06)",
 };
 
-const stats = [
-  { label: "Active admins", value: "6", detail: "+2 this week" },
-  { label: "Pending invites", value: "14", detail: "Send reminders" },
-  { label: "Scheduled jobs", value: "18", detail: "4 require attention" },
-];
-
 export default function HomePage() {
+  const { t } = useTranslation();
+
+  const stats = [
+    {
+      label: t("overview.stats.activeAdmins"),
+      value: "6",
+      detail: t("overview.stats.activeAdminsDetail"),
+    },
+    {
+      label: t("overview.stats.pendingInvites"),
+      value: "14",
+      detail: t("overview.stats.pendingInvitesDetail"),
+    },
+    {
+      label: t("overview.stats.scheduledJobs"),
+      value: "18",
+      detail: t("overview.stats.scheduledJobsDetail"),
+    },
+  ];
+
   return (
     <div style={{ display: "grid", gap: "26px" }}>
       <section style={{ ...cardStyles, gap: "18px" }}>
         <div>
           <h2 style={{ margin: 0, fontSize: "26px", letterSpacing: "-0.01em" }}>
-            Keep daily operations aligned with confidence
+            {t("overview.hero.title")}
           </h2>
-          <p style={paragraphStyles}>
-            Track core signals, manage access, and jump straight into the work that matters most. This
-            snapshot is tuned for local development with the Codex workflow.
-          </p>
+          <p style={paragraphStyles}>{t("overview.hero.description")}</p>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
-          <Link to="/admin/features/user-management" style={{ ...ctaStyles, backgroundColor: "#4f46e5", color: "#fff", padding: "10px 18px", borderRadius: "999px" }}>
-            Open user management →
+          <Link
+            to="/admin/features/user-management"
+            style={{
+              ...ctaStyles,
+              backgroundColor: "#4f46e5",
+              color: "#fff",
+              padding: "10px 18px",
+              borderRadius: "999px",
+            }}
+          >
+            {t("overview.cta.openUserManagement")}
           </Link>
-          <Link to="/admin/features/task-scheduler" style={{ ...ctaStyles, padding: "10px 18px", borderRadius: "999px", border: "1px solid rgba(79,70,229,0.4)" }}>
-            Task scheduler (planned) →
+          <Link
+            to="/admin/features/task-scheduler"
+            style={{
+              ...ctaStyles,
+              padding: "10px 18px",
+              borderRadius: "999px",
+              border: "1px solid rgba(79,70,229,0.4)",
+            }}
+          >
+            {t("overview.cta.taskSchedulerPlanned")}
           </Link>
         </div>
         <div style={{ display: "grid", gap: "14px", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))" }}>
           {stats.map((item) => (
             <div key={item.label} style={statCardStyles}>
-              <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.1em", color: "#64748b" }}>
+              <div
+                style={{
+                  fontSize: "12px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  color: "#64748b",
+                }}
+              >
                 {item.label}
               </div>
               <div style={{ fontSize: "26px", fontWeight: 700, marginTop: "10px" }}>{item.value}</div>
@@ -101,30 +137,24 @@ export default function HomePage() {
 
       <section style={{ display: "grid", gap: "20px", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))" }}>
         <article style={cardStyles}>
-          <h3 style={headingStyles}>User management</h3>
-          <p style={paragraphStyles}>
-            Review accounts, adjust access levels, and audit recent changes across your tenants.
-          </p>
+          <h3 style={headingStyles}>{t("overview.cards.userManagement.title")}</h3>
+          <p style={paragraphStyles}>{t("overview.cards.userManagement.description")}</p>
           <Link to="/admin/features/user-management" style={ctaStyles}>
-            Go to user management →
+            {t("overview.cards.userManagement.cta")}
           </Link>
         </article>
         <article style={cardStyles}>
-          <h3 style={headingStyles}>Application library</h3>
-          <p style={paragraphStyles}>
-            Manage OAuth 2.0 applications, configure access control, and monitor integration usage.
-          </p>
+          <h3 style={headingStyles}>{t("overview.cards.appLibrary.title")}</h3>
+          <p style={paragraphStyles}>{t("overview.cards.appLibrary.description")}</p>
           <Link to="/admin/features/app-library" style={ctaStyles}>
-            Manage applications →
+            {t("overview.cards.appLibrary.cta")}
           </Link>
         </article>
         <article style={cardStyles}>
-          <h3 style={headingStyles}>Task scheduler</h3>
-          <p style={paragraphStyles}>
-            Reserved for Celery/Redis job visibility and controls. Not wired to workers yet — see the page for scope and status.
-          </p>
+          <h3 style={headingStyles}>{t("overview.cards.taskScheduler.title")}</h3>
+          <p style={paragraphStyles}>{t("overview.cards.taskScheduler.description")}</p>
           <Link to="/admin/features/task-scheduler" style={ctaStyles}>
-            Read scope and status →
+            {t("overview.cards.taskScheduler.cta")}
           </Link>
         </article>
       </section>

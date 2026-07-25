@@ -1,6 +1,7 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { useLoaderData, useSearchParams, Link } from "@remix-run/react";
+import { Trans, useTranslation } from "react-i18next";
 import { CheckoutForm } from "../ui/CheckoutForm";
 import { FeatureList } from "../ui/FeatureList";
 import { ProtectedRoute } from "../../user-status";
@@ -259,9 +260,16 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export default function CheckoutPage() {
   const { package: pkg } = useLoaderData<typeof loader>();
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const billingCycle = (searchParams.get("billing") as "monthly" | "yearly") || "monthly";
   const price = billingCycle === "monthly" ? pkg.price_monthly : pkg.price_yearly;
+  const localeSlug = pkg.slug === "premium" ? "pro" : pkg.slug;
+  const planName = t(`subscription.packages.${localeSlug}.name`, { defaultValue: pkg.name });
+  const period = billingCycle === "monthly" ? t("subscription.checkout.periodMonth") : t("subscription.checkout.periodYear");
+  const billingLabel =
+    billingCycle === "monthly" ? t("subscription.checkout.billingMonthly") : t("subscription.checkout.billingYearly");
+  const perShort = billingCycle === "monthly" ? t("subscription.checkout.perMonth") : t("subscription.checkout.perYear");
 
   return (
     <ProtectedRoute>
@@ -269,15 +277,19 @@ export default function CheckoutPage() {
       <div className="max-w-6xl mx-auto px-4 py-12">
         <Link to=".." className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold mb-8 transition-colors">
           <span>←</span>
-          <span>Back to Pricing</span>
+          <span>{t("subscription.checkout.backToPricing")}</span>
         </Link>
 
         <div className="mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
-            Complete Your Subscription
+            {t("subscription.checkout.title")}
           </h1>
           <p className="text-xl text-gray-600">
-            You're subscribing to the <span className="font-bold text-gray-900">{pkg.name}</span> plan
+            <Trans
+              i18nKey="subscription.checkout.subscribingTo"
+              values={{ plan: planName }}
+              components={{ strong: <span className="font-bold text-gray-900" /> }}
+            />
           </p>
         </div>
 
@@ -289,43 +301,45 @@ export default function CheckoutPage() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl border-2 border-gray-200 shadow-lg p-8 sticky top-4">
               <h3 className="text-xl font-bold text-gray-900 mb-6 pb-4 border-b-2 border-gray-100">
-                Order Summary
+                {t("subscription.checkout.orderSummary")}
               </h3>
 
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between items-start">
                   <div>
-                    <div className="font-bold text-lg text-gray-900">{pkg.name} Plan</div>
-                    <div className="text-sm text-gray-600 capitalize mt-1">{billingCycle} billing</div>
+                    <div className="font-bold text-lg text-gray-900">
+                      {t("subscription.checkout.planLabel", { name: planName })}
+                    </div>
+                    <div className="text-sm text-gray-600 capitalize mt-1">{billingLabel}</div>
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-bold text-gray-900">${price.toFixed(2)}</div>
-                    <div className="text-xs text-gray-600">/{billingCycle === "monthly" ? "mo" : "yr"}</div>
+                    <div className="text-xs text-gray-600">/{perShort}</div>
                   </div>
                 </div>
               </div>
 
               <div className="border-t-2 border-gray-100 pt-6 mb-6">
-                <h4 className="font-bold text-gray-900 mb-4">What's Included</h4>
-                <FeatureList features={pkg.features} showOnlyIncluded={true} />
+                <h4 className="font-bold text-gray-900 mb-4">{t("subscription.checkout.whatsIncluded")}</h4>
+                <FeatureList packageSlug={pkg.slug} features={pkg.features} showOnlyIncluded={true} />
               </div>
 
               <div className="border-t-2 border-gray-100 pt-6">
                 <div className="flex justify-between mb-3">
-                  <span className="text-gray-600">Subtotal</span>
+                  <span className="text-gray-600">{t("subscription.checkout.subtotal")}</span>
                   <span className="font-semibold text-gray-900">${price.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between mb-4">
-                  <span className="text-gray-600">Tax</span>
+                  <span className="text-gray-600">{t("subscription.checkout.tax")}</span>
                   <span className="font-semibold text-gray-900">$0.00</span>
                 </div>
                 <div className="flex justify-between border-t-2 border-gray-200 pt-4 mb-2">
-                  <span className="font-bold text-lg text-gray-900">Total Due Today</span>
+                  <span className="font-bold text-lg text-gray-900">{t("subscription.checkout.totalDueToday")}</span>
                   <span className="text-3xl font-bold text-blue-600">$0.00</span>
                 </div>
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4">
                   <p className="text-sm font-medium text-green-800">
-                    14-day free trial, then ${price.toFixed(2)}/{billingCycle === "monthly" ? "mo" : "yr"}
+                    {t("subscription.checkout.freeTrialNotice", { price: price.toFixed(2), period })}
                   </p>
                 </div>
               </div>

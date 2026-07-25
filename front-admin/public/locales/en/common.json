@@ -1,0 +1,184 @@
+{
+  "layout": {
+    "brand": "Tools Dashboard",
+    "subtitle": "Admin console",
+    "nav": {
+      "overview": "Overview",
+      "appLibrary": "Application library",
+      "userManagement": "User management",
+      "taskScheduler": "Task scheduler"
+    },
+    "header": {
+      "welcome": "Welcome back",
+      "subtitle": "Manage operations, users, and automation without leaving this workspace.",
+      "suiteBadge": "Admin suite",
+      "online": "Online"
+    },
+    "session": {
+      "signedInAs": "Signed in as",
+      "session": "Session",
+      "authenticated": "Authenticated",
+      "signOut": "Sign out"
+    },
+    "environment": {
+      "label": "Environment:",
+      "value": "Local development",
+      "connected": "Connected to stack"
+    },
+    "footer": {
+      "copyright": "© {{year}} Tools Dashboard Platform"
+    }
+  },
+  "signin": {
+    "title": "Admin sign-in",
+    "subtitle": "Tools Dashboard · use your admin email and password",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "sessionNote": "Session expires after 30 minutes of inactivity.",
+    "errors": {
+      "csrfInvalid": "Invalid or expired security token. Refresh the page and try again.",
+      "invalidSubmission": "Invalid form submission",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email address",
+      "passwordRequired": "Password is required",
+      "invalidCredentials": "Invalid email or password",
+      "emailNotVerified": "Email not verified. Please verify your email before logging in.",
+      "genericError": "An error occurred. Please try again.",
+      "accessDenied": "Access denied. Admin role required.",
+      "authServiceFailed": "Failed to connect to authentication service. Please try again."
+    }
+  },
+  "overview": {
+    "meta": {
+      "title": "Tools Dashboard · Admin Console",
+      "description": "Administrative overview for managing users and scheduled tasks."
+    },
+    "hero": {
+      "title": "Keep daily operations aligned with confidence",
+      "description": "Track core signals, manage access, and jump straight into the work that matters most. This snapshot is tuned for local development with the Codex workflow."
+    },
+    "cta": {
+      "openUserManagement": "Open user management →",
+      "taskSchedulerPlanned": "Task scheduler (planned) →"
+    },
+    "stats": {
+      "activeAdmins": "Active admins",
+      "pendingInvites": "Pending invites",
+      "scheduledJobs": "Scheduled jobs",
+      "activeAdminsDetail": "+2 this week",
+      "pendingInvitesDetail": "Send reminders",
+      "scheduledJobsDetail": "4 require attention"
+    },
+    "cards": {
+      "userManagement": {
+        "title": "User management",
+        "description": "Review accounts, adjust access levels, and audit recent changes across your tenants.",
+        "cta": "Go to user management →"
+      },
+      "appLibrary": {
+        "title": "Application library",
+        "description": "Manage OAuth 2.0 applications, configure access control, and monitor integration usage.",
+        "cta": "Manage applications →"
+      },
+      "taskScheduler": {
+        "title": "Task scheduler",
+        "description": "Reserved for Celery/Redis job visibility and controls. Not wired to workers yet — see the page for scope and status.",
+        "cta": "Read scope and status →"
+      }
+    }
+  },
+  "userManagement": {
+    "title": "User Management",
+    "description": "Manage user accounts, roles, and permissions.",
+    "totalUsers": "Total users: {{count}}",
+    "createUser": "+ Create User",
+    "search": {
+      "label": "Search by email",
+      "placeholder": "Enter email address",
+      "submit": "Search"
+    },
+    "filters": {
+      "roleLabel": "Filter by role",
+      "allRoles": "All Roles",
+      "admin": "Admin",
+      "moderator": "Moderator",
+      "support": "Support",
+      "customer": "Customer"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "showingPage": "Showing page <1>{{current}}</1> of <2>{{total}}</2>"
+    },
+    "table": {
+      "email": "Email",
+      "name": "Name",
+      "role": "Role",
+      "status": "Status",
+      "joined": "Joined",
+      "lastLogin": "Last Login",
+      "actions": "Actions",
+      "empty": "No users found",
+      "verified": "Verified",
+      "unverified": "Unverified",
+      "view": "View"
+    }
+  },
+  "appLibrary": {
+    "title": "Application library",
+    "description": "Manage OAuth 2.0 clients and integrations. In the last column, use View for the summary or Edit registration to open the full client settings (URLs, redirect URIs, scopes, and metadata).",
+    "filters": {
+      "all": "All applications",
+      "active": "Active",
+      "inactive": "Inactive",
+      "searchPlaceholder": "Search by name…",
+      "search": "Search"
+    },
+    "createApplication": "Create application",
+    "stats": {
+      "total": "Total",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "empty": {
+      "title": "No applications yet",
+      "description": "Create an OAuth client to connect first-party or partner apps to the dashboard."
+    }
+  },
+  "taskScheduler": {
+    "meta": {
+      "title": "Task scheduler · Tools Dashboard Admin",
+      "description": "Background and scheduled jobs (planned)."
+    },
+    "title": "Task scheduler",
+    "description": "This area is reserved for operating and inspecting <1>background work</1> (queues, retries, schedules) that today run in the stack via <2>Celery</2> and <3>Redis</3> (<4>back-workers</4>). Nothing here talks to the workers yet; the admin UI is a shell until an API exists.",
+    "planned": "Planned",
+    "future": {
+      "title": "What it will be for",
+      "item1": "See scheduled and ad-hoc jobs (name, cron or trigger, last run, failures)",
+      "item2": "Pause or retry from the console when we expose safe controls",
+      "item3": "Align with long-running tasks: email, exports, cleanup — not interactive product CRUD"
+    },
+    "today": {
+      "title": "What works today",
+      "description": "Workers and Redis are part of the docker stack; job code lives under <1>back-workers/</1>. There is <2>no</2> admin API to list or edit schedules from this screen yet."
+    },
+    "notice": "<1>Create / edit jobs</1> — The old placeholder form has been removed. When this ships, creation will go through a real backend contract (validation, auth, audit), not a dummy POST.",
+    "links": {
+      "overview": "← Admin overview",
+      "appLibrary": "Application library"
+    }
+  },
+  "language": {
+    "selector": "Language",
+    "en": "English",
+    "es": "Español"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "notFound": "The requested resource was not found.",
+    "unauthorized": "You are not authorized to perform this action."
+  }
+}

@@ -1,5 +1,6 @@
 ﻿import type { FC } from "react";
 import { Link } from "@remix-run/react";
+import { useTranslation } from "react-i18next";
 
 export type User = {
   id: number;
@@ -22,6 +23,8 @@ type Props = {
 };
 
 export const UserTable: FC<Props> = ({ users, onSort, sortBy, sortOrder }) => {
+  const { t, i18n } = useTranslation();
+
   const handleSort = (field: string) => {
     if (onSort) {
       onSort(field);
@@ -34,7 +37,7 @@ export const UserTable: FC<Props> = ({ users, onSort, sortBy, sortOrder }) => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString(i18n.language, {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -52,14 +55,15 @@ export const UserTable: FC<Props> = ({ users, onSort, sortBy, sortOrder }) => {
               onClick={() => handleSort("email")}
               style={{ letterSpacing: "0.01em" }}
             >
-              Email{getSortIndicator("email")}
+              {t("userManagement.table.email")}
+              {getSortIndicator("email")}
             </th>
             <th
               scope="col"
               className="px-6 py-4 text-left text-sm font-semibold text-gray-900"
               style={{ letterSpacing: "0.01em" }}
             >
-              Name
+              {t("userManagement.table.name")}
             </th>
             <th
               scope="col"
@@ -67,14 +71,15 @@ export const UserTable: FC<Props> = ({ users, onSort, sortBy, sortOrder }) => {
               onClick={() => handleSort("role")}
               style={{ letterSpacing: "0.01em" }}
             >
-              Role{getSortIndicator("role")}
+              {t("userManagement.table.role")}
+              {getSortIndicator("role")}
             </th>
             <th
               scope="col"
               className="px-6 py-4 text-left text-sm font-semibold text-gray-900"
               style={{ letterSpacing: "0.01em" }}
             >
-              Status
+              {t("userManagement.table.status")}
             </th>
             <th
               scope="col"
@@ -82,17 +87,18 @@ export const UserTable: FC<Props> = ({ users, onSort, sortBy, sortOrder }) => {
               onClick={() => handleSort("created_at")}
               style={{ letterSpacing: "0.01em" }}
             >
-              Joined{getSortIndicator("created_at")}
+              {t("userManagement.table.joined")}
+              {getSortIndicator("created_at")}
             </th>
             <th
               scope="col"
               className="px-6 py-4 text-left text-sm font-semibold text-gray-900"
               style={{ letterSpacing: "0.01em" }}
             >
-              Last Login
+              {t("userManagement.table.lastLogin")}
             </th>
             <th scope="col" className="relative px-6 py-4">
-              <span className="sr-only">Actions</span>
+              <span className="sr-only">{t("userManagement.table.actions")}</span>
             </th>
           </tr>
         </thead>
@@ -100,7 +106,7 @@ export const UserTable: FC<Props> = ({ users, onSort, sortBy, sortOrder }) => {
           {users.length === 0 ? (
             <tr>
               <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-500">
-                No users found
+                {t("userManagement.table.empty")}
               </td>
             </tr>
           ) : (
@@ -123,9 +129,13 @@ export const UserTable: FC<Props> = ({ users, onSort, sortBy, sortOrder }) => {
                 </td>
                 <td className="px-6 py-3 whitespace-nowrap">
                   {user.is_email_verified ? (
-                    <span className="text-sm font-medium" style={{ color: "#059669" }}>Verified</span>
+                    <span className="text-sm font-medium" style={{ color: "#059669" }}>
+                      {t("userManagement.table.verified")}
+                    </span>
                   ) : (
-                    <span className="text-sm" style={{ color: "#9ca3af" }}>Unverified</span>
+                    <span className="text-sm" style={{ color: "#9ca3af" }}>
+                      {t("userManagement.table.unverified")}
+                    </span>
                   )}
                 </td>
                 <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">
@@ -140,7 +150,7 @@ export const UserTable: FC<Props> = ({ users, onSort, sortBy, sortOrder }) => {
                     className="font-medium"
                     style={{ color: "#2563eb", textDecoration: "none" }}
                   >
-                    View
+                    {t("userManagement.table.view")}
                   </Link>
                 </td>
               </tr>

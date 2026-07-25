@@ -1,0 +1,184 @@
+{
+  "layout": {
+    "brand": "Panel de Herramientas",
+    "subtitle": "Consola de administración",
+    "nav": {
+      "overview": "Resumen",
+      "appLibrary": "Biblioteca de aplicaciones",
+      "userManagement": "Gestión de usuarios",
+      "taskScheduler": "Programador de tareas"
+    },
+    "header": {
+      "welcome": "Bienvenido de nuevo",
+      "subtitle": "Administra operaciones, usuarios y automatización sin salir de este espacio de trabajo.",
+      "suiteBadge": "Suite de administración",
+      "online": "En línea"
+    },
+    "session": {
+      "signedInAs": "Sesión iniciada como",
+      "session": "Sesión",
+      "authenticated": "Autenticado",
+      "signOut": "Cerrar sesión"
+    },
+    "environment": {
+      "label": "Entorno:",
+      "value": "Desarrollo local",
+      "connected": "Conectado al stack"
+    },
+    "footer": {
+      "copyright": "© {{year}} Plataforma Panel de Herramientas"
+    }
+  },
+  "signin": {
+    "title": "Inicio de sesión de administrador",
+    "subtitle": "Panel de Herramientas · usa tu correo y contraseña de administrador",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "submit": "Iniciar sesión",
+    "submitting": "Iniciando sesión…",
+    "sessionNote": "La sesión expira después de 30 minutos de inactividad.",
+    "errors": {
+      "csrfInvalid": "Token de seguridad inválido o expirado. Actualiza la página e inténtalo de nuevo.",
+      "invalidSubmission": "Envío de formulario inválido",
+      "emailRequired": "El correo electrónico es obligatorio",
+      "emailInvalid": "Por favor ingresa una dirección de correo válida",
+      "passwordRequired": "La contraseña es obligatoria",
+      "invalidCredentials": "Correo o contraseña incorrectos",
+      "emailNotVerified": "Correo no verificado. Verifica tu correo antes de iniciar sesión.",
+      "genericError": "Ocurrió un error. Por favor inténtalo de nuevo.",
+      "accessDenied": "Acceso denegado. Se requiere rol de administrador.",
+      "authServiceFailed": "No se pudo conectar al servicio de autenticación. Por favor inténtalo de nuevo."
+    }
+  },
+  "overview": {
+    "meta": {
+      "title": "Panel de Herramientas · Consola de administración",
+      "description": "Resumen administrativo para gestionar usuarios y tareas programadas."
+    },
+    "hero": {
+      "title": "Mantén las operaciones diarias alineadas con confianza",
+      "description": "Sigue señales clave, gestiona accesos y accede directamente al trabajo que más importa. Esta vista está optimizada para desarrollo local con el flujo Codex."
+    },
+    "cta": {
+      "openUserManagement": "Abrir gestión de usuarios →",
+      "taskSchedulerPlanned": "Programador de tareas (planificado) →"
+    },
+    "stats": {
+      "activeAdmins": "Administradores activos",
+      "pendingInvites": "Invitaciones pendientes",
+      "scheduledJobs": "Trabajos programados",
+      "activeAdminsDetail": "+2 esta semana",
+      "pendingInvitesDetail": "Enviar recordatorios",
+      "scheduledJobsDetail": "4 requieren atención"
+    },
+    "cards": {
+      "userManagement": {
+        "title": "Gestión de usuarios",
+        "description": "Revisa cuentas, ajusta niveles de acceso y audita cambios recientes en tus inquilinos.",
+        "cta": "Ir a gestión de usuarios →"
+      },
+      "appLibrary": {
+        "title": "Biblioteca de aplicaciones",
+        "description": "Administra aplicaciones OAuth 2.0, configura control de acceso y monitorea el uso de integraciones.",
+        "cta": "Gestionar aplicaciones →"
+      },
+      "taskScheduler": {
+        "title": "Programador de tareas",
+        "description": "Reservado para visibilidad y controles de trabajos Celery/Redis. Aún no conectado a workers — consulta la página para alcance y estado.",
+        "cta": "Ver alcance y estado →"
+      }
+    }
+  },
+  "userManagement": {
+    "title": "Gestión de usuarios",
+    "description": "Administra cuentas de usuario, roles y permisos.",
+    "totalUsers": "Total de usuarios: {{count}}",
+    "createUser": "+ Crear usuario",
+    "search": {
+      "label": "Buscar por correo",
+      "placeholder": "Ingresa la dirección de correo",
+      "submit": "Buscar"
+    },
+    "filters": {
+      "roleLabel": "Filtrar por rol",
+      "allRoles": "Todos los roles",
+      "admin": "Administrador",
+      "moderator": "Moderador",
+      "support": "Soporte",
+      "customer": "Cliente"
+    },
+    "pagination": {
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "showingPage": "Mostrando página <1>{{current}}</1> de <2>{{total}}</2>"
+    },
+    "table": {
+      "email": "Correo",
+      "name": "Nombre",
+      "role": "Rol",
+      "status": "Estado",
+      "joined": "Registro",
+      "lastLogin": "Último acceso",
+      "actions": "Acciones",
+      "empty": "No se encontraron usuarios",
+      "verified": "Verificado",
+      "unverified": "Sin verificar",
+      "view": "Ver"
+    }
+  },
+  "appLibrary": {
+    "title": "Biblioteca de aplicaciones",
+    "description": "Administra clientes OAuth 2.0 e integraciones. En la última columna, usa Ver para el resumen o Editar registro para abrir la configuración completa del cliente (URLs, URIs de redirección, alcances y metadatos).",
+    "filters": {
+      "all": "Todas las aplicaciones",
+      "active": "Activas",
+      "inactive": "Inactivas",
+      "searchPlaceholder": "Buscar por nombre…",
+      "search": "Buscar"
+    },
+    "createApplication": "Crear aplicación",
+    "stats": {
+      "total": "Total",
+      "active": "Activas",
+      "inactive": "Inactivas"
+    },
+    "empty": {
+      "title": "Aún no hay aplicaciones",
+      "description": "Crea un cliente OAuth para conectar aplicaciones propias o de socios al panel."
+    }
+  },
+  "taskScheduler": {
+    "meta": {
+      "title": "Programador de tareas · Panel de Herramientas Admin",
+      "description": "Trabajos en segundo plano y programados (planificado)."
+    },
+    "title": "Programador de tareas",
+    "description": "Esta área está reservada para operar e inspeccionar <1>trabajo en segundo plano</1> (colas, reintentos, programaciones) que hoy se ejecuta en el stack mediante <2>Celery</2> y <3>Redis</3> (<4>back-workers</4>). Nada aquí se comunica con los workers aún; la interfaz de administración es un contenedor hasta que exista una API.",
+    "planned": "Planificado",
+    "future": {
+      "title": "Para qué servirá",
+      "item1": "Ver trabajos programados y ad-hoc (nombre, cron o disparador, última ejecución, fallos)",
+      "item2": "Pausar o reintentar desde la consola cuando expongamos controles seguros",
+      "item3": "Alinear con tareas de larga duración: correo, exportaciones, limpieza — no CRUD interactivo del producto"
+    },
+    "today": {
+      "title": "Qué funciona hoy",
+      "description": "Los workers y Redis forman parte del stack de docker; el código de trabajos vive en <1>back-workers/</1>. Aún <2>no</2> hay API de administración para listar o editar programaciones desde esta pantalla."
+    },
+    "notice": "<1>Crear / editar trabajos</1> — Se eliminó el formulario provisional anterior. Cuando esto se implemente, la creación pasará por un contrato real de backend (validación, autenticación, auditoría), no un POST ficticio.",
+    "links": {
+      "overview": "← Resumen de administración",
+      "appLibrary": "Biblioteca de aplicaciones"
+    }
+  },
+  "language": {
+    "selector": "Idioma",
+    "en": "English",
+    "es": "Español"
+  },
+  "errors": {
+    "generic": "Algo salió mal. Por favor inténtalo de nuevo.",
+    "notFound": "No se encontró el recurso solicitado.",
+    "unauthorized": "No estás autorizado para realizar esta acción."
+  }
+}

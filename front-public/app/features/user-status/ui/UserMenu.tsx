@@ -63,7 +63,7 @@ export const UserMenu: FC<UserMenuProps> = ({ basePath }) => {
   }
 
   if (isAuthenticated && user) {
-    const display = user.name?.trim() || user.email?.split("@")[0] || "Account";
+    const display = user.name?.trim() || user.email?.split("@")[0] || t("header.session.account");
     return (
       <div className="header-account">
         {user.avatar ? (
@@ -89,7 +89,7 @@ export const UserMenu: FC<UserMenuProps> = ({ basePath }) => {
             disabled={loggingOut}
             onClick={handleLogout}
           >
-            {loggingOut ? t("header.actions.loggingOut", { defaultValue: "Logging out…" }) : t("header.actions.logout")}
+            {loggingOut ? t("header.actions.loggingOut") : t("header.actions.logout")}
           </button>
         </div>
       </div>

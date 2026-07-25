@@ -48,7 +48,7 @@ export function PublicLayout({
                 <span>{t("header.subtitle")}</span>
               </div>
             </div>
-            <nav className="header-nav" aria-label="Primary">
+            <nav className="header-nav" aria-label={t("a11y.primaryNav")}>
               {navigationLinks.map((item) => (
                 <NavLink
                   key={item.to}
@@ -78,12 +78,12 @@ export function PublicLayout({
           <div className="footer-inner">
             <p className="footer-copyright">
               {t("footer.copyright", { year: new Date().getFullYear() })}
-              <span className="footer-build" aria-label="Public build version">
+              <span className="footer-build" aria-label={t("a11y.buildVersion", { version: "0.1.0" })}>
                 {" "}
                 · v0.1.0
               </span>
             </p>
-            <nav className="footer-actions" aria-label="Footer">
+            <nav className="footer-actions" aria-label={t("a11y.footer")}>
               {navigationLinks.map((item) => (
                 <NavLink key={item.to} to={item.to} prefetch="intent" className="header-link footer-link">
                   {t(item.labelKey)}

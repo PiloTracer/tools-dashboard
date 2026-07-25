@@ -12,16 +12,29 @@
       "signedIn": "Signed in",
       "pendingVerification": "Pending verification",
       "statusUnknown": "Status unknown",
-      "guest": "Guest"
+      "guest": "Guest",
+      "account": "Account"
     },
     "actions": {
       "signIn": "Sign in",
       "register": "Register",
-      "logout": "Logout"
+      "logout": "Logout",
+      "loggingOut": "Logging out…"
     },
     "toolbarLabel": "Language and account"
   },
+  "a11y": {
+    "primaryNav": "Primary",
+    "footer": "Footer",
+    "buildVersion": "Public build version {{version}}",
+    "authFlowTabs": "Select authentication flow",
+    "loadingApp": "Loading application"
+  },
   "home": {
+    "meta": {
+      "title": "Tools Dashboard - Public Portal",
+      "description": "Welcome to the public onboarding experience for the Tools Dashboard ecosystem."
+    },
     "hero": {
       "tag": "Launch-ready onboarding",
       "title": "Design a customer journey that learns and responds instantly",
@@ -58,6 +71,11 @@
     }
   },
   "auth": {
+    "tabs": {
+      "register": "Create account",
+      "login": "Sign in"
+    },
+    "serviceOffline": "Authentication services are temporarily offline while we restore connectivity. Please try again shortly.",
     "register": {
       "kicker": "Create account",
       "title": "Trusted access to Tools Dashboard",
@@ -81,7 +99,32 @@
       "password": "Password",
       "submitRegister": "Create account",
       "submitLogin": "Sign in",
-      "submitting": "Processing..."
+      "submitting": "Processing...",
+      "submittingLogin": "Signing you in...",
+      "submittingRegister": "Creating your account...",
+      "passwordHint": "Must be at least {{min}} characters and no more than 72."
+    },
+    "validation": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Enter a valid email address",
+      "passwordRequired": "Password is required",
+      "passwordMinLength": "Password must be at least {{min}} characters long",
+      "passwordTooLong": "Password must be 72 characters or fewer",
+      "csrfRequired": "Missing security token"
+    },
+    "errors": {
+      "invalidCsrf": "Missing security token",
+      "invalidSubmission": "We could not process your submission. Please try again.",
+      "loginFailed": "We could not complete your sign-in. Please try again.",
+      "loginFailedRetry": "We could not complete your sign-in. Please try again shortly.",
+      "registrationFailed": "We could not complete your registration.",
+      "registrationFailedRetry": "We could not complete your registration. Please try again shortly.",
+      "serviceUnreachable": "We could not reach the authentication service. Please try again.",
+      "unexpectedResponse": "We received an unexpected response from the authentication service.",
+      "verifyEmailRequired": "Please verify your email before signing in.",
+      "serviceNotReady": "The sign-in service is not ready yet, or the network is unavailable. If the stack has just started, wait a few seconds and refresh, or try again in a moment.",
+      "configLoadError": "We could not load registration settings. The service may still be starting: wait a few seconds, refresh, and try again.",
+      "registrationSettingsUnavailable": "Registration settings are unavailable. Please try again later."
     },
     "aside": {
       "title": "What to expect next",
@@ -99,6 +142,293 @@
       "googleUnavailable": "Google sign-in is temporarily unavailable. Please continue with email.",
       "googleUnavailableOffline": "Google sign-in is unavailable until authentication services reconnect."
     }
+  },
+  "verify": {
+    "title": "Verify your account",
+    "google": {
+      "title": "Google sign-in",
+      "subtitle": {
+        "error": "Something went wrong while connecting your Google account.",
+        "verified": "Your Google account is linked. You can continue in the app.",
+        "pending": "Finishing sign-in with Google…"
+      }
+    },
+    "email": {
+      "sentTo": "We sent a secure link to <strong>{{email}}</strong>. Complete the steps in that message to activate your access.",
+      "sentGeneric": "We sent you a secure link. Complete the steps in that message to activate your access."
+    },
+    "help": {
+      "title": "Need a hand?",
+      "spam": "Check your spam folder if the message does not arrive within a minute.",
+      "expiry": "Verification links expire after 15 minutes for your security.",
+      "contactSupport": "Still waiting? <1>Contact support</1> for a fresh link."
+    },
+    "continueOnboarding": "Continue onboarding",
+    "messages": {
+      "googleMissingParams": "Missing Google authorization parameters. Please retry signing in with Google.",
+      "googleServiceUnreachable": "We could not reach the authentication service. Please try signing in again.",
+      "googleUnexpectedPayload": "We could not confirm your Google sign-in. Please try again.",
+      "googleVerified": "Your Google account is connected. You are ready to continue.",
+      "googlePending": "We are finalizing your account setup. You will be redirected soon.",
+      "googleFailed": "Google sign-in could not be completed. Please try again.",
+      "emailServiceUnreachable": "We could not verify your email right now. Please try again or request a new link.",
+      "emailInvalidLink": "Your verification link is invalid or expired. Request a new one to continue.",
+      "emailVerified": "Your email is verified. You will be redirected to complete onboarding.",
+      "emailPending": "We are finalizing your registration. This page will update shortly.",
+      "accountVerified": "Your account is verified and ready to use.",
+      "pendingWithEmail": "Check {{email}} for your verification link. You can close this tab once you're confirmed.",
+      "pendingGeneric": "Check your inbox for the verification link we just sent."
+    }
+  },
+  "appLibrary": {
+    "title": "Application Library",
+    "subtitle": "Launch integrated applications with seamless authentication",
+    "connected": {
+      "title": "Connected apps",
+      "body": "Each card shows what that app may access (for example profile and subscription). Choosing <strong>Launch App</strong> while you are signed in here opens the app and grants only those permissions—no second confirmation page. The <em>Available</em> pill is a quick check from your device to the app's URL; if it shows Offline, the app may be stopped, blocked, or the environment may prevent the test (for example some mixed-content or privacy settings).",
+      "launchApp": "Launch App",
+      "availablePill": "Available"
+    },
+    "empty": {
+      "title": "No applications available",
+      "description": "There are currently no applications available in the library. Check back soon for new integrations!",
+      "comingSoonTitle": "Coming soon:",
+      "comingSoonBody": "We're working on integrating more applications to expand your toolkit."
+    },
+    "error": {
+      "title": "Failed to load applications",
+      "defaultMessage": "An error occurred while loading the application library. Please try again.",
+      "retry": "Try Again"
+    },
+    "loadingAria": "Loading application",
+    "card": {
+      "permissions": "Permissions",
+      "launchApp": "Launch App",
+      "launchAppAria": "Launch {{appName}}",
+      "launchFailed": "Failed to launch application. Please try again."
+    },
+    "reachability": {
+      "checking": "Checking connection",
+      "online": "App endpoint responded",
+      "offline": "No response (app may be stopped or blocked)",
+      "unavailable": "No URL to check",
+      "checkingLabel": "Checking…",
+      "onlineLabel": "Available",
+      "offlineLabel": "Offline",
+      "unavailableLabel": "—",
+      "titleWithUrl": "{{label}} (checked from your browser: {{url}})"
+    }
+  },
+  "subscription": {
+    "page": {
+      "title": "Choose Your Plan",
+      "subtitle": "Select the perfect subscription for your needs. All plans include a 14-day free trial with no credit card required."
+    },
+    "toggle": {
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "yearlySavings": "Save up to 17% with annual billing"
+    },
+    "packages": {
+      "free": {
+        "name": "Free",
+        "description": "Perfect for trying out our platform",
+        "tagline": "Get started with essential tools",
+        "highlight": "Perfect for individuals",
+        "cta": "Start Free",
+        "features": {
+          "basicTools": {
+            "name": "Basic Tools",
+            "description": "Access to core functionality"
+          },
+          "communitySupport": {
+            "name": "Community Support",
+            "description": "Help from our community"
+          },
+          "oneWorkspace": {
+            "name": "1 Workspace",
+            "description": "Single workspace for your projects"
+          }
+        }
+      },
+      "standard": {
+        "name": "Standard",
+        "description": "Great for individuals and small teams",
+        "tagline": "Everything you need to grow",
+        "highlight": "Popular",
+        "cta": "Get Started",
+        "features": {
+          "basicTools": {
+            "name": "Basic Tools",
+            "description": "Access to core functionality"
+          },
+          "fiveWorkspaces": {
+            "name": "5 Workspaces",
+            "description": "Organize with multiple workspaces"
+          },
+          "apiAccess": {
+            "name": "API Access",
+            "description": "Full API access"
+          },
+          "emailSupport": {
+            "name": "Email Support",
+            "description": "Priority email support"
+          }
+        }
+      },
+      "pro": {
+        "name": "Premium",
+        "description": "Advanced features for growing businesses",
+        "tagline": "Advanced capabilities for professionals",
+        "highlight": "Best Value",
+        "cta": "Go Premium",
+        "features": {
+          "advancedTools": {
+            "name": "Advanced Tools",
+            "description": "Professional-grade tools"
+          },
+          "unlimitedWorkspaces": {
+            "name": "Unlimited Workspaces",
+            "description": "Create as many workspaces as you need"
+          },
+          "prioritySupport": {
+            "name": "Priority Support",
+            "description": "24/7 priority support"
+          },
+          "advancedAnalytics": {
+            "name": "Advanced Analytics",
+            "description": "Detailed insights and reports"
+          },
+          "customIntegrations": {
+            "name": "Custom Integrations",
+            "description": "Build custom integrations"
+          }
+        }
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Unlimited access with premium support",
+        "tagline": "Maximum power and support",
+        "highlight": "For Large Organizations",
+        "cta": "Contact Sales",
+        "features": {
+          "everythingPremium": {
+            "name": "Everything in Premium",
+            "description": "All premium features included"
+          },
+          "dedicatedSupport": {
+            "name": "Dedicated Support",
+            "description": "Dedicated account manager"
+          },
+          "slaGuarantee": {
+            "name": "SLA Guarantee",
+            "description": "99.9% uptime guarantee"
+          },
+          "ssoSaml": {
+            "name": "SSO/SAML",
+            "description": "Single sign-on integration"
+          },
+          "whiteLabel": {
+            "name": "White Label",
+            "description": "Customize with your branding"
+          }
+        }
+      }
+    },
+    "package": {
+      "perMonth": "/month",
+      "perYear": "/year"
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "changePlans": {
+        "question": "Can I change plans later?",
+        "answer": "Yes, you can upgrade or downgrade at any time. Changes take effect immediately."
+      },
+      "paymentMethods": {
+        "question": "What payment methods do you accept?",
+        "answer": "All major credit cards, PayPal, and bank transfers for enterprise plans."
+      },
+      "setupFee": {
+        "question": "Is there a setup fee?",
+        "answer": "No setup fees. You only pay for your selected plan with transparent pricing."
+      },
+      "cancelAnytime": {
+        "question": "Can I cancel anytime?",
+        "answer": "Yes, cancel anytime with no questions asked. No penalties or fees."
+      }
+    },
+    "checkout": {
+      "backToPricing": "Back to Pricing",
+      "title": "Complete Your Subscription",
+      "subscribingTo": "You're subscribing to the <strong>{{plan}}</strong> plan",
+      "orderSummary": "Order Summary",
+      "planLabel": "{{name}} Plan",
+      "billingMonthly": "monthly billing",
+      "billingYearly": "yearly billing",
+      "perMonth": "mo",
+      "perYear": "yr",
+      "whatsIncluded": "What's Included",
+      "subtotal": "Subtotal",
+      "tax": "Tax",
+      "totalDueToday": "Total Due Today",
+      "freeTrialNotice": "14-day free trial, then ${{price}}/{{period}}",
+      "profileInformation": "Profile Information",
+      "paymentInformation": "Payment Information",
+      "paymentDemoNotice": "Payment integration is not yet active. This is a demonstration form.",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email Address",
+      "company": "Company",
+      "companyOptional": "(Optional)",
+      "cardNumber": "Card Number",
+      "cardNumberPlaceholder": "1234 5678 9012 3456",
+      "expiry": "Expiry Date",
+      "expiryPlaceholder": "MM/YY",
+      "cvv": "CVV",
+      "cvvPlaceholder": "123",
+      "termsAgreement": "I agree to the <1>Terms of Service</1> and <2>Privacy Policy</2>",
+      "termsOfService": "Terms of Service",
+      "privacyPolicy": "Privacy Policy",
+      "submitButton": "Start Free Trial — Then ${{price}}/{{period}}",
+      "periodMonth": "month",
+      "periodYear": "year",
+      "requiredField": "*"
+    }
+  },
+  "logout": {
+    "title": "Signing you out",
+    "message": "We are ending your session and redirecting you to the home page. If nothing happens, refresh the page or close the tab for security."
+  },
+  "profiling": {
+    "index": {
+      "title": "Complete your profile",
+      "description": "Tell us a bit about yourself so we can tailor your Tools Dashboard experience.",
+      "fullName": "Full Name",
+      "timezone": "Timezone",
+      "continue": "Continue"
+    },
+    "complete": {
+      "title": "All Set!",
+      "description": "Your profile is complete. You're ready to explore Tools Dashboard.",
+      "goToDashboard": "Go to dashboard"
+    }
+  },
+  "oauthError": {
+    "title": "Authentication Failed",
+    "appName": "Unable to authenticate with <strong>{{appName}}</strong>",
+    "errorCode": "Error Code:",
+    "unknownDescription": "An unknown error occurred during authentication",
+    "returnToLibrary": "Return to Application Library",
+    "goToDashboard": "Go to Dashboard",
+    "contactSupport": "Contact Support",
+    "helpText": "If this issue persists, please contact support with the error code above. Our team will help you resolve the authentication issue."
+  },
+  "common": {
+    "loading": "Loading…",
+    "retry": "Try Again",
+    "contactSupport": "Contact Support",
+    "comingSoon": "Coming soon"
   },
   "footer": {
     "copyright": "© {{year}} Tools Dashboard Platform."

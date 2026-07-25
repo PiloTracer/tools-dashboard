@@ -1,53 +1,43 @@
-import type { LoaderFunctionArgs } from '@remix-run/node';
-import { json, redirect } from '@remix-run/node';
-import { useLoaderData, useRevalidator } from '@remix-run/react';
-import { resolvePublicPath } from '../../../utils/publicPath.server';
-import type { AppConfig } from '../utils/api';
-import { AppGrid } from '../ui/AppGrid';
-import { EmptyState } from '../ui/EmptyState';
-import { LoadingState } from '../ui/LoadingState';
-import { ErrorState } from '../ui/ErrorState';
+import type { LoaderFunctionArgs } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
+import { useLoaderData, useRevalidator } from "@remix-run/react";
+import { Trans, useTranslation } from "react-i18next";
 
-/**
- * Loader data type
- */
+import { resolvePublicPath } from "../../../utils/publicPath.server";
+import type { AppConfig } from "../utils/api";
+import { AppGrid } from "../ui/AppGrid";
+import { EmptyState } from "../ui/EmptyState";
+import { LoadingState } from "../ui/LoadingState";
+import { ErrorState } from "../ui/ErrorState";
+
 type LoaderData = {
   apps: AppConfig[];
   error?: string;
 };
 
-/**
- * Loader function
- *
- * Fetches available applications from back-api.
- * The backend enforces access control based on the user's session.
- */
 export async function loader({ request }: LoaderFunctionArgs) {
-  const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:8100';
+  const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8100";
 
   try {
-    // Fetch available apps from back-api (server-side)
     const response = await fetch(`${BACKEND_API_URL}/api/app-library/oauth-clients`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
-        // Forward cookies from the original request for session authentication
-        'Cookie': request.headers.get('Cookie') || '',
+        "Content-Type": "application/json",
+        Cookie: request.headers.get("Cookie") || "",
       },
     });
 
     if (response.status === 401) {
-      return redirect(resolvePublicPath('/features/user-registration?mode=login'));
+      return redirect(resolvePublicPath("/features/user-registration?mode=login"));
     }
     if (response.status === 403) {
-      return redirect(resolvePublicPath('/features/user-registration/verify?source=email'));
+      return redirect(resolvePublicPath("/features/user-registration/verify?source=email"));
     }
     if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
+      const errorText = await response.text().catch(() => "Unknown error");
       throw new Error(`Failed to fetch apps: ${response.status} ${errorText}`);
     }
 
-    // The backend returns { apps: [...], total, favorites, recently_used }
     const data = await response.json();
     const apps: AppConfig[] = data.apps || [];
 
@@ -55,30 +45,21 @@ export async function loader({ request }: LoaderFunctionArgs) {
       apps,
     });
   } catch (error) {
-    console.error('Failed to load apps:', error);
+    console.error("Failed to load apps:", error);
 
-    // Return error state instead of throwing
-    // This allows the UI to display a friendly error message
     return json<LoaderData>(
       {
         apps: [],
-        error: error instanceof Error ? error.message : 'Failed to load applications',
+        error: error instanceof Error ? error.message : "Failed to load applications",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
-/**
- * App Library Route
- *
- * Main application library interface where authenticated users can:
- * - View all available applications
- * - Click on apps to launch with OAuth
- * - See loading, error, and empty states
- */
 export default function AppLibrary() {
   const { apps, error } = useLoaderData<typeof loader>();
+  const { t } = useTranslation();
   const revalidator = useRevalidator();
 
   const handleRetry = () => {
@@ -87,53 +68,31 @@ export default function AppLibrary() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      {/* Header */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center sm:text-left">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              Application Library
-            </h1>
-            <p className="text-lg text-gray-600">
-              Launch integrated applications with seamless authentication
-            </p>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">{t("appLibrary.title")}</h1>
+            <p className="text-lg text-gray-600">{t("appLibrary.subtitle")}</p>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Loading State */}
-        {revalidator.state === 'loading' && <LoadingState />}
+        {revalidator.state === "loading" && <LoadingState />}
 
-        {/* Error State */}
-        {error && revalidator.state !== 'loading' && (
-          <ErrorState message={error} onRetry={handleRetry} />
-        )}
+        {error && revalidator.state !== "loading" && <ErrorState message={error} onRetry={handleRetry} />}
 
-        {/* Empty State */}
-        {!error && apps.length === 0 && revalidator.state !== 'loading' && (
-          <EmptyState />
-        )}
+        {!error && apps.length === 0 && revalidator.state !== "loading" && <EmptyState />}
 
-        {/* App Grid */}
-        {!error && apps.length > 0 && revalidator.state !== 'loading' && (
-          <AppGrid apps={apps} />
-        )}
+        {!error && apps.length > 0 && revalidator.state !== "loading" && <AppGrid apps={apps} />}
       </div>
 
-      {/* Footer Info */}
-      {!error && apps.length > 0 && revalidator.state !== 'loading' && (
+      {!error && apps.length > 0 && revalidator.state !== "loading" && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0">
-                <svg
-                  className="w-6 h-6 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -143,18 +102,9 @@ export default function AppLibrary() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-blue-900 mb-1">
-                  Connected apps
-                </h3>
+                <h3 className="text-sm font-semibold text-blue-900 mb-1">{t("appLibrary.connected.title")}</h3>
                 <p className="text-sm text-blue-800">
-                  Each card shows what that app may access (for example profile and subscription). Choosing
-                  <span className="font-semibold"> Launch App </span>
-                  while you are signed in here opens the app and grants only those permissions—no second
-                  confirmation page. The
-                  <span className="font-medium"> Available </span>
-                  pill is a quick check from your device to the app’s URL; if it shows Offline, the
-                  app may be stopped, blocked, or the environment may prevent the test (for example
-                  some mixed-content or privacy settings).
+                  <Trans i18nKey="appLibrary.connected.body" />
                 </p>
               </div>
             </div>

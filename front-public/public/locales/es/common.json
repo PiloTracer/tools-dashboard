@@ -12,16 +12,29 @@
       "signedIn": "Sesión iniciada",
       "pendingVerification": "Verificación pendiente",
       "statusUnknown": "Estado desconocido",
-      "guest": "Invitado"
+      "guest": "Invitado",
+      "account": "Cuenta"
     },
     "actions": {
       "signIn": "Ingresar",
       "register": "Registro",
-      "logout": "Salir"
+      "logout": "Salir",
+      "loggingOut": "Cerrando sesión…"
     },
     "toolbarLabel": "Idioma y cuenta"
   },
+  "a11y": {
+    "primaryNav": "Principal",
+    "footer": "Pie de página",
+    "buildVersion": "Versión pública de compilación {{version}}",
+    "authFlowTabs": "Seleccionar flujo de autenticación",
+    "loadingApp": "Cargando aplicación"
+  },
   "home": {
+    "meta": {
+      "title": "Tools Dashboard - Portal público",
+      "description": "Bienvenido a la experiencia pública de incorporación del ecosistema Tools Dashboard."
+    },
     "hero": {
       "tag": "Incorporación lista para lanzar",
       "title": "Diseña un viaje del cliente que aprende y responde instantáneamente",
@@ -58,6 +71,11 @@
     }
   },
   "auth": {
+    "tabs": {
+      "register": "Crear cuenta",
+      "login": "Iniciar sesión"
+    },
+    "serviceOffline": "Los servicios de autenticación están temporalmente fuera de línea mientras restablecemos la conectividad. Por favor, inténtalo de nuevo en breve.",
     "register": {
       "kicker": "Crear cuenta",
       "title": "Acceso confiable al Panel de Herramientas",
@@ -81,7 +99,32 @@
       "password": "Contraseña",
       "submitRegister": "Crear cuenta",
       "submitLogin": "Iniciar sesión",
-      "submitting": "Procesando..."
+      "submitting": "Procesando...",
+      "submittingLogin": "Iniciando sesión...",
+      "submittingRegister": "Creando tu cuenta...",
+      "passwordHint": "Debe tener al menos {{min}} caracteres y no más de 72."
+    },
+    "validation": {
+      "emailRequired": "El correo electrónico es obligatorio",
+      "emailInvalid": "Introduce una dirección de correo electrónico válida",
+      "passwordRequired": "La contraseña es obligatoria",
+      "passwordMinLength": "La contraseña debe tener al menos {{min}} caracteres",
+      "passwordTooLong": "La contraseña debe tener 72 caracteres o menos",
+      "csrfRequired": "Falta el token de seguridad"
+    },
+    "errors": {
+      "invalidCsrf": "Falta el token de seguridad",
+      "invalidSubmission": "No pudimos procesar tu envío. Por favor, inténtalo de nuevo.",
+      "loginFailed": "No pudimos completar tu inicio de sesión. Por favor, inténtalo de nuevo.",
+      "loginFailedRetry": "No pudimos completar tu inicio de sesión. Por favor, inténtalo de nuevo en breve.",
+      "registrationFailed": "No pudimos completar tu registro.",
+      "registrationFailedRetry": "No pudimos completar tu registro. Por favor, inténtalo de nuevo en breve.",
+      "serviceUnreachable": "No pudimos conectar con el servicio de autenticación. Por favor, inténtalo de nuevo.",
+      "unexpectedResponse": "Recibimos una respuesta inesperada del servicio de autenticación.",
+      "verifyEmailRequired": "Verifica tu correo electrónico antes de iniciar sesión.",
+      "serviceNotReady": "El servicio de inicio de sesión aún no está listo o la red no está disponible. Si el sistema acaba de iniciarse, espera unos segundos y actualiza la página, o inténtalo de nuevo en un momento.",
+      "configLoadError": "No pudimos cargar la configuración de registro. El servicio puede estar iniciándose: espera unos segundos, actualiza e inténtalo de nuevo.",
+      "registrationSettingsUnavailable": "La configuración de registro no está disponible. Por favor, inténtalo de nuevo más tarde."
     },
     "aside": {
       "title": "Qué esperar a continuación",
@@ -99,6 +142,293 @@
       "googleUnavailable": "El inicio de sesión de Google está temporalmente no disponible. Por favor, continúa con correo electrónico.",
       "googleUnavailableOffline": "El inicio de sesión de Google no está disponible hasta que se reconecten los servicios de autenticación."
     }
+  },
+  "verify": {
+    "title": "Verifica tu cuenta",
+    "google": {
+      "title": "Inicio de sesión con Google",
+      "subtitle": {
+        "error": "Algo salió mal al conectar tu cuenta de Google.",
+        "verified": "Tu cuenta de Google está vinculada. Puedes continuar en la aplicación.",
+        "pending": "Finalizando el inicio de sesión con Google…"
+      }
+    },
+    "email": {
+      "sentTo": "Enviamos un enlace seguro a <strong>{{email}}</strong>. Completa los pasos en ese mensaje para activar tu acceso.",
+      "sentGeneric": "Te enviamos un enlace seguro. Completa los pasos en ese mensaje para activar tu acceso."
+    },
+    "help": {
+      "title": "¿Necesitas ayuda?",
+      "spam": "Revisa tu carpeta de spam si el mensaje no llega en un minuto.",
+      "expiry": "Los enlaces de verificación caducan a los 15 minutos por tu seguridad.",
+      "contactSupport": "¿Sigues esperando? <1>Contacta con soporte</1> para obtener un enlace nuevo."
+    },
+    "continueOnboarding": "Continuar incorporación",
+    "messages": {
+      "googleMissingParams": "Faltan parámetros de autorización de Google. Vuelve a intentar iniciar sesión con Google.",
+      "googleServiceUnreachable": "No pudimos conectar con el servicio de autenticación. Por favor, intenta iniciar sesión de nuevo.",
+      "googleUnexpectedPayload": "No pudimos confirmar tu inicio de sesión con Google. Por favor, inténtalo de nuevo.",
+      "googleVerified": "Tu cuenta de Google está conectada. Ya puedes continuar.",
+      "googlePending": "Estamos finalizando la configuración de tu cuenta. Serás redirigido en breve.",
+      "googleFailed": "No se pudo completar el inicio de sesión con Google. Por favor, inténtalo de nuevo.",
+      "emailServiceUnreachable": "No pudimos verificar tu correo electrónico en este momento. Inténtalo de nuevo o solicita un enlace nuevo.",
+      "emailInvalidLink": "Tu enlace de verificación no es válido o ha caducado. Solicita uno nuevo para continuar.",
+      "emailVerified": "Tu correo electrónico está verificado. Serás redirigido para completar la incorporación.",
+      "emailPending": "Estamos finalizando tu registro. Esta página se actualizará en breve.",
+      "accountVerified": "Tu cuenta está verificada y lista para usar.",
+      "pendingWithEmail": "Revisa {{email}} para encontrar tu enlace de verificación. Puedes cerrar esta pestaña una vez confirmado.",
+      "pendingGeneric": "Revisa tu bandeja de entrada para el enlace de verificación que acabamos de enviar."
+    }
+  },
+  "appLibrary": {
+    "title": "Biblioteca de aplicaciones",
+    "subtitle": "Inicia aplicaciones integradas con autenticación sin interrupciones",
+    "connected": {
+      "title": "Aplicaciones conectadas",
+      "body": "Cada tarjeta muestra a qué puede acceder esa aplicación (por ejemplo, perfil y suscripción). Al elegir <strong>Iniciar aplicación</strong> mientras tienes sesión iniciada aquí, se abre la aplicación y solo se conceden esos permisos, sin una segunda pantalla de confirmación. La etiqueta <em>Disponible</em> es una comprobación rápida desde tu dispositivo a la URL de la aplicación; si muestra Sin conexión, la aplicación puede estar detenida, bloqueada o el entorno puede impedir la prueba (por ejemplo, ciertas configuraciones de contenido mixto o privacidad).",
+      "launchApp": "Iniciar aplicación",
+      "availablePill": "Disponible"
+    },
+    "empty": {
+      "title": "No hay aplicaciones disponibles",
+      "description": "Actualmente no hay aplicaciones disponibles en la biblioteca. ¡Vuelve pronto para ver nuevas integraciones!",
+      "comingSoonTitle": "Próximamente:",
+      "comingSoonBody": "Estamos trabajando en integrar más aplicaciones para ampliar tu conjunto de herramientas."
+    },
+    "error": {
+      "title": "Error al cargar las aplicaciones",
+      "defaultMessage": "Se produjo un error al cargar la biblioteca de aplicaciones. Por favor, inténtalo de nuevo.",
+      "retry": "Reintentar"
+    },
+    "loadingAria": "Cargando aplicación",
+    "card": {
+      "permissions": "Permisos",
+      "launchApp": "Iniciar aplicación",
+      "launchAppAria": "Iniciar {{appName}}",
+      "launchFailed": "No se pudo iniciar la aplicación. Por favor, inténtalo de nuevo."
+    },
+    "reachability": {
+      "checking": "Comprobando conexión",
+      "online": "El punto de acceso de la aplicación respondió",
+      "offline": "Sin respuesta (la aplicación puede estar detenida o bloqueada)",
+      "unavailable": "No hay URL para comprobar",
+      "checkingLabel": "Comprobando…",
+      "onlineLabel": "Disponible",
+      "offlineLabel": "Sin conexión",
+      "unavailableLabel": "—",
+      "titleWithUrl": "{{label}} (comprobado desde tu navegador: {{url}})"
+    }
+  },
+  "subscription": {
+    "page": {
+      "title": "Elige tu plan",
+      "subtitle": "Selecciona la suscripción perfecta para tus necesidades. Todos los planes incluyen una prueba gratuita de 14 días sin tarjeta de crédito."
+    },
+    "toggle": {
+      "monthly": "Mensual",
+      "yearly": "Anual",
+      "yearlySavings": "Ahorra hasta un 17% con facturación anual"
+    },
+    "packages": {
+      "free": {
+        "name": "Gratis",
+        "description": "Ideal para probar nuestra plataforma",
+        "tagline": "Comienza con las herramientas esenciales",
+        "highlight": "Perfecto para particulares",
+        "cta": "Empezar gratis",
+        "features": {
+          "basicTools": {
+            "name": "Herramientas básicas",
+            "description": "Acceso a la funcionalidad principal"
+          },
+          "communitySupport": {
+            "name": "Soporte comunitario",
+            "description": "Ayuda de nuestra comunidad"
+          },
+          "oneWorkspace": {
+            "name": "1 espacio de trabajo",
+            "description": "Un solo espacio de trabajo para tus proyectos"
+          }
+        }
+      },
+      "standard": {
+        "name": "Estándar",
+        "description": "Ideal para particulares y equipos pequeños",
+        "tagline": "Todo lo que necesitas para crecer",
+        "highlight": "Popular",
+        "cta": "Comenzar",
+        "features": {
+          "basicTools": {
+            "name": "Herramientas básicas",
+            "description": "Acceso a la funcionalidad principal"
+          },
+          "fiveWorkspaces": {
+            "name": "5 espacios de trabajo",
+            "description": "Organízate con múltiples espacios de trabajo"
+          },
+          "apiAccess": {
+            "name": "Acceso a la API",
+            "description": "Acceso completo a la API"
+          },
+          "emailSupport": {
+            "name": "Soporte por correo",
+            "description": "Soporte prioritario por correo electrónico"
+          }
+        }
+      },
+      "pro": {
+        "name": "Premium",
+        "description": "Funciones avanzadas para empresas en crecimiento",
+        "tagline": "Capacidades avanzadas para profesionales",
+        "highlight": "Mejor valor",
+        "cta": "Ir a Premium",
+        "features": {
+          "advancedTools": {
+            "name": "Herramientas avanzadas",
+            "description": "Herramientas de nivel profesional"
+          },
+          "unlimitedWorkspaces": {
+            "name": "Espacios de trabajo ilimitados",
+            "description": "Crea tantos espacios de trabajo como necesites"
+          },
+          "prioritySupport": {
+            "name": "Soporte prioritario",
+            "description": "Soporte prioritario 24/7"
+          },
+          "advancedAnalytics": {
+            "name": "Analítica avanzada",
+            "description": "Información detallada e informes"
+          },
+          "customIntegrations": {
+            "name": "Integraciones personalizadas",
+            "description": "Crea integraciones a medida"
+          }
+        }
+      },
+      "enterprise": {
+        "name": "Empresarial",
+        "description": "Acceso ilimitado con soporte premium",
+        "tagline": "Máximo poder y soporte",
+        "highlight": "Para grandes organizaciones",
+        "cta": "Contactar ventas",
+        "features": {
+          "everythingPremium": {
+            "name": "Todo lo de Premium",
+            "description": "Todas las funciones premium incluidas"
+          },
+          "dedicatedSupport": {
+            "name": "Soporte dedicado",
+            "description": "Gestor de cuenta dedicado"
+          },
+          "slaGuarantee": {
+            "name": "Garantía SLA",
+            "description": "Garantía de disponibilidad del 99,9%"
+          },
+          "ssoSaml": {
+            "name": "SSO/SAML",
+            "description": "Integración de inicio de sesión único"
+          },
+          "whiteLabel": {
+            "name": "Marca blanca",
+            "description": "Personaliza con tu marca"
+          }
+        }
+      }
+    },
+    "package": {
+      "perMonth": "/mes",
+      "perYear": "/año"
+    },
+    "faq": {
+      "title": "Preguntas frecuentes",
+      "changePlans": {
+        "question": "¿Puedo cambiar de plan más adelante?",
+        "answer": "Sí, puedes subir o bajar de plan en cualquier momento. Los cambios se aplican de inmediato."
+      },
+      "paymentMethods": {
+        "question": "¿Qué métodos de pago aceptan?",
+        "answer": "Todas las tarjetas de crédito principales, PayPal y transferencias bancarias para planes empresariales."
+      },
+      "setupFee": {
+        "question": "¿Hay una tarifa de configuración?",
+        "answer": "No hay tarifas de configuración. Solo pagas el plan seleccionado con precios transparentes."
+      },
+      "cancelAnytime": {
+        "question": "¿Puedo cancelar en cualquier momento?",
+        "answer": "Sí, cancela cuando quieras sin preguntas. Sin penalizaciones ni cargos."
+      }
+    },
+    "checkout": {
+      "backToPricing": "Volver a precios",
+      "title": "Completa tu suscripción",
+      "subscribingTo": "Te estás suscribiendo al plan <strong>{{plan}}</strong>",
+      "orderSummary": "Resumen del pedido",
+      "planLabel": "Plan {{name}}",
+      "billingMonthly": "facturación mensual",
+      "billingYearly": "facturación anual",
+      "perMonth": "mes",
+      "perYear": "año",
+      "whatsIncluded": "Qué incluye",
+      "subtotal": "Subtotal",
+      "tax": "Impuestos",
+      "totalDueToday": "Total a pagar hoy",
+      "freeTrialNotice": "Prueba gratuita de 14 días, luego ${{price}}/{{period}}",
+      "profileInformation": "Información del perfil",
+      "paymentInformation": "Información de pago",
+      "paymentDemoNotice": "La integración de pagos aún no está activa. Este es un formulario de demostración.",
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "email": "Correo electrónico",
+      "company": "Empresa",
+      "companyOptional": "(Opcional)",
+      "cardNumber": "Número de tarjeta",
+      "cardNumberPlaceholder": "1234 5678 9012 3456",
+      "expiry": "Fecha de vencimiento",
+      "expiryPlaceholder": "MM/AA",
+      "cvv": "CVV",
+      "cvvPlaceholder": "123",
+      "termsAgreement": "Acepto los <1>Términos de servicio</1> y la <2>Política de privacidad</2>",
+      "termsOfService": "Términos de servicio",
+      "privacyPolicy": "Política de privacidad",
+      "submitButton": "Iniciar prueba gratuita — Luego ${{price}}/{{period}}",
+      "periodMonth": "mes",
+      "periodYear": "año",
+      "requiredField": "*"
+    }
+  },
+  "logout": {
+    "title": "Cerrando tu sesión",
+    "message": "Estamos finalizando tu sesión y redirigiéndote a la página de inicio. Si no ocurre nada, actualiza la página o cierra la pestaña por seguridad."
+  },
+  "profiling": {
+    "index": {
+      "title": "Completa tu perfil",
+      "description": "Cuéntanos un poco sobre ti para personalizar tu experiencia en Tools Dashboard.",
+      "fullName": "Nombre completo",
+      "timezone": "Zona horaria",
+      "continue": "Continuar"
+    },
+    "complete": {
+      "title": "¡Todo listo!",
+      "description": "Tu perfil está completo. Ya puedes explorar Tools Dashboard.",
+      "goToDashboard": "Ir al panel"
+    }
+  },
+  "oauthError": {
+    "title": "Error de autenticación",
+    "appName": "No se pudo autenticar con <strong>{{appName}}</strong>",
+    "errorCode": "Código de error:",
+    "unknownDescription": "Se produjo un error desconocido durante la autenticación",
+    "returnToLibrary": "Volver a la biblioteca de aplicaciones",
+    "goToDashboard": "Ir al panel",
+    "contactSupport": "Contactar con soporte",
+    "helpText": "Si el problema persiste, contacta con soporte e indica el código de error anterior. Nuestro equipo te ayudará a resolver el problema de autenticación."
+  },
+  "common": {
+    "loading": "Cargando…",
+    "retry": "Reintentar",
+    "contactSupport": "Contactar con soporte",
+    "comingSoon": "Próximamente"
   },
   "footer": {
     "copyright": "© {{year}} Plataforma Panel de Herramientas."

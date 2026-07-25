@@ -2,6 +2,8 @@ import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
+
 import { PackageCard } from "../ui/PackageCard";
 import { PricingToggle } from "../ui/PricingToggle";
 
@@ -31,12 +33,9 @@ type Package = {
   }>;
 };
 
-export async function loader(_args: LoaderFunctionArgs) {
-  // TODO: Replace with actual API call to back-api service
-  // const response = await fetch('http://localhost:8000/user-subscription/packages');
-  // const packages = await response.json();
+const FAQ_KEYS = ["changePlans", "paymentMethods", "setupFee", "cancelAnytime"] as const;
 
-  // Mock data for now
+export async function loader(_args: LoaderFunctionArgs) {
   const packages: Package[] = [
     {
       id: "1",
@@ -257,60 +256,36 @@ export async function loader(_args: LoaderFunctionArgs) {
 
 export default function PricingPage() {
   const { packages } = useLoaderData<typeof loader>();
+  const { t } = useTranslation();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <div className="max-w-7xl mx-auto px-4 py-20">
-        {/* Header */}
         <div className="text-center mb-16">
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-            Choose Your Plan
-          </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Select the perfect subscription for your needs. All plans include a 14-day free trial with no credit card required.
-          </p>
+          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">{t("subscription.page.title")}</h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">{t("subscription.page.subtitle")}</p>
         </div>
 
-        {/* Billing Toggle */}
         <div className="mb-16">
           <PricingToggle billingCycle={billingCycle} onToggle={setBillingCycle} />
         </div>
 
-        {/* Package Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
           {packages.map((pkg) => (
-            <PackageCard
-              key={pkg.id}
-              package={pkg}
-              billingCycle={billingCycle}
-              highlighted={pkg.slug === "standard"}
-            />
+            <PackageCard key={pkg.id} package={pkg} billingCycle={billingCycle} highlighted={pkg.slug === "standard"} />
           ))}
         </div>
 
-        {/* FAQ Section */}
         <div className="mt-32 max-w-5xl mx-auto">
-          <h2 className="text-4xl font-bold text-gray-900 text-center mb-16">
-            Frequently Asked Questions
-          </h2>
+          <h2 className="text-4xl font-bold text-gray-900 text-center mb-16">{t("subscription.faq.title")}</h2>
           <div className="grid md:grid-cols-2 gap-x-12 gap-y-10">
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-              <h3 className="font-bold text-lg text-gray-900 mb-3">Can I change plans later?</h3>
-              <p className="text-gray-600 leading-relaxed">Yes, you can upgrade or downgrade at any time. Changes take effect immediately.</p>
-            </div>
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-              <h3 className="font-bold text-lg text-gray-900 mb-3">What payment methods do you accept?</h3>
-              <p className="text-gray-600 leading-relaxed">All major credit cards, PayPal, and bank transfers for enterprise plans.</p>
-            </div>
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-              <h3 className="font-bold text-lg text-gray-900 mb-3">Is there a setup fee?</h3>
-              <p className="text-gray-600 leading-relaxed">No setup fees. You only pay for your selected plan with transparent pricing.</p>
-            </div>
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-              <h3 className="font-bold text-lg text-gray-900 mb-3">Can I cancel anytime?</h3>
-              <p className="text-gray-600 leading-relaxed">Yes, cancel anytime with no questions asked. No penalties or fees.</p>
-            </div>
+            {FAQ_KEYS.map((key) => (
+              <div key={key} className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+                <h3 className="font-bold text-lg text-gray-900 mb-3">{t(`subscription.faq.${key}.question`)}</h3>
+                <p className="text-gray-600 leading-relaxed">{t(`subscription.faq.${key}.answer`)}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>

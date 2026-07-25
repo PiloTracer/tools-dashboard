@@ -1,16 +1,19 @@
 import { useSubmit } from "@remix-run/react";
 import { useTranslation } from "react-i18next";
 
+import { usePublicHref } from "./layout/PublicLayout";
+
 export function LanguageSwitcher() {
   const { i18n, t } = useTranslation();
   const submit = useSubmit();
+  const changeLanguageAction = usePublicHref("/change-language");
 
   const currentLang = i18n.language.split("-")[0];
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newLanguage = e.target.value;
     if (newLanguage !== currentLang) {
-      submit({ lng: newLanguage }, { method: "post", action: "/app/change-language", replace: true });
+      submit({ lng: newLanguage }, { method: "post", action: changeLanguageAction, replace: true });
     }
   };
 

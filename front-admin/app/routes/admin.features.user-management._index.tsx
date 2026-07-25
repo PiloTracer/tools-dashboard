@@ -1,6 +1,7 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData, useSearchParams, useNavigate } from "@remix-run/react";
+import { useTranslation, Trans } from "react-i18next";
 import { UserTable, type User } from "../features/user-management/ui/UserTable";
 import { useState } from "react";
 
@@ -73,6 +74,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export default function UserManagementIndex() {
+  const { t } = useTranslation();
   const data = useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -130,14 +132,15 @@ export default function UserManagementIndex() {
           marginBottom: "8px",
           letterSpacing: "-0.01em"
         }}>
-          User Management
+          {t("userManagement.title")}
         </h1>
         <p style={{
           fontSize: "14px",
           color: "#6b7280",
           fontWeight: 400
         }}>
-          Manage user accounts, roles, and permissions. <span style={{ color: "#9ca3af" }}>Total users: {data.total}</span>
+          {t("userManagement.description")}{" "}
+          <span style={{ color: "#9ca3af" }}>{t("userManagement.totalUsers", { count: data.total })}</span>
         </p>
         <div style={{ marginTop: 12 }}>
           <a
@@ -155,7 +158,7 @@ export default function UserManagementIndex() {
               textDecoration: "none",
             }}
           >
-            + Create User
+            {t("userManagement.createUser")}
           </a>
         </div>
       </div>
@@ -178,7 +181,7 @@ export default function UserManagementIndex() {
               color: "#374151",
               marginBottom: "6px"
             }}>
-              Search by email
+              {t("userManagement.search.label")}
             </label>
             <div style={{ display: "flex", gap: "0" }}>
               <input
@@ -187,7 +190,7 @@ export default function UserManagementIndex() {
                 id="search"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Enter email address"
+                placeholder={t("userManagement.search.placeholder")}
                 style={{
                   flex: 1,
                   padding: "8px 12px",
@@ -213,7 +216,7 @@ export default function UserManagementIndex() {
                   cursor: "pointer"
                 }}
               >
-                Search
+                {t("userManagement.search.submit")}
               </button>
             </div>
           </form>
@@ -227,7 +230,7 @@ export default function UserManagementIndex() {
               color: "#374151",
               marginBottom: "6px"
             }}>
-              Filter by role
+              {t("userManagement.filters.roleLabel")}
             </label>
             <select
               id="role-filter"
@@ -243,11 +246,11 @@ export default function UserManagementIndex() {
                 outline: "none"
               }}
             >
-              <option value="">All Roles</option>
-              <option value="admin">Admin</option>
-              <option value="moderator">Moderator</option>
-              <option value="support">Support</option>
-              <option value="customer">Customer</option>
+              <option value="">{t("userManagement.filters.allRoles")}</option>
+              <option value="admin">{t("userManagement.filters.admin")}</option>
+              <option value="moderator">{t("userManagement.filters.moderator")}</option>
+              <option value="support">{t("userManagement.filters.support")}</option>
+              <option value="customer">{t("userManagement.filters.customer")}</option>
             </select>
           </div>
         </div>
@@ -276,21 +279,24 @@ export default function UserManagementIndex() {
               disabled={currentPage <= 1}
               className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             >
-              Previous
+              {t("userManagement.pagination.previous")}
             </button>
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage >= data.total_pages}
               className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             >
-              Next
+              {t("userManagement.pagination.next")}
             </button>
           </div>
           <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-gray-700">
-                Showing page <span className="font-medium">{currentPage}</span> of{" "}
-                <span className="font-medium">{data.total_pages}</span>
+                <Trans
+                  i18nKey="userManagement.pagination.showingPage"
+                  values={{ current: currentPage, total: data.total_pages }}
+                  components={[<span className="font-medium" key="current" />, <span className="font-medium" key="total" />]}
+                />
               </p>
             </div>
             <div>
@@ -300,7 +306,7 @@ export default function UserManagementIndex() {
                   disabled={currentPage <= 1}
                   className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
                 >
-                  <span className="sr-only">Previous</span>
+                  <span className="sr-only">{t("userManagement.pagination.previous")}</span>
                   ←
                 </button>
                 {Array.from({ length: data.total_pages }, (_, i) => i + 1)
@@ -338,7 +344,7 @@ export default function UserManagementIndex() {
                   disabled={currentPage >= data.total_pages}
                   className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
                 >
-                  <span className="sr-only">Next</span>
+                  <span className="sr-only">{t("userManagement.pagination.next")}</span>
                   →
                 </button>
               </nav>

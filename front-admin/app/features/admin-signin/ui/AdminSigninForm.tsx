@@ -1,5 +1,6 @@
 import { Form } from "@remix-run/react";
 import type { FC } from "react";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   csrfToken: string;
@@ -18,16 +19,16 @@ export const AdminSigninForm: FC<Props> = ({
   isSubmitting = false,
   disabled = false,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="w-full">
       <div className="rounded-2xl border border-white/10 bg-white/95 p-8 shadow-2xl shadow-slate-900/40 backdrop-blur-sm sm:p-10">
         <div className="mb-8 text-center">
           <h1 className="mb-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-            Admin sign-in
+            {t("signin.title")}
           </h1>
-          <p className="text-sm text-slate-600 sm:text-base">
-            Tools Dashboard · use your admin email and password
-          </p>
+          <p className="text-sm text-slate-600 sm:text-base">{t("signin.subtitle")}</p>
         </div>
 
         {formError && (
@@ -43,7 +44,7 @@ export const AdminSigninForm: FC<Props> = ({
         <Form method="post" className="flex flex-col gap-5">
           <div>
             <label htmlFor="admin-signin-email" className="mb-2 block text-sm font-medium text-slate-700">
-              Email
+              {t("signin.email")}
             </label>
             <input
               id="admin-signin-email"
@@ -67,7 +68,7 @@ export const AdminSigninForm: FC<Props> = ({
 
           <div>
             <label htmlFor="admin-signin-password" className="mb-2 block text-sm font-medium text-slate-700">
-              Password
+              {t("signin.password")}
             </label>
             <input
               id="admin-signin-password"
@@ -96,13 +97,11 @@ export const AdminSigninForm: FC<Props> = ({
             aria-busy={isSubmitting}
             className="mt-1 w-full rounded-lg bg-indigo-600 py-2.5 text-[15px] font-semibold text-white shadow-md shadow-indigo-900/20 transition hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:shadow-none"
           >
-            {isSubmitting ? "Signing in…" : "Sign in"}
+            {isSubmitting ? t("signin.submitting") : t("signin.submit")}
           </button>
         </Form>
       </div>
-      <p className="mt-8 text-center text-xs text-slate-400">
-        Session expires after 30 minutes of inactivity.
-      </p>
+      <p className="mt-8 text-center text-xs text-slate-400">{t("signin.sessionNote")}</p>
     </div>
   );
 };

@@ -1,0 +1,51 @@
+import { RemixBrowser } from "@remix-run/react";
+import { startTransition, StrictMode } from "react";
+import { hydrateRoot } from "react-dom/client";
+import i18next from "i18next";
+import { I18nextProvider, initReactI18next } from "react-i18next";
+import LanguageDetector from "i18next-browser-languagedetector";
+import i18nOptions from "./i18n";
+
+// Bundle `common` for en/es so nav strings never depend on a separate HTTP fetch to
+// `/admin/locales/...` (browser/CDN/proxy caching was serving stale JSON without new keys).
+import commonEn from "../public/locales/en/common.json";
+import commonEs from "../public/locales/es/common.json";
+
+async function hydrate() {
+  // Get the language from the HTML tag set by the server
+  const lng = document.documentElement.lang || "en";
+
+  await i18next
+    .use(initReactI18next)
+    .use(LanguageDetector)
+    .init({
+      ...i18nOptions,
+      lng, // Use the server-provided language
+      resources: {
+        en: { common: commonEn },
+        es: { common: commonEs },
+      },
+      detection: {
+        order: ["cookie", "htmlTag", "navigator"], // Prioritize cookie for persistence
+        caches: [], // Disable client-side cookie writing - server handles persistence
+        lookupCookie: "i18next", // But still read from this cookie
+      },
+    });
+
+  startTransition(() => {
+    hydrateRoot(
+      document,
+      <I18nextProvider i18n={i18next}>
+        <StrictMode>
+          <RemixBrowser />
+        </StrictMode>
+      </I18nextProvider>
+    );
+  });
+}
+
+if (window.requestIdleCallback) {
+  window.requestIdleCallback(hydrate);
+} else {
+  window.setTimeout(hydrate, 1);
+}

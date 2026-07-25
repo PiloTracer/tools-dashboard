@@ -3,7 +3,9 @@ import { json, redirect } from "@remix-run/node";
 import { useActionData, useLoaderData, useNavigation } from "@remix-run/react";
 import { isValidAdminCsrf, newAdminCsrf } from "../../../utils/admin-csrf.server";
 import { getAdminSession, commitAdminSession } from "../../../utils/admin-session.server";
+import i18next from "../../../i18next.server";
 import { AdminSigninForm } from "../ui/AdminSigninForm";
+import { LanguageSwitcher } from "../../../components/LanguageSwitcher";
 
 type ActionData = {
   fieldErrors?: {
@@ -37,6 +39,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
  * Action: Handle admin signin form submission
  */
 export async function action({ request }: ActionFunctionArgs) {
+  const t = await i18next.getFixedT(request);
   const formData = await request.formData();
   const email = formData.get("email");
   const password = formData.get("password");
@@ -44,7 +47,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   if (!isValidAdminCsrf(request, formData)) {
     return json<ActionData>(
-      { formError: "Invalid or expired security token. Refresh the page and try again." },
+      { formError: t("signin.errors.csrfInvalid") },
       { status: 403 }
     );
   }
@@ -52,7 +55,7 @@ export async function action({ request }: ActionFunctionArgs) {
   // Validate intent
   if (intent !== "admin-signin") {
     return json<ActionData>(
-      { formError: "Invalid form submission" },
+      { formError: t("signin.errors.invalidSubmission") },
       { status: 400 }
     );
   }
@@ -61,13 +64,13 @@ export async function action({ request }: ActionFunctionArgs) {
   const fieldErrors: ActionData["fieldErrors"] = {};
 
   if (typeof email !== "string" || !email) {
-    fieldErrors.email = "Email is required";
+    fieldErrors.email = t("signin.errors.emailRequired");
   } else if (!email.includes("@")) {
-    fieldErrors.email = "Please enter a valid email address";
+    fieldErrors.email = t("signin.errors.emailInvalid");
   }
 
   if (typeof password !== "string" || !password) {
-    fieldErrors.password = "Password is required";
+    fieldErrors.password = t("signin.errors.passwordRequired");
   }
 
   if (Object.keys(fieldErrors).length > 0) {
@@ -95,20 +98,20 @@ export async function action({ request }: ActionFunctionArgs) {
       // Handle specific error cases
       if (response.status === 401) {
         return json<ActionData>(
-          { formError: "Invalid email or password" },
+          { formError: t("signin.errors.invalidCredentials") },
           { status: 401 }
         );
       }
 
       if (response.status === 403) {
         return json<ActionData>(
-          { formError: errorData.detail || "Email not verified. Please verify your email before logging in." },
+          { formError: errorData.detail || t("signin.errors.emailNotVerified") },
           { status: 403 }
         );
       }
 
       return json<ActionData>(
-        { formError: "An error occurred. Please try again." },
+        { formError: t("signin.errors.genericError") },
         { status: 500 }
       );
     }
@@ -118,7 +121,7 @@ export async function action({ request }: ActionFunctionArgs) {
     // CRITICAL: Verify user has admin role
     if (data.user?.role !== "admin") {
       return json<ActionData>(
-        { formError: "Access denied. Admin role required." },
+        { formError: t("signin.errors.accessDenied") },
         { status: 403 }
       );
     }
@@ -139,7 +142,7 @@ export async function action({ request }: ActionFunctionArgs) {
   } catch (error) {
     console.error("Admin signin error:", error);
     return json<ActionData>(
-      { formError: "Failed to connect to authentication service. Please try again." },
+      { formError: t("signin.errors.authServiceFailed") },
       { status: 500 }
     );
   }
@@ -166,6 +169,9 @@ export default function AdminSigninIndex() {
         aria-hidden
       />
       <div className="relative flex min-h-screen w-full items-center justify-center px-4 py-16 sm:px-8 lg:px-12">
+        <div className="absolute right-4 top-4 sm:right-8 sm:top-8">
+          <LanguageSwitcher />
+        </div>
         <div className="w-full max-w-md sm:max-w-lg">
           <AdminSigninForm
             csrfToken={loaderData.csrfToken}

@@ -1,26 +1,17 @@
-import { useState } from 'react';
-import { launchAppWithOAuth } from '../utils/oauth';
-import type { AppConfig } from '../utils/api';
-import { useAppReachability } from '../hooks/useAppReachability';
-import { ReachabilityBadge } from './ReachabilityBadge';
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+
+import { launchAppWithOAuth } from "../utils/oauth";
+import type { AppConfig } from "../utils/api";
+import { useAppReachability } from "../hooks/useAppReachability";
+import { ReachabilityBadge } from "./ReachabilityBadge";
 
 interface AppCardProps {
   app: AppConfig;
 }
 
-/**
- * AppCard Component
- *
- * Displays an individual application as a card with:
- * - Application logo
- * - Application name
- * - Description
- * - Scope badges
- * - Launch button
- *
- * When the user clicks "Launch App", it initiates the OAuth flow.
- */
 export function AppCard({ app }: AppCardProps) {
+  const { t } = useTranslation();
   const [logoFailed, setLogoFailed] = useState(false);
   const showInitials = !app.logo_url || logoFailed;
   const linkUrl = app.dev_url || app.prod_url;
@@ -30,14 +21,13 @@ export function AppCard({ app }: AppCardProps) {
     try {
       await launchAppWithOAuth(app);
     } catch (error) {
-      console.error('Failed to launch app:', error);
-      alert('Failed to launch application. Please try again.');
+      console.error("Failed to launch app:", error);
+      alert(t("appLibrary.card.launchFailed"));
     }
   };
 
   return (
     <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group">
-      {/* Logo Section — tight vertical padding so cards stay compact */}
       <div className="flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 py-3 px-4 min-h-0 group-hover:from-blue-100 group-hover:to-indigo-100 transition-all duration-300">
         {!showInitials ? (
           <img
@@ -53,16 +43,12 @@ export function AppCard({ app }: AppCardProps) {
         )}
       </div>
 
-      {/* Content Section */}
       <div className="p-4">
-        <h3 className="text-base font-semibold text-gray-900 line-clamp-2 mb-1.5">
-          {app.client_name}
-        </h3>
+        <h3 className="text-base font-semibold text-gray-900 line-clamp-2 mb-1.5">{app.client_name}</h3>
         <div className="mb-2">
           <ReachabilityBadge state={reachability} titleUrl={linkUrl} />
         </div>
 
-        {/* App URL */}
         {linkUrl && (
           <div className="mb-2">
             <a
@@ -73,24 +59,23 @@ export function AppCard({ app }: AppCardProps) {
               onClick={(e) => e.stopPropagation()}
             >
               <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
               </svg>
               {linkUrl}
             </a>
           </div>
         )}
 
-        {/* Description */}
-        {app.description && (
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-            {app.description}
-          </p>
-        )}
+        {app.description && <p className="text-sm text-gray-600 mb-3 line-clamp-2">{app.description}</p>}
 
-        {/* Scopes */}
         {app.allowed_scopes && app.allowed_scopes.length > 0 && (
           <div className="mb-3">
-            <p className="text-xs text-gray-500 mb-1">Permissions</p>
+            <p className="text-xs text-gray-500 mb-1">{t("appLibrary.card.permissions")}</p>
             <div className="flex flex-wrap gap-1">
               {app.allowed_scopes.map((scope) => (
                 <span
@@ -104,13 +89,12 @@ export function AppCard({ app }: AppCardProps) {
           </div>
         )}
 
-        {/* Launch Button */}
         <button
           onClick={handleLaunch}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm hover:shadow-md"
-          aria-label={`Launch ${app.client_name}`}
+          aria-label={t("appLibrary.card.launchAppAria", { appName: app.client_name })}
         >
-          Launch App
+          {t("appLibrary.card.launchApp")}
         </button>
       </div>
     </div>

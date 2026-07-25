@@ -1,4 +1,5 @@
 import type { FC } from "react";
+import { useTranslation } from "react-i18next";
 
 type VerificationStatus = "pending" | "verified" | "error";
 
@@ -14,21 +15,25 @@ const STATUS_STYLES: Record<VerificationStatus, string> = {
   error: "border-red-200 bg-red-50 text-red-700",
 };
 
-export const VerificationBanner: FC<Props> = ({ status, message, supportUrl }) => (
-  <section
-    role="status"
-    className={`rounded-lg border px-4 py-3 text-sm ${STATUS_STYLES[status]} flex flex-col gap-2`}
-  >
-    <span>{message}</span>
-    {supportUrl ? (
-      <a
-        href={supportUrl}
-        rel="noreferrer"
-        target="_blank"
-        className="inline-flex w-fit items-center gap-2 text-sm font-semibold underline"
-      >
-        Contact support
-      </a>
-    ) : null}
-  </section>
-);
+export const VerificationBanner: FC<Props> = ({ status, message, supportUrl }) => {
+  const { t } = useTranslation();
+
+  return (
+    <section
+      role="status"
+      className={`rounded-lg border px-4 py-3 text-sm ${STATUS_STYLES[status]} flex flex-col gap-2`}
+    >
+      <span>{message}</span>
+      {supportUrl ? (
+        <a
+          href={supportUrl}
+          rel="noreferrer"
+          target="_blank"
+          className="inline-flex w-fit items-center gap-2 text-sm font-semibold underline"
+        >
+          {t("common.contactSupport")}
+        </a>
+      ) : null}
+    </section>
+  );
+};

@@ -1,20 +1,12 @@
-/**
- * EmptyState Component
- *
- * Displayed when no applications are available in the library.
- * Provides helpful messaging to guide users.
- */
+import { useTranslation } from "react-i18next";
+
 export function EmptyState() {
+  const { t } = useTranslation();
+
   return (
     <div className="text-center py-16 px-4">
       <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full mb-6 shadow-inner">
-        <svg
-          className="w-10 h-10 text-gray-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
+        <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -23,15 +15,12 @@ export function EmptyState() {
           />
         </svg>
       </div>
-      <h3 className="text-xl font-semibold text-gray-900 mb-3">
-        No applications available
-      </h3>
-      <p className="text-base text-gray-600 max-w-md mx-auto mb-6">
-        There are currently no applications available in the library. Check back soon for new integrations!
-      </p>
+      <h3 className="text-xl font-semibold text-gray-900 mb-3">{t("appLibrary.empty.title")}</h3>
+      <p className="text-base text-gray-600 max-w-md mx-auto mb-6">{t("appLibrary.empty.description")}</p>
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-lg mx-auto">
         <p className="text-sm text-blue-800">
-          <strong className="font-semibold">Coming soon:</strong> We're working on integrating more applications to expand your toolkit.
+          <strong className="font-semibold">{t("appLibrary.empty.comingSoonTitle")}</strong>{" "}
+          {t("appLibrary.empty.comingSoonBody")}
         </p>
       </div>
     </div>
