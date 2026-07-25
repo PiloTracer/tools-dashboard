@@ -110,7 +110,7 @@
     "pagination": {
       "previous": "Previous",
       "next": "Next",
-      "showingPage": "Showing page <1>{{current}}</1> of <2>{{total}}</2>"
+      "showingPage": "Showing page <0>{{current}}</0> of <1>{{total}}</1>"
     },
     "table": {
       "email": "Email",
@@ -153,7 +153,7 @@
       "description": "Background and scheduled jobs (planned)."
     },
     "title": "Task scheduler",
-    "description": "This area is reserved for operating and inspecting <1>background work</1> (queues, retries, schedules) that today run in the stack via <2>Celery</2> and <3>Redis</3> (<4>back-workers</4>). Nothing here talks to the workers yet; the admin UI is a shell until an API exists.",
+    "description": "This area is reserved for operating and inspecting <0>background work</0> (queues, retries, schedules) that today run in the stack via <1>Celery</1> and <2>Redis</2> (<3>back-workers</3>). Nothing here talks to the workers yet; the admin UI is a shell until an API exists.",
     "planned": "Planned",
     "future": {
       "title": "What it will be for",
@@ -163,9 +163,9 @@
     },
     "today": {
       "title": "What works today",
-      "description": "Workers and Redis are part of the docker stack; job code lives under <1>back-workers/</1>. There is <2>no</2> admin API to list or edit schedules from this screen yet."
+      "description": "Workers and Redis are part of the docker stack; job code lives under <0>back-workers/</0>. There is <1>no</1> admin API to list or edit schedules from this screen yet."
     },
-    "notice": "<1>Create / edit jobs</1> — The old placeholder form has been removed. When this ships, creation will go through a real backend contract (validation, auth, audit), not a dummy POST.",
+    "notice": "<0>Create / edit jobs</0> — The old placeholder form has been removed. When this ships, creation will go through a real backend contract (validation, auth, audit), not a dummy POST.",
     "links": {
       "overview": "← Admin overview",
       "appLibrary": "Application library"

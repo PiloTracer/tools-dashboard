@@ -144,6 +144,48 @@ Detailed landed-work tables, deployment checklists, and Priority 1 step lists fr
 
 ---
 
+## Cross-framework action (@x-director)
+
+**Date:** 2026-07-25
+**Request:** "verify all changes in the last 12 hours. Make sure the system is reliable, languages are properly handled. Implement any fixes that you deem necessary"
+**Frameworks involved:** .ai, .ai.ui
+**Classified framework bucket(s):** cross-framework (engineering + ui)
+**Routing confidence:** high
+**Preflight (frameworks installed):** .ai yes | .ai.ui yes | .ai.biz yes | .ai.soc yes
+**Executed:**
+1. Verified commits `f0e1024..HEAD` (multilingual landing + front-admin/front-public i18n) via 4 parallel probes: stack smoke, front-admin i18n, front-public i18n, landing/nginx → smoke 4/4, logs clean, locale parity exact (en/es), but 8 defects found
+2. Fixed (all live-verified): front-admin + front-public `i18next.server.ts` dead `i18nextOptions` block → server `getFixedT` returned raw keys (HIGH); front-admin `<Trans>` tags renumbered 0-based; change-language redirects honor `X-Forwarded-Proto` (both apps); landing `localStorage.getItem` guarded; landing mobile dock title emphasis; `default.prd.conf` deprecation note; dev nginx `:8082/health` endpoint added; front-public dead `getRequestT` export removed
+3. Gates: touch-scope pass; blast-radius high (4 areas) — owner-approved by the request itself; smoke 4/4; MOD-06 registry in NEXT.md → merge_ok
+**User correction:** none
+**Coordination notes:** .ai.ui portion handled natively (landing page CSS/JS) — no ui-* skill chain needed for defect fixes; MOD-06 run per AI-assisted default
+**Blockers / follow-ups (owner decisions needed):**
+- `front-admin/tsconfig.json` / `front-public/tsconfig.json` are protected — `moduleResolution: "Node"` causes TS2307 on `remix-i18next/*` subpath imports; recommend `"Bundler"` (needs explicit approval). Baseline tsc already broken (~2393 errors, `@types/react*` missing from devDeps)
+- Google sign-in button label not localized: backend-configured `buttonText` overrides `t()` on es pages (`front-public/.../user-registration/routes/index.tsx:184,297`) — needs product decision (locale-aware config vs always-translate)
+- Real-browser hydration/client-side language switch unverified (no headless browser); SSR verified via curl
+- Landing FOUC (English paint before es swap) — accepted, cosmetic
+**Next recommended:** @ai-director - "fix tsconfig moduleResolution + add @types/react to make tsc a usable gate" (with protected-file approval)
+
+---
+
+## Cross-framework action (@x-director)
+
+**Date:** 2026-07-25 (second action)
+**Request:** "when user lands in the root: https://tools.datawork.top/ and the user changes the language, the selection should persist even after navigating to the public portal (portal publico)"
+**Frameworks involved:** .ai
+**Classified framework bucket(s):** engineering
+**Routing confidence:** high
+**Root cause (evidence):** Remix 2.17.2 `createCookie` unconditionally base64-JSON-encodes values (`encodeData`, `server-runtime/dist/cookies.js:101`) — the landing page writes plain `i18next=es`, which both apps silently ignored → fell back to English. Reproduced live before fixing (plain cookie → `lang="en"`).
+**Executed:**
+1. Replaced `i18nCookie` in `front-public/app/i18next.server.ts` and `front-admin/app/i18next.server.ts`: spread of the Remix cookie with plain-value `parse`/`serialize` overrides (first attempt — `encode`/`decode` options — provably cannot disable Remix's base64 layer; reverted)
+2. Verified live: plain `i18next=es` → Spanish SSR in both apps; `change-language` now writes plain cookie; invalid + legacy base64 values fall back to English without crashing
+3. Gates: smoke 4/4, touch-scope pass, blast-radius warn (in-scope)
+**User correction:** none
+**Coordination notes:** cookie contract now plain across landing page + both Remix apps; same attributes (Path=/, Max-Age=1y, SameSite=Lax, JS-readable)
+**Blockers:** none
+**Next recommended:** deploy to VPS so the fix reaches tools.datawork.top (owner action #2)
+
+---
+
 ## Updating this file
 
 After a significant session, refresh **Session status**, **Open owner actions**, **Repository state**, and **Where to look next**. Move long historical tables to `archives/`.

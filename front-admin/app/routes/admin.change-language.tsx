@@ -16,7 +16,11 @@ function resolveRedirectPath(request: Request): string {
   try {
     const refUrl = new URL(referer);
     const reqUrl = new URL(request.url);
-    if (refUrl.origin !== reqUrl.origin) {
+    // Behind a TLS-terminating proxy the request URL is http: while the
+    // browser Referer is https: — honor the forwarded proto for the origin.
+    const forwardedProto = request.headers.get("X-Forwarded-Proto")?.split(",")[0]?.trim();
+    const reqOrigin = forwardedProto ? `${forwardedProto}://${reqUrl.host}` : reqUrl.origin;
+    if (refUrl.origin !== reqOrigin) {
       return DEFAULT_REDIRECT;
     }
     return `${refUrl.pathname}${refUrl.search}${refUrl.hash}`;

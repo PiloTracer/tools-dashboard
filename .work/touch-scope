@@ -1,7 +1,17 @@
 {
   "ref": "tools-dashboard",
   "updated": "2026-07-25",
-  "goal": "no active iteration",
-  "allowed_paths": [],
-  "allowed_patterns": []
+  "goal": "verify last-12h multilingual changes (f0e1024..HEAD); fix reliability + language-handling defects",
+  "allowed_paths": [
+    ".work/touch-scope"
+  ],
+  "allowed_patterns": [
+    "front-admin/app/**",
+    "front-admin/public/locales/**",
+    "front-public/app/**",
+    "front-public/public/locales/**",
+    "infra/nginx/**",
+    ".work/**",
+    ".work.ui/**"
+  ]
 }

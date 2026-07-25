@@ -78,6 +78,13 @@
 
 ---
 
+## Cross-framework action (@x-director) — 2026-07-25
+
+**Request:** "verify all changes in the last 12 hours… languages are properly handled… implement fixes" (full record: `.work/context/HANDOFF.md`)
+**UI-side outcome:** landing page (`infra/nginx/landing/index.html`) verified bilingual (61/61 en/es key parity, contrast fix d843f21 confirmed); fixed unguarded `localStorage.getItem` (could kill the language switcher) + mobile dock title emphasis. No ui-* skill chain required (defect fixes, native handling). No token/foundation files touched.
+
+---
+
 ## Cross-link (Agent OS)
 
 Keep **### UI layer** in `.work/context/HANDOFF.md` in sync when UI milestones close.

@@ -50,6 +50,23 @@
 
 *(No active iteration - run `@code-implementation plan - M1` after master plan is **Approved** and `implementation-ready: yes`.)*
 
+### Concept / NFR registry (2026-07-25 — i18n verification + fixes, no formal iteration)
+
+| Concept id | Applies | Status | Evidence / trigger |
+|------------|---------|--------|-------------------|
+| MOD-06 | yes | done | AI-assisted session — risk summary below |
+
+**AI change risk summary (MOD-06):**
+- AI-assisted: yes
+- Boundaries crossed: 0 hard module boundaries — independent per-area fixes (front-admin, front-public, infra/nginx), no new inter-module imports/RPC
+- New cross-boundary deps: none (`X-Forwarded-Proto` header convention only)
+- Test isolation: weak — `bash bin/test.sh` smoke green (4/4) but does not isolate i18n; verification via live curl probes (signin CSRF error en/es, oauth-error page en/es, change-language redirects same-origin/TLS/cross-origin, nginx /health)
+- Human architectural review: optional — small diff (10 files, ~73 lines), no boundary crossings
+- Blast radius: if wrong, language switching/server-side translations on admin+public apps degrade and landing switcher may fail — user-facing only; no data, jobs, or backend state affected
+- Recommendation: merge_ok. Residual: real-browser hydration unverified; baseline `tsc` broken pre-existing (missing `@types/react`, TS2307 remix-i18next subpaths — tsconfig protected)
+- Blast-radius gate: risk high (4 areas) — owner-approved via explicit cross-area request "verify all changes… implement any fixes" (2026-07-25)
+- Follow-up (same day): plain-value `i18nCookie` in both apps fixes landing→portal language persistence (Remix base64 cookie encoding was ignoring the landing's plain cookie); live-verified, smoke 4/4
+
 ```markdown
 ## Current iteration - M{N}: <milestone name>
 
