@@ -786,7 +786,8 @@ td_stack_up_aligned() {
   echo "Starting remaining services..."
   td_docker_compose up -d || return 1
   # APIs may have crashed before password align; force recreate so they pick env + healthy DB.
-  td_docker_compose up -d --force-recreate back-api back-auth back-postgres-service feature-registry || return 1
+  # Recreate nginx-proxy too so it re-resolves Docker DNS (see default.prd.conf resolver).
+  td_docker_compose up -d --force-recreate back-api back-auth back-postgres-service feature-registry nginx-proxy || return 1
   td_prune_unused_volumes_for_project
   if ! wait_for_stack_ready; then
     echo "Stack did not become healthy in time." >&2
