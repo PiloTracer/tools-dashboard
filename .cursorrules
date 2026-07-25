@@ -95,29 +95,22 @@ Sister frameworks are siblings on disk; `.ai/` is the Agent OS source. Paths res
 
 **Path resolution:** (1) use a filled path cell; empty → fall through. (2) Auto-discover: thin-client parent = `$AGENT_OS_SOURCE/..`; check `${parent}/.ai.ui|.ai.biz|.ai.soc`; missing = "not installed". (3) Before routing, verify the framework dir + its `skills/README.md` exist; if absent, route to `@ai-director` prefixed `[degraded: <framework> not installed]` — never route into the void.
 
-### Source resolution — fat-client vs thin-client (MANDATORY before reading any `.ai/...` path)
-
-**Agent OS source (thin-client only — set by `@deploy-basic`):**
+### Source resolution (thin-client — mandatory before any `.ai/...` path)
 
 AGENT_OS_SOURCE=/mnt/work/Projects/.ai
 
-| Mode | Bootstrapped via | Framework assets | `AGENT_OS_SOURCE` |
-|------|------------------|------------------|-------------------|
-| **Fat-client** (vendored) | `@deploy-files` / `@project-bootstrap init` | this repo's `.ai/` | unset (token unchanged) |
-| **Thin-client** (remote) | `@deploy-basic` | the source Agent OS; this repo holds only `.cursorrules` + `.work/` | absolute path |
+| Variable | Value |
+|----------|-------|
+| `AGENT_OS_SOURCE` | `/mnt/work/Projects/.ai` |
+| `AI_UI_SOURCE` | `/mnt/work/Projects/.ai.ui` |
 
-**Rule (apply before reading any `.ai/...` reference):**
-1. `.cursorrules` + `.work/**` — always read locally, both modes.
-2. **Thin-client** (`AGENT_OS_SOURCE` set + readable): read every other `.ai/<path>` from `$AGENT_OS_SOURCE/<path>` (skills, standards, concepts, docs, scripts, templates, READMEs). Any `.ai/<x>` referenced anywhere — inside a skill document, or inside this `.cursorrules` file itself — resolves to `$AGENT_OS_SOURCE/<x>`.
-3. **Fat-client** (token unset/unchanged): read `.ai/<path>` locally.
-4. App code + `.work/...` resolve locally in both modes.
-5. **Thin-client + unreachable source:** stop and report `agent-os source unreachable: $AGENT_OS_SOURCE` — do not fall back or guess.
+**Rules:**
+1. `.cursorrules` + `.work/**` + `.work.ui/**` — always local.
+2. Every `.ai/<path>` or `.ai.ui/<path>` resolves from the matching source above (skills, standards, concepts, scripts, templates).
+3. If a source path is unreadable → stop and report `agent-os source unreachable` or `ui-design-os source unreachable` — do not guess.
+4. Gate scripts use pre-resolved absolute paths in § Change safety (do not re-derive).
 
-**Executable script paths are pre-resolved, not left to interpretation.** The `bash /mnt/work/Projects/.ai/scripts/...` commands in the Change-safety gate table are rewritten to the absolute `$AGENT_OS_SOURCE/scripts/...` path by `@deploy-basic` at bootstrap/`update` time — do not re-derive them at read-time.
-
-**First thin-client bootstrap** (no local skill yet): run from source (`@deploy-basic - /abs/target`) or invoke the shell from target (`bash /abs/source/scripts/deploy-basic.sh .`). Afterward the source pointer lets the local agent load every skill from source.
-
-Read these at the start of every conversation and when relevant:
+Read at conversation start / when relevant:
 
 | File | Purpose |
 |------|---------|
@@ -129,11 +122,17 @@ Read these at the start of every conversation and when relevant:
 | **`.work.ui/context/HANDOFF_UI.md`** | UI session handoff (when UI work) |
 | **`$AGENT_OS_SOURCE/docs/guides/workflows/README.md`** | Workflow index and artifact matrix |
 
+**Conditional reads (load only when the task needs them):**
+
+| Task | Read |
+|------|------|
+| Feature / service code change | `DOCS_CONTEXT.md` + `<service>/DOCS_CONTEXT.md` + `.work/features/<slug>/` |
+| Stack ports / infra detail | `DOCS_TECH_STACK.md` (full spec — do not load for small fixes) |
+| UI build / screen work | `DOCS_UI_STACK.md` + `.work.ui/context/HANDOFF_UI.md` |
+
 ### Workflow bootstrap (concepts + guides)
 
-Portable process docs: **`.ai/docs/guides/workflows/README.md`** (artifact matrix). Curriculum: **`20260518-guide-workflows-index.md`** (when present). Tutorials: **`20260518-tutorial-*`**. Reference guides: **`20260518-guide-*`**.
-
-**Concept pack:** `.ai/concepts/README.md` (MOD-01–MOD-07). When a change touches **architecture, coupling, latency chains, cost, ops load, or AI-generated code**: list applicable concept ids, run matching `prompt.md` under `.ai/concepts/<name>/`, attach outputs to the PR or **`### Concept / NFR registry`** in `.work/plans/NEXT.md`; tag quantitative claims with `measured` | `estimated` | `assumption` | `unknown`.
+Portable process docs: **`$AGENT_OS_SOURCE/docs/guides/workflows/README.md`**. Concept pack: **`$AGENT_OS_SOURCE/concepts/README.md`** (MOD-01–MOD-07). When a change touches architecture, coupling, latency, cost, ops load, or AI-generated code: list applicable concept ids, run matching `prompt.md`, attach outputs to PR or **`### Concept / NFR registry`** in `.work/plans/NEXT.md`.
 
 **Placeholder quick map (customize for this repository):**
 
@@ -154,20 +153,17 @@ Portable process docs: **`.ai/docs/guides/workflows/README.md`** (artifact matri
 | `{SKILLS_ROOT}` | `.ai/skills/` |
 | `{OBSERVABILITY_SPEC}` | .ai/standards/20260517-observability-spec.md (e.g. `.ai/standards/YYYYMMDD-observability-spec.md`) |
 | `{BOUNDARY_MAP}` | .ai/standards/20260517-DIRECTORY_MAP.md (directory map or dedicated boundary doc) |
-| `{AGENT_RULES_FILE}` | **`.cursorrules` (this file)** — `AGENTS.md` is NOT used unless the owner explicitly adopts it |
-| `back-api/` | Primary application tree (e.g. `backend/`, `apis/`, `src/`) |
-| `/app` | In-container working directory for test/lint commands |
-| `back-postgres/schema/` | Idempotent SQL scripts (e.g. `backend/migrations/`) |
-| `back-postgres/main.py` | Migration runner module path |
-| `python main.py` | Command to run migrations in container (e.g. `python -m platform.migration_runner`) |
-| `shared` | Shared platform/import package name |
-| `bash bin/test.sh` | Host smoke tests (`tests/`; requires `./bin/start.sh dev up`) |
+| `{AGENT_RULES_FILE}` | **`.cursorrules` (this file)** — `AGENTS.md` is a quick index; rules live here |
+| `back-api/` | Primary application tree |
+| `back-postgres/schema/` | Idempotent SQL migrations |
+| `back-postgres/main.py` | Migration runner (replays all schema/*.sql each start) |
+| `shared` | Shared platform package |
+| `bash bin/test.sh` | Host smoke tests (`tests/`; stack must be up — approved host exception) |
 | `docker compose exec back-api bash -c "cd /app && ruff check ."` | back-api lint |
 | `docker compose exec back-api bash -c "cd /app && pyright ."` | back-api typecheck |
 | `docker compose exec front-admin bash -c "cd /app && npx tsc --noEmit"` | front-admin typecheck |
-| `bin/start.sh` | Host script for compose control (e.g. `bin/start.sh`) |
-| `front-public` | Optional compose service for UI (e.g. `dashboard`, `web`) |
-| `/app` | In-container path to frontend app (e.g. `/app`) |
+| `bin/start.sh` | Host compose control (`dev` / `prd`) |
+| `front-admin` / `front-public` | Remix apps; container workdir `/app` |
 
 **P0 product intent (canonical):** `{PLANS_ROOT}/foundation/*-01-*-initial-scope.md` — created by `@plan-foundation greenfield`. `{PROMPTS_ROOT}/initial.md` is **user scratch only**; skills must not read or create it unless the user explicitly names that path.
 
@@ -201,9 +197,7 @@ Reusable agent skills live under `.ai/skills/`. Each skill is a subfolder contai
 | ai-director | `.ai/skills/ai-director/` | Free-text orchestrator; routes to `.ai` skill chain |
 | x-director | `.ai/skills/x-director/` | Cross-framework orchestrator (`.ai` + `.ai.ui` + `.ai.biz` + `.ai.soc`) |
 
-**Usage:** When a task matches a skill's purpose, read `skill.md` and follow the workflow. Skills are tool-agnostic (Cursor, Claude Code, Codex, opencode, etc.).
-
-**Creating new skills:** Add `.ai/skills/<skill-name>/skill.md`; register in the table above. **Naming:** `.ai/skills/README.md` § Naming protocol (`{domain}-{role}`, kebab-case).
+**Usage:** When a task matches a skill's purpose, read `skill.md` under `$AGENT_OS_SOURCE/skills/<id>/` and follow it. Full registry: `$AGENT_OS_SOURCE/skills/README.md`.
 
 ---
 
@@ -310,9 +304,11 @@ Numbered SQL under **`back-postgres/schema/`** is the default schema path. Proce
 
 ## Docker / Dev Environment
 
-### Run Tooling in Containers (when the project uses Docker)
-- NEVER run bare `npm`, `yarn`, `next`, `python`, `pytest`, `pip install`, or type-checkers on the **host** when the project uses Compose for that service.
-- All test/lint/type/build commands for app code MUST run inside the documented compose service.
+### Run Tooling in Containers
+
+- Default: run `npm`/`python`/`pytest`/`ruff`/`pyright`/`tsc` **inside** the owning compose service.
+- **Approved host exception:** `bash bin/test.sh` — root smoke suite against mapped ports (`tests/`); requires `./bin/start.sh dev up`.
+- Per-service deep tests: `docker compose exec <service> bash -c "cd /app && pytest tests/ -q"`.
 
 ### Host hygiene (container-first dependencies)
 
@@ -390,29 +386,11 @@ If the project does **not** use Docker, replace this section with the canonical 
 
 ---
 
-## Verification & Quality Discipline
+## Verification & Communication
 
-### Before Claiming Completion
-1. Run applicable tests (unit, integration, or whatever exists).
-2. Run linting/type-checking if available.
-3. Verify the change does not break existing functionality.
-4. Report actual output — not assumed output.
-
-### On Failure
-- Report the exact error output.
-- Diagnose root cause.
-- Propose and apply a fix.
-- Re-run verification.
-
-### Scope Discipline
-- Only modify files directly related to the task.
-- Do not refactor unrelated code "while you're at it."
-- Do not add dependencies without asking.
-
-### Communication
-- Be concise. Surface blockers early.
-- Label uncertainty explicitly.
-- Distinguish: confirmed facts, inferences, proposals.
+- Before "complete": run applicable tests/lint/type; report actual output (see Core Principles §2–3, §7).
+- On failure: report exact error, diagnose, fix, re-run.
+- Scope: declare scope first (§ Change safety); be concise; label uncertainty.
 
 ---
 
@@ -433,50 +411,18 @@ If the project does **not** use Docker, replace this section with the canonical 
 
 ---
 
-## Documentation layout (`.ai/` vs `.work/`)
+## Documentation layout
 
-**`.ai/`** — framework-only (thin-client: resolved from `$AGENT_OS_SOURCE`): skills, concepts, workflow guides, `START_HERE.md`, `PROCESS_ROUTER.md`, **`templates/`**. **Never created by `@deploy-basic`**. Pointer READMEs only under `.ai/plans/`, `.ai/features/`.
-
-**`.work/`** — **all project-specific memory and customization** — plans, SPECs, ADRs, prompts, `HANDOFF.md`, `PROTECTED_SURFACES.json`, binding **`.work/standards/`**, and **`.work/docs/`** (including vendor **`.work/docs/integration/`** cache). Always local in both fat- and thin-client modes.
-
-Generated filenames under `.work/` use the `YYYYMMDD-` prefix unless documented otherwise (`NEXT.md`, `HANDOFF.md`, …).
-
-| Path | Layer |
-|------|-------|
-| `.work/plans/` | Plans, registries, `NEXT.md` |
-| `.work/features/` | Feature SPECs |
-| `.work/decisions/` | ADRs |
-| `.work/prompts/` | Questionnaires; user scratch |
-| `.work/context/HANDOFF.md` | Session handoff |
-| `.work/PROTECTED_SURFACES.json` | This project's high-blast paths |
-| `.work/standards/` | This project's binding engineering standards (generated, not vendored) |
-| `.work/docs/integration/` | This project's vendor/API integration cache |
-| `.ai/skills/` | Portable agent skills (thin-client: `$AGENT_OS_SOURCE/skills/`) |
-| `.ai/templates/cursorrules.template` | Copy to repo root as `.cursorrules` when bootstrapping |
-
-Canonical map: `.ai/README.md` · Working tree: `.work/README.md`.
+- **Framework** (`$AGENT_OS_SOURCE`, `$AI_UI_SOURCE`): skills, standards, concepts, guides — never vendored here.
+- **Project** (`.work/`, `.work.ui/`): plans, SPECs, HANDOFF, touch-scope, integration cache. Map: `.work/README.md` · `.work.ui/README.md`.
 
 ---
 
-## Source resolution — UI Design OS (`.ai.ui/...`)
-
-**UI Design OS source (thin-client — set by `@deploy-basic`):**
+## Source resolution — UI Design OS
 
 AI_UI_SOURCE=/mnt/work/Projects/.ai.ui
 
-| Mode | Bootstrapped via | Where framework assets live | `AI_UI_SOURCE` |
-|------|------------------|----------------------------|----------------|
-| **Fat-client** (vendored) | `@ui-bootstrap init` or `@deploy-files` | this repo's `.ai.ui/` | unset (token unchanged) |
-| **Thin-client** (remote) | `@deploy-basic` | the source UI Design OS; this repo holds only `.cursorrules` + `.work.ui/` | absolute path |
-
-**Rule (apply before reading any `.ai.ui/...` reference):**
-1. `.cursorrules` + `.work.ui/**` — always read locally, both modes.
-2. **Thin-client** (`AI_UI_SOURCE` set + readable): read every other `.ai.ui/<path>` from `$AI_UI_SOURCE/<path>` (skills, standards, concepts, docs, scripts, templates, READMEs). Any `.ai.ui/<x>` referenced anywhere resolves to `$AI_UI_SOURCE/<x>`.
-3. **Fat-client** (no `AI_UI_SOURCE` line or local `.ai.ui/skills/` exists): read `.ai.ui/<path>` locally.
-4. App code + `.work.ui/...` resolve locally in both modes.
-5. **Thin-client + unreachable source:** stop and report `ui-design-os source unreachable: $AI_UI_SOURCE` — do not fall back or guess.
-
-**Executable script paths (UI change-safety gates):** use `bash /mnt/work/Projects/.ai.ui/scripts/...` — pre-resolved at `@deploy-basic update` time; do not re-derive at read-time.
+Same thin-client rules as Agent OS: `.work.ui/**` local; all other `.ai.ui/<path>` from `$AI_UI_SOURCE`. Unreachable → stop.
 
 <!-- UI_DESIGN_OS_BEGIN -->
 
@@ -492,7 +438,7 @@ AI_UI_SOURCE=/mnt/work/Projects/.ai.ui
 |------|---------|-----------|
 | Touch scope | `bash /mnt/work/Projects/.ai.ui/scripts/touch-scope-verify.sh` | File outside `.work.ui/touch-scope` |
 | Blast radius | `bash /mnt/work/Projects/.ai.ui/scripts/blast-radius-check.sh` | Cross-area diff ≥3 areas |
-| Tests | `bash /mnt/work/Projects/.ai.ui/scripts/framework-verify.sh` | Non-zero exit |
+| Tests | `docker compose exec front-admin bash -c "cd /app && npx tsc --noEmit"` | Non-zero exit |
 | Gate check | `bash /mnt/work/Projects/.ai.ui/scripts/gate-verify.sh` | Done task with empty Notes |
 
 **Declare scope first:** copy `$AI_UI_SOURCE/templates/work.ui/touch-scope.template` → `.work.ui/touch-scope`.

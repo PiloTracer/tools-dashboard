@@ -1,7 +1,7 @@
 {
-  "ref": "REPLACE:PROJECT_REF",
+  "ref": "tools-dashboard",
   "updated": "2026-07-25",
-  "goal": "thin-client context migration — no active code iteration",
+  "goal": "no active iteration",
   "allowed_paths": [],
   "allowed_patterns": []
 }

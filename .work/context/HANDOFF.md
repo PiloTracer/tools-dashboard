@@ -2,15 +2,15 @@
 
 **Purpose:** Fast resume for the next chat or engineer.
 
-**Updated:** 2026-07-25 · **Mode:** thin-client (`AGENT_OS_SOURCE=/mnt/work/Projects/.ai`, `AI_UI_SOURCE=/mnt/work/Projects/.ai.ui`)
+**Updated:** 2026-07-25 · **Mode:** thin-client
 
 ## Session status
 
-**Open:** 2026-07-25 — thin-client migration cleanup (`.work` / `.work.ui` only; framework from source)
+**Open:** —
 
-**Prior focus:** VPS go-live for `tools.datawork.top` / `s3.datawork.top` (owner-run: DNS + `scripts/vps-deploy-datawork.sh`)
+**Last closed:** 2026-07-25 — thin-client context verified and optimized
 
-**Recommended pick-up:** `.work/plans/NEXT.md` then this file
+**Recommended pick-up:** VPS go-live (`tools.datawork.top`) — see **Open owner actions**
 
 ---
 

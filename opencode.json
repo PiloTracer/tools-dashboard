@@ -2,17 +2,24 @@
   "$schema": "https://opencode.ai/config.json",
   "instructions": [
     "/mnt/work/Projects/.ai/START_HERE.md",
-    "/mnt/work/Projects/.ai/PROCESS_ROUTER.md"
+    "/mnt/work/Projects/.ai/PROCESS_ROUTER.md",
+    ".work/context/HANDOFF.md",
+    "DOCS_TECH_STACK.md"
   ],
   "references": {
     "ai": {
       "path": "/mnt/work/Projects/.ai",
       "description": "Agent OS: skills, standards, concepts, workflow guides"
+    },
+    "ai-ui": {
+      "path": "/mnt/work/Projects/.ai.ui",
+      "description": "UI Design OS: ui-* skills, standards, screen SPEC templates"
     }
   },
   "skills": {
     "paths": [
-      "/mnt/work/Projects/.ai/skills"
+      "/mnt/work/Projects/.ai/skills",
+      "/mnt/work/Projects/.ai.ui/skills"
     ]
   },
   "mcp": {
@@ -22,7 +29,7 @@
         "python3",
         ".opencode/mcp/project-mcp/mcp_server.py"
       ],
-      "enabled": true
+      "enabled": false
     }
   }
 }

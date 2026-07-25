@@ -1,99 +1,38 @@
-# AGENTS.md — Tools Dashboard
+# AGENTS.md — Tools Dashboard (quick index)
 
-## What this project is
+> **Binding rules:** `.cursorrules` · **Session state:** `.work/context/HANDOFF.md` · **Backlog:** `.work/plans/NEXT.md`
 
-Tools Dashboard is a modern administrative dashboard platform with a microservices architecture. It has a public-facing app, an admin panel, a FastAPI backend, authentication service, WebSocket server, background workers, and supports PostgreSQL, Cassandra, Redis, and SeaweedFS.
+Microservices admin platform: Remix frontends (`front-admin`, `front-public`), FastAPI backends (`back-api`, `back-auth`, `back-websockets`, `back-workers`), PostgreSQL/Cassandra/Redis, SeaweedFS, Docker Compose.
 
-## Tech Stack
-
-- **Frontend:** Remix (React 18 + TypeScript + Tailwind CSS)
-- **Backend:** FastAPI (Python 3.9+)
-- **Databases:** PostgreSQL 15, Cassandra 4, Redis 7
-- **Storage:** SeaweedFS
-- **Queue:** Celery
-- **Proxy:** Nginx
-- **Orchestration:** Docker Compose
-
-## How to run this project
+## Run
 
 ```bash
-# Start the dev stack
-./bin/start.sh dev up
-
-# Interactive menu
-./bin/start.sh dev
-
-# Backup everything
-./bin/start.sh dev backup
-
-# Restore from backup
-./bin/start.sh dev restore
-
-# Stop
-./bin/start.sh dev down
+./bin/start.sh dev up          # start dev stack
+./bin/start.sh dev             # interactive menu
+bash bin/test.sh               # smoke tests (stack must be up)
+./bin/start.sh prd preflight   # production compose check
 ```
 
-## Directory structure
+## Context map
 
-```
-├── front-admin/              # Admin dashboard (Remix)
-├── front-public/             # Public app (Remix)
-├── back-api/                 # Main API (FastAPI, port 8000)
-├── back-auth/                # Auth service (FastAPI, port 8001)
-├── back-websockets/          # WebSocket server (port 8010)
-├── back-workers/             # Celery background workers
-├── back-postgres/            # Postgres init & migrations
-├── back-cassandra/           # Cassandra init & schemas
-├── back-redis/               # Redis config
-├── back-gateway/             # API gateway
-├── feature-registry/         # Feature registry service
-├── infra/                    # Nginx, Docker configs
-├── shared/                   # Shared utilities
-├── seaweedfs/                # File storage config
-├── bin/                      # Start/stop scripts
-├── .cursorrules              # Agent rules (thin-client; AGENT_OS_SOURCE pointer)
-├── .work/                    # Project working tree (plans, SPECs, HANDOFF)
-└── .work.ui/                 # UI project memory (screens, UI plans, HANDOFF_UI)
-```
+| Need | File |
+|------|------|
+| Agent rules | `.cursorrules` |
+| Session / ops state | `.work/context/HANDOFF.md` |
+| Tactical backlog | `.work/plans/NEXT.md` |
+| Stack spec (deep) | `DOCS_TECH_STACK.md` |
+| Feature work | `DOCS_CONTEXT.md` + `.work/features/<slug>/` |
+| UI work | `DOCS_UI_STACK.md` + `.work.ui/context/HANDOFF_UI.md` |
+| Framework skills | `$AGENT_OS_SOURCE` → `/mnt/work/Projects/.ai` |
+| UI framework | `$AI_UI_SOURCE` → `/mnt/work/Projects/.ai.ui` |
 
-Framework skills/standards (not in repo): `$AGENT_OS_SOURCE` → `/mnt/work/Projects/.ai` · `$AI_UI_SOURCE` → `/mnt/work/Projects/.ai.ui`
+## Verify changes
 
-## Key documentation
+- Smoke: `bash bin/test.sh`
+- Stack health: `./bin/start.sh dev up` → `http://localhost:8082/health`
+- Per-service: `docker compose exec back-api bash -c "cd /app && pytest tests/ -q"`
 
-| File | What it covers |
-|------|---------------|
-| `README.md` | Project overview, getting started |
-| `DOCS_CONTEXT.md` | Architecture context for AI conversations |
-| `DOCS_TECH_STACK.md` | Full technical stack specification |
-| `DOCS_UI_STACK.md` | UI stack notes |
-| `.cursorrules` | Agent rules and workflow (thin-client pointers filled) |
-| `$AGENT_OS_SOURCE/START_HERE.md` | Agent OS operator entry (external source) |
-| `.work/README.md` | `.work/` layout |
-| `.work.ui/README.md` | `.work.ui/` layout |
-| `.work/context/HANDOFF.md` | Session handoff state |
-| `.work/plans/NEXT.md` | Planning backlog |
+## Gaps
 
-## Feature documentation
-
-Feature specs and docs are in these locations:
-
-- **Primary:** `.work/features/<slug>/` — feature.yaml + README.md per feature
-- **In-code:** `back-api/features/<slug>/feature.yaml`, `front-public/app/features/<slug>/`
-
-## How to verify changes
-
-- No centralized test suite exists at the repo root.
-- Per-service testing: run inside the Docker container for the service.
-- Stack health: `./bin/start.sh dev up` then check http://localhost:8082/health endpoints.
-- The script has preflight checks: `./bin/start.sh dev preflight`.
-
-## Known gaps
-
-- No approved foundation 01–04 or master plan under `.work/plans/` (tactical backlog only).
-- UI foundation 01–04 not yet authored under `.work.ui/plans/foundation/` (`@ui-design-foundation greenfield`).
-
-## Migration notes
-
-- **2026-07-25:** Thin-client bootstrap (`@deploy-basic`). Project memory: `.work/` + `.work.ui/` only. Framework: `/mnt/work/Projects/.ai` + `/mnt/work/Projects/.ai.ui`.
-- **2025-06-11:** Legacy `.ai.bak/` / `.claude/` content migrated into `.work/features/`.
-- **Safe to delete after verification:** `.ai.back/`, `.ai.ui.back/` (local fat-client framework backups).
+- No approved foundation/master plan (tactical backlog only).
+- UI foundation 01–04 not authored (`@ui-design-foundation greenfield`).
