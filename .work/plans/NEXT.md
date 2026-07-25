@@ -8,6 +8,8 @@
 
 | Item | Artifact |
 |------|----------|
+| i18n verification + fixes (last-12h changes) | `a5b8332` + copy commit — getFixedT raw-key fix (both apps), 0-based Trans tags, TLS-safe redirects, plain `i18next` cookie persistence landing↔apps, landing switcher guard, nginx `/health`; smoke 4/4 — **2026-07-25** |
+| Portal home copy rewrite | Template marketing text → product-accurate copy (en/es); feature tile 3 repointed to app library — **2026-07-25** |
 | Thin-client context optimization | Slim `.cursorrules`/`AGENTS.md`; conditional reads; HANDOFF archive; `opencode.json` UI source — **2026-07-25** |
 | Thin-client bootstrap | `.work/` + `.work.ui/` skeleton; `AGENT_OS_SOURCE` pointers; removed local `.ai.ui` — **2026-07-25** |
 | Prod deploy prep (datawork.top) | Compose localhost binds; host nginx templates; `scripts/vps-deploy-datawork.sh`; `.env.prd.example` URLs — **2026-07-24** |
@@ -31,6 +33,8 @@
 |---|------|-------|
 | 1 | Namecheap DNS + VPS go-live | A records for `tools`/`s3`/`www`; run `scripts/vps-deploy-datawork.sh` on VPS |
 | 2 | Google OAuth redirect for tools.datawork.top | Update Google Cloud Console URI |
+| 3 | tsconfig gate approval | Protected files: set `moduleResolution: "Bundler"` + add `@types/react*` (both frontends) — tsc currently unusable (~2393 pre-existing errors) |
+| 4 | Google button label locale decision | Backend `buttonText` overrides translations; es pages show English label |
 
 ---
 

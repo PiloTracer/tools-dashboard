@@ -33,40 +33,40 @@
   "home": {
     "meta": {
       "title": "Tools Dashboard - Portal público",
-      "description": "Bienvenido a la experiencia pública de incorporación del ecosistema Tools Dashboard."
+      "description": "Crea una cuenta, inicia sesión y abre tus aplicaciones desde el portal público de Tools Dashboard."
     },
     "hero": {
-      "tag": "Incorporación lista para lanzar",
-      "title": "Diseña un viaje del cliente que aprende y responde instantáneamente",
-      "description": "Permite a los visitantes registrarse, autenticarse y completar su perfil con pasos claros y orientación receptiva. Cada pantalla está optimizada para accesibilidad y respuesta móvil.",
+      "tag": "Portal público",
+      "title": "Accede a tus herramientas desde un solo portal",
+      "description": "Una sola cuenta te da acceso a todas las aplicaciones del ecosistema. Regístrate con Google o correo electrónico, completa tu perfil y abre tus herramientas.",
       "createAccount": "Crear una cuenta",
       "resumeProfile": "Reanudar perfil"
     },
     "features": {
       "adaptiveOnboarding": {
-        "title": "Incorporación adaptativa",
-        "description": "Ofrece pasos contextuales basados en segmento, geografía y etapa de progresión.",
-        "cta": "Explorar perfilado"
+        "title": "Completa tu perfil",
+        "description": "Cuéntanos un poco sobre ti para adaptar tu espacio de trabajo y tus recomendaciones.",
+        "cta": "Continuar tu perfil"
       },
       "trustedAuth": {
-        "title": "Autenticación confiable",
-        "description": "Ofrece rutas de inicio de sesión de Google y correo electrónico con requisitos de seguridad progresivos.",
-        "cta": "Revisar flujos de autenticación"
+        "title": "Entra como prefieras",
+        "description": "Regístrate e inicia sesión con Google o correo electrónico, con controles de seguridad que crecen con tu cuenta.",
+        "cta": "Crear tu cuenta"
       },
-      "telemetry": {
-        "title": "Telemetría e información",
-        "description": "Monitorea la salud de conversión e informa recomendaciones de suscripción en tiempo real.",
-        "cta": "Ver análisis del viaje"
+      "appLibrary": {
+        "title": "Tus aplicaciones",
+        "description": "Abre las herramientas incluidas en tu suscripción desde una sola biblioteca.",
+        "cta": "Abrir la biblioteca de aplicaciones"
       }
     },
     "cards": {
       "oneFlow": {
-        "title": "Un flujo, todos los dispositivos",
-        "description": "Deleita a los usuarios con una ruta consistente desde la pantalla de bienvenida hasta la activación en menos de tres pasos."
+        "title": "Una cuenta, todos tus dispositivos",
+        "description": "Empieza en tu portátil y continúa en tu móvil: tu sesión y tus preferencias te acompañan."
       },
       "securityFirst": {
-        "title": "Fundamentos de seguridad primero",
-        "description": "Protege las sesiones con tokens rotativos, secretos administrados y alertas asistidas por IA."
+        "title": "Seguridad de serie",
+        "description": "Un servicio de autenticación dedicado protege tu acceso con sesiones firmadas y credenciales gestionadas."
       }
     }
   },

@@ -33,40 +33,40 @@
   "home": {
     "meta": {
       "title": "Tools Dashboard - Public Portal",
-      "description": "Welcome to the public onboarding experience for the Tools Dashboard ecosystem."
+      "description": "Create an account, sign in, and launch your applications from the Tools Dashboard public portal."
     },
     "hero": {
-      "tag": "Launch-ready onboarding",
-      "title": "Design a customer journey that learns and responds instantly",
-      "description": "Empower visitors to register, authenticate, and complete their profile with crystal-clear steps and responsive guidance. Every screen is tuned for accessibility and mobile responsiveness.",
+      "tag": "Public portal",
+      "title": "Access your tools from a single portal",
+      "description": "One account gives you access to every application in the ecosystem. Register with Google or email, complete your profile, and launch your tools.",
       "createAccount": "Create an account",
       "resumeProfile": "Resume profile"
     },
     "features": {
       "adaptiveOnboarding": {
-        "title": "Adaptive onboarding",
-        "description": "Serve contextual steps based on segment, geography, and progression stage.",
-        "cta": "Explore profiling"
+        "title": "Complete your profile",
+        "description": "Tell us a bit about yourself so we can tailor your workspace and recommendations.",
+        "cta": "Continue your profile"
       },
       "trustedAuth": {
-        "title": "Trusted authentication",
-        "description": "Offer Google and email login paths with progressive security requirements.",
-        "cta": "Review auth flows"
+        "title": "Sign in your way",
+        "description": "Register and sign in with Google or email, with security checks that grow with your account.",
+        "cta": "Create your account"
       },
-      "telemetry": {
-        "title": "Telemetry & insight",
-        "description": "Monitor conversion health and inform subscription recommendations in real time.",
-        "cta": "See journey analytics"
+      "appLibrary": {
+        "title": "Your applications",
+        "description": "Launch the tools included in your subscription from a single library.",
+        "cta": "Open the app library"
       }
     },
     "cards": {
       "oneFlow": {
-        "title": "One flow, all devices",
-        "description": "Delight users with a consistent path from welcome screen to activation in under three steps."
+        "title": "One account, every device",
+        "description": "Start on your laptop and pick up on your phone — your session and preferences travel with you."
       },
       "securityFirst": {
-        "title": "Security-first foundations",
-        "description": "Guard sessions with rotating tokens, managed secrets, and AI-assisted alerts."
+        "title": "Security by default",
+        "description": "A dedicated auth service protects your sign-in with signed sessions and managed credentials."
       }
     }
   },

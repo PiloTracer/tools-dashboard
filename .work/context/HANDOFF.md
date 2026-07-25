@@ -21,11 +21,11 @@
 
 ## Session status
 
-**Open:** 2026-07-25 — goal: VPS go-live (`tools.datawork.top`) / tactical backlog per NEXT.md
+**Closed:** 2026-07-25 — last-12h multilingual changes verified; i18n defects fixed (server translations, Trans tags, TLS redirects, landing switcher, plain-cookie persistence); portal home copy rewritten to match the product. All committed (`a5b8332` by owner + copy fix commit this close).
 
 **Updated:** 2026-07-25
 
-Treat prior closed sessions as historical only; see "What this cycle produced" below.
+Treat the next chat as a **new session**: do not assume unwritten goals from prior threads unless they appear in this file or linked artifacts.
 
 ---
 
@@ -36,6 +36,8 @@ Treat prior closed sessions as historical only; see "What this cycle produced" b
 | Thin-client bootstrap | `.cursorrules` + `.work/` + `.work.ui/` + `opencode.json`; no local `.ai/` or `.ai.ui/` |
 | Context slimming | HANDOFF 123 lines; `AGENTS.md` 38-line index; archive at `.work/context/archives/` |
 | Rule fixes | Host smoke test exception; UI typecheck gate; conditional read routing; MCP disabled |
+| i18n verification + fixes | `a5b8332` — server `getFixedT` raw-key bug (both apps), 0-based Trans tags, X-Forwarded-Proto redirects, landing switcher guard, plain `i18next` cookie contract (landing↔apps persistence), dev nginx `/health` |
+| Portal home copy | Template marketing copy replaced with product-accurate text (en/es); third feature tile repointed to app library |
 | Commits | `6e26a63` (bootstrap), `616c2f0` (context optimization) — both on `main` |
 
 **Local cleanup (optional):** delete `.ai.back/` and `.ai.ui.back/` (~86 MB) when ready.
@@ -59,6 +61,8 @@ Treat prior closed sessions as historical only; see "What this cycle produced" b
 | 1 | Namecheap A records: `tools` / `s3` / `www` → VPS public IPv4 |
 | 2 | Sync repo to `/opt/tools-dashboard`; run `sudo bash scripts/vps-deploy-datawork.sh` |
 | 3 | Google OAuth redirect URI + production SMTP for `tools.datawork.top` |
+| 4 | Approve tsconfig fix: `moduleResolution: "Bundler"` + `@types/react*` devDeps (both frontends) so `tsc` works as a gate |
+| 5 | Decide Google sign-in button label: backend-configured `buttonText` (always English) vs translated `t()` on es pages |
 
 ---
 

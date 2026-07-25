@@ -56,10 +56,10 @@ const FEATURE_CARD_KEYS = [
     to: "/features/user-registration",
   },
   {
-    titleKey: "home.features.telemetry.title",
-    descriptionKey: "home.features.telemetry.description",
-    ctaKey: "home.features.telemetry.cta",
-    to: "/features/progressive-profiling",
+    titleKey: "home.features.appLibrary.title",
+    descriptionKey: "home.features.appLibrary.description",
+    ctaKey: "home.features.appLibrary.cta",
+    to: "/features/app-library",
   },
 ] as const;
 
