@@ -55,17 +55,10 @@ install_tools_conf() {
     src="${PRD_DIR}/tools.datawork.top.http-only.conf"
   fi
 
-  if nginx -T 2>/dev/null | grep -q 'map \$http_upgrade \$connection_upgrade'; then
-    echo "Existing \$connection_upgrade map found — installing tools conf without map block"
-    awk '
-      BEGIN { skip=0 }
-      /^map \$http_upgrade \$connection_upgrade/ { skip=1; next }
-      skip && /^}/ { skip=0; next }
-      !skip { print }
-    ' "$src" >"$dst"
-  else
-    cp -f "$src" "$dst"
-  fi
+  # Always install the full tools vhost (maps + servers). Do not strip map{} based on
+  # nginx -T — the old tools.datawork.top.conf is replaced in this run, so a prior map
+  # in that file is not a duplicate once the new file is written.
+  cp -f "$src" "$dst"
 }
 
 install_tools_conf
