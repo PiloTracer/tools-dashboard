@@ -3,7 +3,7 @@
 **Plan file:** `.work/plans/20260422_PLAN_application-improvement-priorities.md`  
 **Naming:** `YYYYMMDD` prefix for sortable filenames; slug describes scope.  
 **Scope:** Cross-cutting improvements for Tools Dashboard (compose: `front-public`, `front-admin`, `back-api`, `back-auth`, `nginx-proxy`, `back-workers`, `back-websockets`, `feature-registry`).  
-**Handoff:** `.ai/context/HANDOFF.md` — **read “Improvement plan” and “Tomorrow: start Priority 1”** before coding; keep HANDOFF in sync after each merge.
+**Handoff:** `.work/context/HANDOFF.md` — read Priority 1 summary before coding; keep HANDOFF in sync after each merge.
 
 **Execution order (unchanged):** Priority 1 → Priority 3 → Priority 2 (see rationale at end).
 
@@ -146,7 +146,7 @@
 
 ## Tomorrow checklist (copy into issue / PR description)
 
-- [ ] Read `.ai/context/HANDOFF.md` (Improvement plan + Priority 1 sections).  
+- [ ] Read `.work/context/HANDOFF.md` (Priority 1 summary + open actions).  
 - [ ] Open `.work/plans/20260422_PLAN_application-improvement-priorities.md` (this file).  
 - [ ] Pick **PR1** (`users` logging) or **PR2** (admin session) — do not mix in one PR unless trivial.  
 - [ ] Run `./bin/start.sh dev up-build` (or existing dev habit) before and after.  

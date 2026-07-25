@@ -70,9 +70,9 @@
 - [ ] …
 
 ### Validation steps
-- [ ] Tests: `REPLACE:TEST_COMMAND` (per `.cursorrules`)
-- [ ] Lint: `REPLACE:LINT_COMMAND`
-- [ ] Type: `REPLACE:TYPECHECK_COMMAND`
+- [ ] Tests: `bash bin/test.sh`
+- [ ] Lint: `docker compose exec back-api bash -c "cd /app && ruff check ."`
+- [ ] Type: `docker compose exec back-api bash -c "cd /app && pyright ."`
 
 ### Owner blockers
 - none

@@ -9,4 +9,4 @@ One folder per feature **slug** (kebab-case).
 | `YYYYMMDD-SPEC-amendment-NN.md` | Post-approval changes (do not edit merged SPEC) |
 
 **Create:** `@feature-spec create - <slug>`  
-**Template:** `.ai/templates/work/features/example-slug/YYYYMMDD-SPEC.md.template`
+**Template:** `$AGENT_OS_SOURCE/templates/work/features/example-slug/YYYYMMDD-SPEC.md.template`

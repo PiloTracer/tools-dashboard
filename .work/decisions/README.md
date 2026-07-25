@@ -1,6 +1,8 @@
 # Architectural Decision Records (ADRs)
 
-Project-specific ADRs. Process: `.ai/skills/plan-foundation/skill.md` P2 · pointer: `.ai/decisions/README.md`.
+Project-specific ADRs. Process: `$AGENT_OS_SOURCE/skills/plan-foundation/skill.md` P2.
+
+**Template:** `$AGENT_OS_SOURCE/templates/work/decisions/YYYYMMDD-NNN-slug.md.template`
 
 ## Conventions
 
@@ -15,5 +17,3 @@ Project-specific ADRs. Process: `.ai/skills/plan-foundation/skill.md` P2 · poin
 | ADR | Topic | Status |
 |-----|-------|--------|
 | 001 | REPLACE:ADR_001_TOPIC | Proposed |
-
-**Template:** `.ai/templates/work/decisions/YYYYMMDD-NNN-slug.md.template`

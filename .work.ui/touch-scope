@@ -1,0 +1,18 @@
+{
+  "description": "Touch scope for UI iteration — Tools Dashboard (front-admin primary).",
+  "allowed_paths": [
+    ".work.ui/",
+    "front-admin/",
+    "DOCS_UI_STACK.md"
+  ],
+  "allowed_patterns": [
+    "*.ts", "*.tsx", "*.js", "*.jsx",
+    "*.css", "*.scss",
+    "*.md", "*.json"
+  ],
+  "rules": [
+    "Only touch files under allowed_paths",
+    "Only touch files matching allowed_patterns",
+    "Update this file before expanding scope"
+  ]
+}

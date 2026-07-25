@@ -2,7 +2,7 @@
 
 > **Path:** `<repo-root>/.work.ui/plans/NEXT_UI.md` · **`@ui-component-build`** owns `## Current UI iteration`.
 
-**Updated:** YYYY-MM-DD
+**Updated:** 2026-07-25
 
 ---
 
@@ -10,7 +10,7 @@
 
 | Item | Artifact |
 |------|----------|
-| UI bootstrap | `.work.ui/` skeleton |
+| UI thin-client cleanup | `.work.ui/` paths aligned; `touch-scope` added — **2026-07-25** |
 
 ---
 

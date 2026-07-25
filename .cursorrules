@@ -8,7 +8,7 @@ You are not a yes-machine. You are a trusted advisor whose sole objective is the
 
 # AI Agent Rules — Tools Dashboard
 
-> **Bootstrap:** Copy this file from `.ai/templates/cursorrules.template` to the **repository root** as `.cursorrules`, then replace every `REPLACE:` token below.
+> **Mode:** thin-client (deploy-basic). Framework skills/standards resolve from `$AGENT_OS_SOURCE`; UI framework from `$AI_UI_SOURCE`. Project memory: `.work/` + `.work.ui/` only.
 
 ## Core Principles (ALWAYS APPLY)
 
@@ -61,28 +61,79 @@ These principles override all other instructions. They are non-negotiable.
 
 ---
 
+## Change safety (mechanical)
+
+Default to **minimal diffs**. Run before commit / `@code-implementation complete`:
+
+| Gate | Command | Fail when |
+|------|---------|-----------|
+| Touch scope | `bash /mnt/work/Projects/.ai/scripts/touch-scope-verify.sh` | File outside `.work/touch-scope` or iteration **Files** |
+| Blast radius | `bash /mnt/work/Projects/.ai/scripts/blast-radius-check.sh` | `risk: high` (cross-area or oversized diff) |
+| Protected surfaces | `.work/PROTECTED_SURFACES.json` + §Protected Files | High-blast path without owner approval |
+| Tests | `bash bin/test.sh` (smoke; stack up) or per-service `docker compose exec back-api bash -c "cd /app && pytest tests/ -q"` | Non-zero exit |
+
+**Declare scope first:** copy `/mnt/work/Projects/.ai/templates/work/touch-scope.template` → `.work/touch-scope`, or `@code-implementation plan` with **Files** per task. **MOD-06** required for agent-authored code (`/mnt/work/Projects/.ai/concepts/README.md` § Trigger table); `human-only` opt-out only when the human declares it in the same message. **No collateral edits** — no drive-by refactors, dependency bumps, or "while I'm here" changes.
+
+---
+
 ## Required Context Files
 
-**Lost or unsure what to do? Read [`.ai/START_HERE.md`](.ai/START_HERE.md) first** — operator decision tree and recovery guide.
+**Lost or unsure what to do? Read `$AGENT_OS_SOURCE/START_HERE.md` first** — operator decision tree and recovery guide (thin-client; no local `.ai/`).
+
+**Free-text entry:** don't know which skill to run? Invoke `@ai-director - <what you want>` (Agent OS), `@ui-director` (`.ai.ui`), `@biz-director` (`.ai.biz`), `@soc-director` (`.ai.soc`), or `@x-director` for cross-framework work.
+
+### Frameworks registry (cross-framework discovery)
+
+Sister frameworks are siblings on disk; `.ai/` is the Agent OS source. Paths resolve at runtime.
+
+| Framework | Director | Path | Bootstrap artifact |
+|-----------|----------|------|--------------------|
+| `.ai` (Agent OS) | `@ai-director` | *source via AGENT_OS_SOURCE* | `skills/README.md` |
+| `.ai.ui` (UI Design OS) | `@ui-director` | `/mnt/work/Projects/.ai.ui` | `.ai.ui/skills/README.md` |
+| `.ai.biz` (Business OS) | `@biz-director` | `/mnt/work/Projects/.ai.biz` | `.ai.biz/skills/README.md` |
+| `.ai.soc` (Social OS) | `@soc-director` | `/mnt/work/Projects/.ai.soc` | `.ai.soc/skills/README.md` |
+
+**Path resolution:** (1) use a filled path cell; empty → fall through. (2) Auto-discover: thin-client parent = `$AGENT_OS_SOURCE/..`; check `${parent}/.ai.ui|.ai.biz|.ai.soc`; missing = "not installed". (3) Before routing, verify the framework dir + its `skills/README.md` exist; if absent, route to `@ai-director` prefixed `[degraded: <framework> not installed]` — never route into the void.
+
+### Source resolution — fat-client vs thin-client (MANDATORY before reading any `.ai/...` path)
+
+**Agent OS source (thin-client only — set by `@deploy-basic`):**
+
+AGENT_OS_SOURCE=/mnt/work/Projects/.ai
+
+| Mode | Bootstrapped via | Framework assets | `AGENT_OS_SOURCE` |
+|------|------------------|------------------|-------------------|
+| **Fat-client** (vendored) | `@deploy-files` / `@project-bootstrap init` | this repo's `.ai/` | unset (token unchanged) |
+| **Thin-client** (remote) | `@deploy-basic` | the source Agent OS; this repo holds only `.cursorrules` + `.work/` | absolute path |
+
+**Rule (apply before reading any `.ai/...` reference):**
+1. `.cursorrules` + `.work/**` — always read locally, both modes.
+2. **Thin-client** (`AGENT_OS_SOURCE` set + readable): read every other `.ai/<path>` from `$AGENT_OS_SOURCE/<path>` (skills, standards, concepts, docs, scripts, templates, READMEs). Any `.ai/<x>` referenced anywhere — inside a skill document, or inside this `.cursorrules` file itself — resolves to `$AGENT_OS_SOURCE/<x>`.
+3. **Fat-client** (token unset/unchanged): read `.ai/<path>` locally.
+4. App code + `.work/...` resolve locally in both modes.
+5. **Thin-client + unreachable source:** stop and report `agent-os source unreachable: $AGENT_OS_SOURCE` — do not fall back or guess.
+
+**Executable script paths are pre-resolved, not left to interpretation.** The `bash /mnt/work/Projects/.ai/scripts/...` commands in the Change-safety gate table are rewritten to the absolute `$AGENT_OS_SOURCE/scripts/...` path by `@deploy-basic` at bootstrap/`update` time — do not re-derive them at read-time.
+
+**First thin-client bootstrap** (no local skill yet): run from source (`@deploy-basic - /abs/target`) or invoke the shell from target (`bash /abs/source/scripts/deploy-basic.sh .`). Afterward the source pointer lets the local agent load every skill from source.
 
 Read these at the start of every conversation and when relevant:
 
 | File | Purpose |
 |------|---------|
-| **`.ai/START_HERE.md`** | What to invoke right now; forgetfulness checklist |
-| **`.ai/PROCESS_ROUTER.md`** | Process Q&A; `@process-router` vs `@session-control status` |
-| **`DOCS_TECH_STACK.md`** | Technology stack (e.g. `DOCS_TECH_STACK.md` at repo root) |
-| **`.ai/standards/20260517-CONVENTIONS.md`** | Code layout, naming, maintainability |
-| **`.ai/standards/20260517-FEATURE_STANDARD.md`** | Feature SPEC lifecycle |
-| **`.ai/standards/20260517-DIRECTORY_MAP.md`** | Repository layout and boundaries |
+| **`$AGENT_OS_SOURCE/START_HERE.md`** | What to invoke right now; forgetfulness checklist |
+| **`$AGENT_OS_SOURCE/PROCESS_ROUTER.md`** | Process Q&A; `@process-router` vs `@session-control status` |
+| **`DOCS_TECH_STACK.md`** | Technology stack (repo root) |
 | **`.work/context/HANDOFF.md`** | Session handoff (session-control read/write) |
-| **`.ai/docs/guides/workflows/README.md`** | Workflow index and artifact matrix |
+| **`.work/plans/NEXT.md`** | Tactical backlog + iteration carrier |
+| **`.work.ui/context/HANDOFF_UI.md`** | UI session handoff (when UI work) |
+| **`$AGENT_OS_SOURCE/docs/guides/workflows/README.md`** | Workflow index and artifact matrix |
 
 ### Workflow bootstrap (concepts + guides)
 
 Portable process docs: **`.ai/docs/guides/workflows/README.md`** (artifact matrix). Curriculum: **`20260518-guide-workflows-index.md`** (when present). Tutorials: **`20260518-tutorial-*`**. Reference guides: **`20260518-guide-*`**.
 
-**Concept pack:** `.ai/concepts/README.md` (MOD-01–MOD-06). When a change touches **architecture, coupling, latency chains, cost, ops load, or AI-generated code**: list applicable concept ids, run matching `prompt.md` under `.ai/concepts/<name>/`, attach outputs to the PR or **`### Concept / NFR registry`** in `.work/plans/NEXT.md`; tag quantitative claims with `measured` | `estimated` | `assumption` | `unknown`.
+**Concept pack:** `.ai/concepts/README.md` (MOD-01–MOD-07). When a change touches **architecture, coupling, latency chains, cost, ops load, or AI-generated code**: list applicable concept ids, run matching `prompt.md` under `.ai/concepts/<name>/`, attach outputs to the PR or **`### Concept / NFR registry`** in `.work/plans/NEXT.md`; tag quantitative claims with `measured` | `estimated` | `assumption` | `unknown`.
 
 **Placeholder quick map (customize for this repository):**
 
@@ -96,6 +147,9 @@ Portable process docs: **`.ai/docs/guides/workflows/README.md`** (artifact matri
 | `{ITERATION_CARRIER}` | `.work/plans/NEXT.md` |
 | `{MASTER_PLAN}` | `.work/plans/full/*-full-plan.md` (latest **Approved**) |
 | `{HANDOFF}` | `.work/context/HANDOFF.md` |
+| `{TOUCH_SCOPE}` | `.work/touch-scope` |
+| `{STANDARDS_ROOT}` | `.work/standards/` |
+| `{INTEGRATION_ROOT}` | `.work/docs/integration/` |
 | `{CONCEPTS_ROOT}` | `.ai/concepts/` |
 | `{SKILLS_ROOT}` | `.ai/skills/` |
 | `{OBSERVABILITY_SPEC}` | .ai/standards/20260517-observability-spec.md (e.g. `.ai/standards/YYYYMMDD-observability-spec.md`) |
@@ -107,9 +161,10 @@ Portable process docs: **`.ai/docs/guides/workflows/README.md`** (artifact matri
 | `back-postgres/main.py` | Migration runner module path |
 | `python main.py` | Command to run migrations in container (e.g. `python -m platform.migration_runner`) |
 | `shared` | Shared platform/import package name |
-| `pytest tests/ -q` | Full test invocation (e.g. `pytest tests/ -q`) |
-| `ruff check .` | Lint invocation (e.g. `ruff check .`) |
-| `pyright .` | Type-check invocation (e.g. `pyright .` or `tsc --noEmit`) |
+| `bash bin/test.sh` | Host smoke tests (`tests/`; requires `./bin/start.sh dev up`) |
+| `docker compose exec back-api bash -c "cd /app && ruff check ."` | back-api lint |
+| `docker compose exec back-api bash -c "cd /app && pyright ."` | back-api typecheck |
+| `docker compose exec front-admin bash -c "cd /app && npx tsc --noEmit"` | front-admin typecheck |
 | `bin/start.sh` | Host script for compose control (e.g. `bin/start.sh`) |
 | `front-public` | Optional compose service for UI (e.g. `dashboard`, `web`) |
 | `/app` | In-container path to frontend app (e.g. `/app`) |
@@ -126,11 +181,13 @@ Reusable agent skills live under `.ai/skills/`. Each skill is a subfolder contai
 
 | Skill | Folder | Purpose |
 |-------|--------|---------|
+| deploy-files | `.ai/skills/deploy-files/` | Fat-client deploy into target (in-place no-overwrite bootstrap + `update` rules-aware merge) |
+| deploy-basic | `.ai/skills/deploy-basic/` | Thin-client bootstrap: `.cursorrules` + `.work/` + stack doc only; rest resolves via `AGENT_OS_SOURCE` |
 | plan-foundation | `.ai/skills/plan-foundation/` | P0–P6 orchestration; certify plan-master-ready |
 | plan-master | `.ai/skills/plan-master/` | Master implementation plan; certify implementation-ready |
 | plan-verify | `.ai/skills/plan-verify/` | Plan audits: foundation, master, alignment, **coverage** (code→SPEC), **brownfield** |
 | plan-repair | `.ai/skills/plan-repair/` | Remediate plan gaps; **brownfield synthesis** from repo evidence; mandatory re-verify |
-| session-control | `.ai/skills/session-control/` | Session open/close; HANDOFF, NEXT; optional git |
+| session-control | `.ai/skills/session-control/` | Session open/close; HANDOFF, NEXT; `context` read-only load; optional git |
 | db-migration | `.ai/skills/db-migration/` | Idempotent numbered SQL migration scripts |
 | code-implementation | `.ai/skills/code-implementation/` | Iteration execution from NEXT.md |
 | code-verify | `.ai/skills/code-verify/` | Milestone/uncommitted/last audits; open-language → Request interpretation |
@@ -138,8 +195,11 @@ Reusable agent skills live under `.ai/skills/`. Each skill is a subfolder contai
 | dev-stack | `.ai/skills/dev-stack/` | Isolated Docker Compose dev stack helper (`bin/start.sh`) |
 | process-router | `.ai/skills/process-router/` | Read-only process Q&A router |
 | feature-spec | `.ai/skills/feature-spec/` | Author, review, amend feature SPECs |
-| concept-run | `.ai/skills/concept-run/` | Run MOD-01…MOD-06 concept prompts |
+| concept-run | `.ai/skills/concept-run/` | Run MOD-01…MOD-07 concept prompts |
 | project-bootstrap | `.ai/skills/project-bootstrap/` | Copy `.work/` skeleton, `.cursorrules`, stack doc from templates |
+| docs | `.ai/skills/docs/` | Create/manage project docs under `.work/docs/` |
+| ai-director | `.ai/skills/ai-director/` | Free-text orchestrator; routes to `.ai` skill chain |
+| x-director | `.ai/skills/x-director/` | Cross-framework orchestrator (`.ai` + `.ai.ui` + `.ai.biz` + `.ai.soc`) |
 
 **Usage:** When a task matches a skill's purpose, read `skill.md` and follow the workflow. Skills are tool-agnostic (Cursor, Claude Code, Codex, opencode, etc.).
 
@@ -149,12 +209,12 @@ Reusable agent skills live under `.ai/skills/`. Each skill is a subfolder contai
 
 ## External integration documentation (optional)
 
-When this project integrates with **vendor-published APIs, XSDs, PDFs, or OpenAPI/HTML specs**, cache reference artifacts under **`.ai/docs/integration/`**.
+When this project integrates with **vendor-published APIs, XSDs, PDFs, or OpenAPI/HTML specs**, cache reference artifacts under **`.work/docs/integration/`**.
 
 Rules:
 
-1. **Subfolders:** Organize by source and version (e.g. `.ai/docs/integration/vendor-v1/`) so upgrades do not silently overwrite pinned files.
-2. **Manifest:** Record every download in `.ai/docs/integration/MANIFEST.txt` (source URL, local path, batch date).
+1. **Subfolders:** Organize by source and version (e.g. `.work/docs/integration/vendor-v1/`) so upgrades do not silently overwrite pinned files.
+2. **Manifest:** Record every download in `.work/docs/integration/MANIFEST.txt` (source URL, local path, batch date).
 3. **Sources:** Prefer official vendor domains; third-party mirrors only with an explicit manifest note.
 4. **Secrets:** Never place keys, PEM/P12, passwords, tokens, or `.env` content in this directory.
 5. **Verification:** After download, confirm file type (not an HTML error page masquerading as a PDF).
@@ -319,8 +379,9 @@ If the project does **not** use Docker, replace this section with the canonical 
 
 ### Git
 - NEVER execute `git commit` or `git push` unless the user explicitly requests it in the same message.
-- **`@session-control close commit` / `close commit push` (mandatory):** When the user invokes session-control **close** with **`commit`** (and optional **`push`**), you **MUST** run shell `git add` + `git commit` per `.ai/skills/session-control/skill.md` § C4b **before** finishing your reply — stage all **safe** dirty paths (default scope), not HANDOFF/NEXT only. If **`push`** was requested, run `git push` after a successful commit. Show `git log -1 --oneline` and `git status -sb`; do not claim close commit succeeded without a commit SHA when the tree was dirty.
+- **`@session-control close commit` / `close commit push` / `commit` / `commit push` (mandatory):** When the user invokes session-control with **`commit`** (and optional **`push`**), you **MUST** run shell `git add` + `git commit` per `.ai/skills/session-control/skill.md` — stage all **safe** dirty paths (default scope), not HANDOFF/NEXT only. If **`push`** was requested, run `git push` after a successful commit. Show `git log -1 --oneline` and `git status -sb`; do not claim commit succeeded without a commit SHA when the tree was dirty. Standalone `commit`/`commit push` do not update HANDOFF or NEXT.
 - Otherwise provide commit commands for the user when they will commit themselves.
+- Never add `Co-authored-by:` trailers. Install hooks once: `bash /mnt/work/Projects/.ai/scripts/install-git-hooks.sh`.
 - Never modify git history (rebase, force-push) without explicit user request.
 
 ### No Attribution / No Signatures
@@ -355,18 +416,6 @@ If the project does **not** use Docker, replace this section with the canonical 
 
 ---
 
-## OpenSpec Integration (optional)
-
-If the team uses OpenSpec:
-
-- **Proposals first** for new features or significant changes.
-- Implement exactly as defined in the approved proposal.
-- Document lifecycle commands under `.ai/commands/openspec/` when that tree exists.
-
-If OpenSpec is not used, delete this section or replace with your team's proposal gate.
-
----
-
 ## External Documentation
 
 - Use **Context7 MCP** (`@upstash/context7-mcp`) for version-specific library docs when configured.
@@ -386,9 +435,9 @@ If OpenSpec is not used, delete this section or replace with your team's proposa
 
 ## Documentation layout (`.ai/` vs `.work/`)
 
-**`.ai/`** — agnostic: skills, standards, concepts, workflow guides, integration mirror, `START_HERE.md`, `PROCESS_ROUTER.md`, **`templates/`** (including this file's source). Pointer READMEs only under `.ai/plans/`, `.ai/features/`, etc.
+**`.ai/`** — framework-only (thin-client: resolved from `$AGENT_OS_SOURCE`): skills, concepts, workflow guides, `START_HERE.md`, `PROCESS_ROUTER.md`, **`templates/`**. **Never created by `@deploy-basic`**. Pointer READMEs only under `.ai/plans/`, `.ai/features/`.
 
-**`.work/`** — project-specific: plans, SPECs, ADRs, prompts, `HANDOFF.md`.
+**`.work/`** — **all project-specific memory and customization** — plans, SPECs, ADRs, prompts, `HANDOFF.md`, `PROTECTED_SURFACES.json`, binding **`.work/standards/`**, and **`.work/docs/`** (including vendor **`.work/docs/integration/`** cache). Always local in both fat- and thin-client modes.
 
 Generated filenames under `.work/` use the `YYYYMMDD-` prefix unless documented otherwise (`NEXT.md`, `HANDOFF.md`, …).
 
@@ -399,8 +448,112 @@ Generated filenames under `.work/` use the `YYYYMMDD-` prefix unless documented 
 | `.work/decisions/` | ADRs |
 | `.work/prompts/` | Questionnaires; user scratch |
 | `.work/context/HANDOFF.md` | Session handoff |
-| `.ai/standards/` | Binding engineering standards |
-| `.ai/skills/` | Portable agent skills |
-| `.ai/templates/cursorrules.template` | **Copy to repo root as `.cursorrules`** when bootstrapping |
+| `.work/PROTECTED_SURFACES.json` | This project's high-blast paths |
+| `.work/standards/` | This project's binding engineering standards (generated, not vendored) |
+| `.work/docs/integration/` | This project's vendor/API integration cache |
+| `.ai/skills/` | Portable agent skills (thin-client: `$AGENT_OS_SOURCE/skills/`) |
+| `.ai/templates/cursorrules.template` | Copy to repo root as `.cursorrules` when bootstrapping |
 
 Canonical map: `.ai/README.md` · Working tree: `.work/README.md`.
+
+---
+
+## Source resolution — UI Design OS (`.ai.ui/...`)
+
+**UI Design OS source (thin-client — set by `@deploy-basic`):**
+
+AI_UI_SOURCE=/mnt/work/Projects/.ai.ui
+
+| Mode | Bootstrapped via | Where framework assets live | `AI_UI_SOURCE` |
+|------|------------------|----------------------------|----------------|
+| **Fat-client** (vendored) | `@ui-bootstrap init` or `@deploy-files` | this repo's `.ai.ui/` | unset (token unchanged) |
+| **Thin-client** (remote) | `@deploy-basic` | the source UI Design OS; this repo holds only `.cursorrules` + `.work.ui/` | absolute path |
+
+**Rule (apply before reading any `.ai.ui/...` reference):**
+1. `.cursorrules` + `.work.ui/**` — always read locally, both modes.
+2. **Thin-client** (`AI_UI_SOURCE` set + readable): read every other `.ai.ui/<path>` from `$AI_UI_SOURCE/<path>` (skills, standards, concepts, docs, scripts, templates, READMEs). Any `.ai.ui/<x>` referenced anywhere resolves to `$AI_UI_SOURCE/<x>`.
+3. **Fat-client** (no `AI_UI_SOURCE` line or local `.ai.ui/skills/` exists): read `.ai.ui/<path>` locally.
+4. App code + `.work.ui/...` resolve locally in both modes.
+5. **Thin-client + unreachable source:** stop and report `ui-design-os source unreachable: $AI_UI_SOURCE` — do not fall back or guess.
+
+**Executable script paths (UI change-safety gates):** use `bash /mnt/work/Projects/.ai.ui/scripts/...` — pre-resolved at `@deploy-basic update` time; do not re-derive at read-time.
+
+<!-- UI_DESIGN_OS_BEGIN -->
+
+## UI Design OS (`.ai.ui/`)
+
+**Coexistence:** `$AI_UI_SOURCE/COHABITATION.md` — UI skills write to `.work.ui/` only; do not overwrite `.work/plans/NEXT.md` except cross-links.
+
+**Lost on UI?** `$AI_UI_SOURCE/START_HERE.md` · **Router:** `@ui-process-router - <question>` · **Free-text:** `@ui-director - <describe what you want>`
+
+### Change safety (UI — add to gate table above)
+
+| Gate | Command | Fail when |
+|------|---------|-----------|
+| Touch scope | `bash /mnt/work/Projects/.ai.ui/scripts/touch-scope-verify.sh` | File outside `.work.ui/touch-scope` |
+| Blast radius | `bash /mnt/work/Projects/.ai.ui/scripts/blast-radius-check.sh` | Cross-area diff ≥3 areas |
+| Tests | `bash /mnt/work/Projects/.ai.ui/scripts/framework-verify.sh` | Non-zero exit |
+| Gate check | `bash /mnt/work/Projects/.ai.ui/scripts/gate-verify.sh` | Done task with empty Notes |
+
+**Declare scope first:** copy `$AI_UI_SOURCE/templates/work.ui/touch-scope.template` → `.work.ui/touch-scope`.
+
+### UI completion gate (addition to Core Principle 7)
+
+UI milestone work is not done until: UI lint/type/tests pass; `@ui-visual-verify` + `@ui-accessibility-audit` pass or are waived in `{HANDOFF_UI}`; agent-assisted UI has `@ui-concept-run - UIS-06` unless **`human-only`** in the same message.
+
+### UI context files
+
+| File | Purpose |
+|------|---------|
+| `$AI_UI_SOURCE/START_HERE.md` | UI operator decision tree |
+| `$AI_UI_SOURCE/COHABITATION.md` | Boundary with Agent OS |
+| `DOCS_UI_STACK.md` | Front-end stack |
+| `$AI_UI_SOURCE/standards/*` | UI conventions, screen SPEC, tokens, a11y |
+| `.work.ui/context/HANDOFF_UI.md` | UI handoff |
+| `.work.ui/plans/NEXT_UI.md` | UI iteration |
+
+### UI placeholders
+
+| Placeholder | Resolves to |
+|-------------|-------------|
+| `{WORK_UI_ROOT}` | `.work.ui/` |
+| `{HANDOFF_UI}` | `.work.ui/context/HANDOFF_UI.md` |
+| `{UI_ITERATION_CARRIER}` | `.work.ui/plans/NEXT_UI.md` |
+| `{SCREEN_SPEC_ROOT}` | `.work.ui/screens/` |
+| `{UI_SKILLS_ROOT}` | `$AI_UI_SOURCE/skills/` |
+| `{UI_CONCEPTS_ROOT}` | `$AI_UI_SOURCE/concepts/` |
+| `front-admin/` | Primary UI app root |
+| `front-admin/app/app.css` | Design tokens |
+| UI unit tests | *not configured* |
+| UI lint | *not configured* |
+| UI typecheck | `docker compose exec front-admin bash -c "cd /app && npx tsc --noEmit"` |
+| UI visual regression | *not configured* |
+| UI accessibility audit | *not configured* |
+| `front-admin` / `/app` | Docker UI service / workdir |
+
+### UI skills (`@ui-*` only)
+
+| Skill | Purpose |
+|-------|---------|
+| ui-bootstrap | `.work.ui/` + cursorrules merge |
+| deploy-basic | Thin-client bootstrap / `update`; re-sync `AI_UI_SOURCE` |
+| ui-design-foundation | Foundation 01–04; screen-spec-ready |
+| ui-screen-spec | `.work.ui/screens/` SPECs |
+| ui-component-build | `NEXT_UI.md` iterations |
+| ui-visual-verify | Visual regression |
+| ui-accessibility-audit | WCAG |
+| ui-design-system | Catalog + Storybook |
+| ui-concept-run | UIS-01…10 |
+| ui-process-router | UI Q&A (read-only) |
+| ui-director | Free-text UI orchestrator |
+| ui-plan-verify | UI readiness + traceability audit |
+
+**Sessions:** `@session-control` (`.ai/`) · **Backend:** `@code-implementation` (`.ai/`) · **UIS-06** (agent-assisted) + **UIS-07** (craft ≥ refined) + **UIS-08** (all screens) + **UIS-09** (analytical dashboards) before `ui-component-build complete`.
+
+### UI protected files (union with existing list)
+
+- `front-admin/app/app.css` (design tokens)
+- `front-admin/vite.config.ts`, `front-admin/tailwind.config.ts`
+- `$AI_UI_SOURCE/inputs/brand/` (reference — do not auto-edit)
+
+<!-- UI_DESIGN_OS_END -->

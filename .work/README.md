@@ -1,55 +1,35 @@
-# `.work/` - project working tree
+# `.work/` — project working tree
 
 **Purpose:** All **project-specific** artifacts: plans, SPECs, ADRs, prompts, and session handoff.
 
-**Agnostic** process (skills, standards, concepts, guides) lives under **`.ai/`** only.
+**Process** (skills, standards, concepts, guides) resolves from **`$AGENT_OS_SOURCE`** (`/mnt/work/Projects/.ai`) — not vendored in this repo.
 
 ## Layout
 
 | Path | Contents |
 |------|----------|
-| `.work/plans/` | Foundation docs (`*-01-*` … `*-04-*`), master plan (`full/*-full-plan.md`), registries, `NEXT.md`, operations runbooks |
-| `.work/features/<slug>/` | Feature SPECs, amendments, `CHANGELOG.md` per FEATURE_STANDARD |
-| `.work/prompts/` | Decision questionnaires; optional user scratch (`initial.md` - **not read by skills** unless user names it) |
+| `.work/plans/` | Foundation docs, master plan, registries, `NEXT.md`, proposals |
+| `.work/features/<slug>/` | Feature SPECs, `feature.yaml`, implementation notes |
+| `.work/prompts/` | Decision questionnaires; user scratch (`initial.md` — skills ignore unless named) |
 | `.work/decisions/` | ADRs (`YYYYMMDD-NNN-*.md`) |
-| `.work/context/` | `HANDOFF.md` - read/write via `@session-control` |
+| `.work/context/` | `HANDOFF.md` — read/write via `@session-control` |
+| `.work/context/archives/` | Long-form handoff history (slim HANDOFF points here) |
 | `.work/fixes/` | Error fixes and bug reports |
 | `.work/implementations/` | Feature implementation logs |
 | `.work/agents/` | Agent role definitions |
-| `.work/docs/` | Integration docs and guides |
-| `.work/role-cards/` | Agent role cards |
-| `.work/scripts/` | Markdown runbooks for operational scripts |
-
-## Placeholder map
-
-Configured in `.cursorrules` § Workflow bootstrap:
-
-| Placeholder | Resolves to |
-|-------------|-------------|
-| `{WORK_ROOT}` | `.work/` |
-| `{PLANS_ROOT}` | `.work/plans/` |
-| `{FEATURE_SPEC_ROOT}` | `.work/features/` |
-| `{PROMPTS_ROOT}` | `.work/prompts/` |
-| `{DECISIONS_ROOT}` | `.work/decisions/` |
-| `{ITERATION_CARRIER}` | `.work/plans/NEXT.md` |
-| `{MASTER_PLAN}` | `.work/plans/full/*-full-plan.md` (latest **Approved**) |
-| `{HANDOFF}` | `.work/context/HANDOFF.md` |
+| `.work/docs/` | Project docs; `integration/` for vendor API cache |
+| `.work/standards/` | Project-owned binding standards (from `@plan-foundation`) |
+| `.work/PROTECTED_SURFACES.json` | High-blast paths for change-safety gates |
+| `.work/touch-scope` | Declared file scope for current backend iteration |
 
 ## Quick pick-up
 
 1. `.work/context/HANDOFF.md`
 2. `.work/plans/NEXT.md`
+3. `DOCS_TECH_STACK.md` (repo root)
 
-Operator entry: `.ai/START_HERE.md`
+Operator entry (framework): `$AGENT_OS_SOURCE/START_HERE.md`
 
-## Bootstrap
+## Bootstrap / update
 
-If this tree was created empty, run from repo root:
-
-```bash
-bash .ai/templates/bootstrap.sh
-```
-
-Or invoke `@project-bootstrap init`.
-
-Foundation docs **01–04** are created by `@plan-foundation greenfield` (templates under `.ai/templates/work/plans/foundation/`).
+Thin-client is active. Re-sync scaffold: `@deploy-basic update` (from this repo). Foundation docs **01–04**: `@plan-foundation greenfield`.

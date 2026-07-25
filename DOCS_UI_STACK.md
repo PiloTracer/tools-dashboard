@@ -51,5 +51,5 @@
 
 ## Design references
 
-- Inputs: `.ai.ui/inputs/`
+- Brand inputs: `$AI_UI_SOURCE/inputs/` (`/mnt/work/Projects/.ai.ui/inputs/`)
 - Screen SPECs: `.work.ui/screens/`

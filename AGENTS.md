@@ -51,9 +51,12 @@ Tools Dashboard is a modern administrative dashboard platform with a microservic
 ├── shared/                   # Shared utilities
 ├── seaweedfs/                # File storage config
 ├── bin/                      # Start/stop scripts
-├── .ai/                      # Agent OS framework (skills, standards, docs)
-└── .work/                    # Project working tree (plans, SPECs, ADRs, handoff, feature docs)
+├── .cursorrules              # Agent rules (thin-client; AGENT_OS_SOURCE pointer)
+├── .work/                    # Project working tree (plans, SPECs, HANDOFF)
+└── .work.ui/                 # UI project memory (screens, UI plans, HANDOFF_UI)
 ```
+
+Framework skills/standards (not in repo): `$AGENT_OS_SOURCE` → `/mnt/work/Projects/.ai` · `$AI_UI_SOURCE` → `/mnt/work/Projects/.ai.ui`
 
 ## Key documentation
 
@@ -63,9 +66,10 @@ Tools Dashboard is a modern administrative dashboard platform with a microservic
 | `DOCS_CONTEXT.md` | Architecture context for AI conversations |
 | `DOCS_TECH_STACK.md` | Full technical stack specification |
 | `DOCS_UI_STACK.md` | UI stack notes |
-| `.cursorrules` | Agent rules and workflow (all tokens filled) |
-| `.ai/START_HERE.md` | Agent OS operator entry point |
-| `.work/README.md` | `.work/` layout and placeholders |
+| `.cursorrules` | Agent rules and workflow (thin-client pointers filled) |
+| `$AGENT_OS_SOURCE/START_HERE.md` | Agent OS operator entry (external source) |
+| `.work/README.md` | `.work/` layout |
+| `.work.ui/README.md` | `.work.ui/` layout |
 | `.work/context/HANDOFF.md` | Session handoff state |
 | `.work/plans/NEXT.md` | Planning backlog |
 
@@ -85,10 +89,11 @@ Feature specs and docs are in these locations:
 
 ## Known gaps
 
-- `.work/` was bootstrapped as a skeleton; foundation docs 01–04 and a master plan have not been created yet.
+- No approved foundation 01–04 or master plan under `.work/plans/` (tactical backlog only).
+- UI foundation 01–04 not yet authored under `.work.ui/plans/foundation/` (`@ui-design-foundation greenfield`).
 
 ## Migration notes
 
-- `.ai.bak/` contents were properly migrated into `.work/` subdirectories on 2025-06-11.
-- `.claude/` was migrated to `.work/` and merged into `.work/features/` on 2025-06-11.
-- `.ai.bak/` is now safe to remove (you will do it manually).
+- **2026-07-25:** Thin-client bootstrap (`@deploy-basic`). Project memory: `.work/` + `.work.ui/` only. Framework: `/mnt/work/Projects/.ai` + `/mnt/work/Projects/.ai.ui`.
+- **2025-06-11:** Legacy `.ai.bak/` / `.claude/` content migrated into `.work/features/`.
+- **Safe to delete after verification:** `.ai.back/`, `.ai.ui.back/` (local fat-client framework backups).
