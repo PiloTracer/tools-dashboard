@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# Fast production refresh: git pull → detect changed paths → build + recreate only affected services.
+# Fast production refresh: sync repo to origin → detect changed paths → build + recreate only affected services.
 #
 # Run on the VPS from repo root (e.g. /opt/tools-dashboard):
 #   ./bin/refresh-prd.sh
+#
+# By default the VPS checkout is reset to match origin (local edits on the server are discarded).
+# Use --keep-local only if you intentionally patched files on the host.
 #   ./bin/refresh-prd.sh front-admin back-api
 #   ./bin/refresh-prd.sh --all
 #   ./bin/refresh-prd.sh --dry-run
@@ -37,10 +40,12 @@ DRY_RUN=0
 NO_CACHE=0
 FORCE_ALL=0
 ALLOW_DIRTY=0
+KEEP_LOCAL=0
 SINCE_REF=""
 EXPLICIT_SERVICES=()
 NGINX_RELOAD=0
 ENV_ONLY=0
+GIT_SYNC_OLD_HEAD=""
 
 usage() {
   sed -n '2,28p' "$0"
@@ -48,11 +53,12 @@ usage() {
 
 Options:
   --all           Rebuild and recreate all application services
-  --no-pull       Skip git pull (compare since last deploy marker or --since)
+  --no-pull       Skip git sync (compare since last deploy marker or --since)
   --no-cache      docker compose build --no-cache
   --dry-run       Print the plan without building or recreating
-  --since <ref>   Git ref to diff against (default: ORIG_HEAD after pull, else deploy marker)
-  --allow-dirty   Allow untracked non-tmp files; still blocks tracked local edits
+  --since <ref>   Git ref to diff against (default: pre-sync HEAD, ORIG_HEAD, or deploy marker)
+  --keep-local    Block when tracked files differ; use git pull --ff-only (no hard reset)
+  --allow-dirty   With --keep-local: allow untracked non-tmp files
   -h, --help      Show this help
 
 Examples:
@@ -225,6 +231,7 @@ services_to_array() {
 DIRTY_IGNORE_UNTRACKED_PREFIXES=(
   "tmp/"
   "build.log"
+  "*.bak"
 )
 
 git_tracked_dirty() {
@@ -238,7 +245,7 @@ git_untracked_blocking() {
     path="${line#?? }"
     local prefix
     for prefix in "${DIRTY_IGNORE_UNTRACKED_PREFIXES[@]}"; do
-      if [[ "$path" == "$prefix" || "$path" == "$prefix"* ]]; then
+      if [[ "$path" == "$prefix" || "$path" == "$prefix"* || "$path" == *".bak" ]]; then
         continue 2
       fi
     done
@@ -280,23 +287,66 @@ assert_clean_enough_for_pull() {
   fi
 }
 
-git_pull_if_needed() {
+git_resolve_upstream() {
+  local upstream
+  upstream="$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || true)"
+  if [ -n "$upstream" ]; then
+    echo "$upstream"
+    return
+  fi
+  echo "origin/$(git rev-parse --abbrev-ref HEAD)"
+}
+
+git_sync_to_remote() {
   [ "$DO_PULL" -eq 1 ] || return 0
   command -v git >/dev/null 2>&1 || die "git not found"
   [ -d "$TD_PROJECT_ROOT/.git" ] || die "not a git repository: $TD_PROJECT_ROOT"
   cd "$TD_PROJECT_ROOT"
-  assert_clean_enough_for_pull
-  log "git pull --ff-only"
-  if [ "$DRY_RUN" -eq 1 ]; then
-    echo "  (dry-run: would run git pull --ff-only)"
+
+  if [ "$KEEP_LOCAL" -eq 1 ]; then
+    assert_clean_enough_for_pull
+    log "git pull --ff-only (--keep-local)"
+    if [ "$DRY_RUN" -eq 1 ]; then
+      echo "  (dry-run: would run git pull --ff-only)"
+      return 0
+    fi
+    GIT_SYNC_OLD_HEAD="$(git rev-parse HEAD)"
+    git pull --ff-only
     return 0
   fi
-  git pull --ff-only
+
+  GIT_SYNC_OLD_HEAD="$(git rev-parse HEAD)"
+  local upstream
+  upstream="$(git_resolve_upstream)"
+
+  if git_tracked_dirty || [ -n "$(git_untracked_blocking)" ]; then
+    log "local changes detected — resetting checkout to ${upstream}"
+    git_show_worktree_state
+  else
+    log "syncing checkout to ${upstream}"
+  fi
+
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "  (dry-run: would run git fetch origin && git reset --hard ${upstream} && git clean -fd)"
+    return 0
+  fi
+
+  git fetch origin
+  git reset --hard "$upstream"
+  git clean -fd
+}
+
+git_pull_if_needed() {
+  git_sync_to_remote
 }
 
 resolve_diff_base() {
   if [ -n "$SINCE_REF" ]; then
     echo "$SINCE_REF"
+    return
+  fi
+  if [ -n "$GIT_SYNC_OLD_HEAD" ] && [ "$GIT_SYNC_OLD_HEAD" != "$(git rev-parse HEAD 2>/dev/null)" ]; then
+    echo "$GIT_SYNC_OLD_HEAD"
     return
   fi
   if [ "$DO_PULL" -eq 1 ] && git rev-parse ORIG_HEAD >/dev/null 2>&1; then
@@ -513,6 +563,7 @@ while [ "$#" -gt 0 ]; do
     --no-cache) NO_CACHE=1; shift ;;
     --dry-run) DRY_RUN=1; shift ;;
     --allow-dirty) ALLOW_DIRTY=1; shift ;;
+    --keep-local) KEEP_LOCAL=1; shift ;;
     --since)
       [ "$#" -ge 2 ] || die "--since requires a git ref"
       SINCE_REF="$2"
