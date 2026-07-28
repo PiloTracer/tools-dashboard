@@ -1,7 +1,7 @@
 {
   "ref": "tools-dashboard",
   "updated": "2026-07-28",
-  "goal": "Fix admin asset publicPath (/admin/build/) and broken lazy-route reload loop",
+  "goal": "Fix admin asset publicPath + Access tab + refresh-prd.sh deploy helper",
   "allowed_paths": [
     ".work/touch-scope",
     "front-admin/remix.config.js"
@@ -16,6 +16,7 @@
     "front-admin/public/locales/**",
     "back-api/features/app-library/**",
     "back-api/tests/**",
+    "bin/refresh-prd.sh",
     ".work/**"
   ]
 }
