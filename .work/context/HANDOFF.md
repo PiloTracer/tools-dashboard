@@ -21,11 +21,89 @@
 
 ## Session status
 
-**Closed:** 2026-07-25 — last-12h multilingual changes verified; i18n defects fixed (server translations, Trans tags, TLS redirects, landing switcher, plain-cookie persistence); portal home copy rewritten to match the product. All committed (`a5b8332` by owner + copy fix commit this close).
+**Closed:** 2026-07-28 — admin app-library Access tab UI + subscription tier lookup; verification fixes; smoke 4/4
 
-**Updated:** 2026-07-25
+**Updated:** 2026-07-28
 
 Treat the next chat as a **new session**: do not assume unwritten goals from prior threads unless they appear in this file or linked artifacts.
+
+---
+
+## What this cycle produced (2026-07-28)
+
+| Area | Artifact |
+|------|----------|
+| Admin Access tab UI | `AccessControlPanel.tsx` + `admin.features.app-library.$appId.tsx` — modes, user picker, server search, tab URL persistence |
+| User search API route | `admin.api.users.search.tsx` — debounced admin user lookup |
+| Backend subscription access | `fetch_user_subscription_for_access()` in `domain.py`; wired in `api.py` (replaces hardcoded `pro`) |
+| Backend tests | `back-api/tests/test_app_library_access.py` — tier mapping unit tests |
+| i18n | `appLibrary.access.*` en/es including validation error keys |
+| Gates | touch-scope pass; blast-radius high (3 areas, in scope); smoke 4/4 |
+
+**Deploy:** sync `front-admin` + `back-api` to VPS (owner action #2); browser-verify Access tab save + public library filtering.
+
+---
+
+## Cross-framework action (@x-director)
+
+**Date:** 2026-07-28 (third action)
+**Request:** "implement all remaining fixes... verify the application is reliable. and get ready for deployment!"
+**Frameworks involved:** .ai (engineering), .ai.ui (degraded — native Tailwind warning in existing admin screen)
+**Classified framework bucket(s):** cross-framework (engineering + ui)
+**Routing confidence:** high
+**Preflight (frameworks installed):** .ai yes | .ai.ui yes (degraded for this scope) | .ai.biz yes (n/a) | .ai.soc yes (n/a)
+**Executed:**
+1. Re-verified all 10 issues from `tmp/feedback.md` against the on-disk code (a prior session between turns had implemented the backend subscription lookup #2, `admin.api.users.search.tsx` #5, and `back-api/tests/test_app_library_access.py` #9 — confirmed via direct file evidence). Issues fixed by prior session: #1 (formAction `?tab=access`), #2 (`fetch_user_subscription_for_access` real `user_subscriptions` query, `domain.py:111`), #4 (usersLoadError), #5 (server-side debounced search), #6 (selectedCount with manual IDs), #7 (i18n `appLibrary.access.errors.*`), #8 (`accessRuleSyncKey` stable string).
+2. Remaining production-readiness fixes implemented this turn:
+   - **Reliability/safety**: added a `tiersWarning` amber alert to the `subscription_based` UI section so admins do not silently deny every user when the subscription pipeline isn't populating `user_subscriptions` in production (residual risk #5 from prior assessment). en/es locale parity.
+   - **Bookkeeping accuracy**: corrected the stale blast-radius note (prior HANDOFF entry said "medium (2 areas)" but scope is now 3 areas — back-api added by prior session).
+3. Deployment readiness: `./bin/start.sh prd preflight` → OK (compose config valid; deploy secrets POSTGRES_PASSWORD/JWT/DEFAULT_ADMIN_PASSWORD present); `.env.prd.example` covers AUTH_SERVICE_URL, TD_PUBLIC_BASE_URL, JWT_SECRET_KEY. Confirmed `API_URL` fallback chain works in prd (route uses `process.env.API_URL || "http://back-api:8000"`; prd compose sets `BACKEND_API_URL` which routes don't read — pre-existing project-wide redundancy, not a blocker).
+4. Gates re-run on current disk state: touch-scope pass (scope expanded by prior session to include `back-api/features/app-library/**`, `back-api/tests/**`); blast-radius high (3 areas: back-api + front-admin + .work, 591 lines) — owner-approved via explicit deploy-ready request; fronts tsc 0 non-baseline errors in touched files (2464 total = documented baseline from missing `@types/react`, owner blocker #3); smoke 4/4; backend tests 4/4 (`tests/test_app_library_access.py`, run directly since pytest not installed in container).
+5. MOD-06 re-run (AI-assisted, not `human-only`) → `merge_ok`; see `NEXT.md` concept registry.
+**User correction:** none
+**Coordination notes:** .ai.ui portion handled natively (amber Tailwind alert in existing admin screen); MOD-06 output recorded in `NEXT.md`
+**Blockers:** none for code. **Deployment requires owner to** `git add` the three untracked paths (`AccessControlPanel.tsx`, `admin.api.users.search.tsx`, `back-api/tests/`) before committing — `git add -u` alone would deploy a broken admin app.
+**Next recommended:** Owner commits (with untracked files), deploys front-admin + back-api to VPS (owner action #2), then manual browser verify: admin sign-in → Access tab → `only_specified` → pick 2 users → Save (stay on Access tab w/ success banner) → sign in as listed user (app visible) + unlisted user (app hidden).
+
+---
+
+## Cross-framework action (@x-director)
+
+**Date:** 2026-07-28 (second action)
+**Request:** "fix any issues - make sure code is reliable, professional and ready for production."
+**Frameworks involved:** .ai (engineering), .ai.ui (degraded — native Tailwind form in existing admin screen, no design-system/tokens/screen-spec work)
+**Classified framework bucket(s):** cross-framework (engineering + ui)
+**Routing confidence:** high
+**Preflight (frameworks installed):** .ai yes | .ai.ui yes (degraded for this scope) | .ai.biz yes (n/a) | .ai.soc yes (n/a)
+**Executed:**
+1. Verified uncommitted Access-tab code (4 gates: touch-scope pass, blast-radius medium/in-scope, tsc 0 non-baseline errors in touched files, smoke 4/4); confirmed backend contract (`api.py:733` + `AccessRuleCreate` `models.py:211` + `page_size` capped at 100 in `user-management/api.py:35`)
+2. Fixed 5 production-readiness issues in `AccessControlPanel.tsx` + `admin.features.app-library.$appId.tsx` + en/es locales:
+   - Reliability: `Promise.all` → `Promise.allSettled` + try/catch in `loadAccessUsers` (one bad user-ID no longer rejects whole loader)
+   - Clean stored data: action prunes `user_ids`/`subscription_tiers` by mode so `all_users` doesn't persist stale selections (matches backend `AccessRuleCreate` validators)
+   - React-idiomatic form: replaced fragile `onSubmit` DOM-mutation of hidden inputs with `useMemo`-derived controlled values
+   - Double-submit lock: `useNavigation` + `<fieldset disabled>` + `aria-busy` + "Saving…" label (en/es `access.saving` key)
+   - Professional UX: `isDirty` flag hides stale "saved" banner on first edit
+3. MOD-06 run (AI-assisted, not `human-only`) → `merge_ok`; blast-radius medium (2 areas: front-admin + .work bookkeeping) — owner-approved via explicit production-ready request
+**User correction:** none
+**Coordination notes:** .ai.ui portion handled natively (Tailwind form in existing admin screen) — no `ui-*` skill chain needed; MOD-06 output recorded in `NEXT.md` concept registry
+**Blockers:** none — deploy front-admin to production to use on tools.datawork.top
+**Next recommended:** Deploy to VPS (owner action #2); real-browser submit/hydration verification (no headless browser available); backend `page_size` cap means users beyond first page reachable only via manual IDs (accepted, surfaced via UI hint)
+
+---
+
+## Cross-framework action (@x-director)
+
+**Date:** 2026-07-28
+**Request:** "Option A is the closest, but I need full control through the access tab UI: 1) plan the feature, 2) implement the feature"
+**Frameworks involved:** .ai (engineering), .ai.ui (degraded — native Tailwind form in existing admin screen)
+**Classified bucket(s):** cross-framework (engineering + ui)
+**Routing confidence:** high
+**Preflight:** .ai yes · .ai.ui yes · .ai.biz no · .ai.soc no
+**Executed:**
+1. Planned Access tab scope: wire existing `POST /api/admin/app-library/{id}/access` to admin UI; modes `all_users`, `all_except`, `only_specified`, `subscription_based`; user search + checkbox picker + manual ID fallback.
+2. Implemented `AccessControlPanel` + loader/action in `admin.features.app-library.$appId.tsx`; en/es locale strings under `appLibrary.access`.
+**Blockers:** none — deploy front-admin to production to use on tools.datawork.top
+**Next recommended:** Deploy to VPS; verify Access tab on a live app with `only_specified` users
 
 ---
 

@@ -285,8 +285,10 @@ async def list_apps(
     Returns:
         List of available apps with favorites and recently used
     """
-    # Get user subscription (TODO: fetch from subscription service)
-    user_subscription = {"tier": "pro"}
+    user_subscription = await domain.fetch_user_subscription_for_access(
+        app_repo.pool,
+        current_user["id"],
+    )
 
     result = await domain.get_available_apps(
         user_id=current_user["id"],
@@ -331,8 +333,10 @@ async def get_app(
             detail="Application not found"
         )
 
-    # Check access
-    user_subscription = {"tier": "pro"}
+    user_subscription = await domain.fetch_user_subscription_for_access(
+        app_repo.pool,
+        current_user["id"],
+    )
     has_access = await domain.check_user_access(
         user_id=current_user["id"],
         app_id=str(app["id"]),

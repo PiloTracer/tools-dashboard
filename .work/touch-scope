@@ -1,17 +1,17 @@
 {
   "ref": "tools-dashboard",
-  "updated": "2026-07-25",
-  "goal": "verify last-12h multilingual changes (f0e1024..HEAD); fix reliability + language-handling defects",
+  "updated": "2026-07-28",
+  "goal": "Admin app-library Access tab fixes + subscription_based backend lookup",
   "allowed_paths": [
     ".work/touch-scope"
   ],
   "allowed_patterns": [
-    "front-admin/app/**",
+    "front-admin/app/features/app-library/**",
+    "front-admin/app/routes/admin.features.app-library.$appId.tsx",
+    "front-admin/app/routes/admin.api.users.search.tsx",
     "front-admin/public/locales/**",
-    "front-public/app/**",
-    "front-public/public/locales/**",
-    "infra/nginx/**",
-    ".work/**",
-    ".work.ui/**"
+    "back-api/features/app-library/**",
+    "back-api/tests/**",
+    ".work/**"
   ]
 }

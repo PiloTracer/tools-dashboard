@@ -145,6 +145,50 @@
     "empty": {
       "title": "No applications yet",
       "description": "Create an OAuth client to connect first-party or partner apps to the dashboard."
+    },
+    "access": {
+      "title": "Access control",
+      "description": "Choose who may launch or authorize this application in the public app library. Changes apply immediately for signed-in users.",
+      "saved": "Access rules saved.",
+      "saving": "Saving…",
+      "modeLabel": "Access mode",
+      "modes": {
+        "all_users": "All users",
+        "all_except": "All users except selected",
+        "only_specified": "Only selected users",
+        "subscription_based": "Subscription tier"
+      },
+      "modeHelp": {
+        "all_users": "Every signed-in user can see and launch this app.",
+        "all_except": "Everyone except the users you select below.",
+        "only_specified": "Only the users you select below can see and launch this app.",
+        "subscription_based": "Users whose subscription tier matches your selection below."
+      },
+      "userSearchLabel": "Find users",
+      "userSearchPlaceholder": "Search by email, name, or ID…",
+      "userListHint": "Showing {{shown}} of {{total}} users · {{selected}} selected",
+      "noUsersMatch": "No users match your search.",
+      "manualIdsLabel": "Additional user IDs (optional)",
+      "manualIdsPlaceholder": "e.g. 42, 57",
+      "manualIdsHelp": "Comma-separated numeric IDs merged with checkboxes above. Useful when a user is not in the loaded list.",
+      "tiersLabel": "Allowed subscription tiers",
+      "tiers": {
+        "free": "Free",
+        "pro": "Pro",
+        "enterprise": "Enterprise",
+        "custom": "Custom"
+      },
+      "save": "Save access rules",
+      "searching": "Searching…",
+      "tiersHelp": "Tiers map to subscription package slugs (e.g. free, standard → pro, enterprise).",
+      "tiersWarning": "Subscription-based access relies on active subscription records. Users without an active subscription are denied even if they are signed in. Confirm your subscription pipeline is populating user_subscriptions before enabling this mode.",
+      "errors": {
+        "invalidMode": "Select a valid access mode.",
+        "invalidUserSelection": "Invalid user selection.",
+        "invalidTierSelection": "Invalid tier selection.",
+        "userIdsRequired": "Select at least one user for this mode.",
+        "tiersRequired": "Select at least one subscription tier."
+      }
     }
   },
   "taskScheduler": {

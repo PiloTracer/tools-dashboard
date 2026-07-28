@@ -12,6 +12,12 @@ import {
 } from "@remix-run/react";
 import { useState, useEffect, useRef } from "react";
 import type { App } from "../features/app-library/ui/AppTable";
+import {
+  AccessControlPanel,
+  type AccessMode,
+  type AccessRuleState,
+  type AccessUserOption,
+} from "../features/app-library/ui/AccessControlPanel";
 import { getAdminSession } from "../utils/admin-session.server";
 import { bearerHeaders } from "../utils/admin-api-auth.server";
 
@@ -49,7 +55,10 @@ type StorageIntegrationKeyRow = {
 
 type LoaderData = {
   app: App;
-  accessRule?: Record<string, unknown> | null;
+  accessRule: AccessRuleState | null;
+  accessUsers: AccessUserOption[];
+  accessUsersTotal: number;
+  accessUsersError?: string;
   newSecret?: string; // Only populated when ?new=true&secret=xxx
   initialTab: AppLibraryTab;
   startEditing: boolean;
@@ -67,12 +76,105 @@ type ActionData = {
   error?: string;
   fieldErrors?: Record<string, string>;
   success?: boolean;
+  accessSaved?: boolean;
   /** Returned only for regenerate_secret (do not pass through redirect). */
   regeneratedClientSecret?: string;
   /** Plaintext integration key; shown once after mint (not registration success). */
   newStorageIntegrationKey?: string;
   storageKeysRevoked?: boolean;
 };
+
+const ACCESS_MODES: AccessMode[] = [
+  "all_users",
+  "all_except",
+  "only_specified",
+  "subscription_based",
+];
+
+function normalizeAccessRule(
+  raw: Record<string, unknown> | null | undefined
+): AccessRuleState | null {
+  if (!raw) return null;
+  const mode = String(raw.mode ?? "all_users");
+  if (!ACCESS_MODES.includes(mode as AccessMode)) return null;
+  const userIds = Array.isArray(raw.user_ids)
+    ? raw.user_ids
+        .map((id) => Number(id))
+        .filter((id) => Number.isFinite(id) && id > 0)
+    : [];
+  const tiers = Array.isArray(raw.subscription_tiers)
+    ? raw.subscription_tiers.map((tier) => String(tier))
+    : [];
+  return {
+    mode: mode as AccessMode,
+    user_ids: userIds,
+    subscription_tiers: tiers,
+  };
+}
+
+async function loadAccessUsers(
+  apiUrl: string,
+  auth: Record<string, string>,
+  accessRule: AccessRuleState | null
+): Promise<{ users: AccessUserOption[]; total: number; error?: string }> {
+  let users: AccessUserOption[] = [];
+  let total = 0;
+
+  try {
+    const usersResponse = await fetch(
+      `${apiUrl}/admin/users?page_size=100&sort_by=email&sort_order=asc`,
+      { headers: { ...auth } }
+    );
+    if (usersResponse.ok) {
+      const usersData = (await usersResponse.json()) as {
+        users?: AccessUserOption[];
+        total?: number;
+      };
+      users = usersData.users ?? [];
+      total = usersData.total ?? users.length;
+    } else {
+      return {
+        users: [],
+        total: 0,
+        error: `Could not load users (HTTP ${usersResponse.status})`,
+      };
+    }
+  } catch {
+    return {
+      users: [],
+      total: 0,
+      error: "Network error while loading users",
+    };
+  }
+
+  const knownIds = new Set(users.map((user) => user.id));
+  const missingIds = (accessRule?.user_ids ?? []).filter(
+    (id) => !knownIds.has(id)
+  );
+
+  if (missingIds.length === 0) {
+    return { users, total };
+  }
+
+  const settled = await Promise.allSettled(
+    missingIds.map(async (userId) => {
+      const response = await fetch(`${apiUrl}/admin/users/${userId}`, {
+        headers: { ...auth },
+      });
+      if (!response.ok) return null;
+      return (await response.json()) as AccessUserOption;
+    })
+  );
+
+  for (const result of settled) {
+    if (result.status === "fulfilled" && result.value) {
+      users.push(result.value);
+    }
+  }
+
+  users.sort((a, b) => a.email.localeCompare(b.email));
+  return { users, total };
+}
 
 /**
  * Loader: Fetch application details
@@ -129,6 +231,11 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 
     const data = await response.json();
     const publicOAuthOrigin = publicOAuthOriginFromRequest(request);
+    const accessRule = normalizeAccessRule(
+      (data.access_rule ?? null) as Record<string, unknown> | null
+    );
+    const { users: accessUsers, total: accessUsersTotal, error: accessUsersError } =
+      await loadAccessUsers(apiUrl, auth, accessRule);
 
     let storageIntegrationKeys: StorageIntegrationKeyRow[] = [];
     if (keysResponse.ok) {
@@ -137,7 +244,10 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 
     return json<LoaderData>({
       app: data.app,
-      accessRule: data.access_rule ?? null,
+      accessRule,
+      accessUsers,
+      accessUsersTotal,
+      accessUsersError,
       newSecret: isNew && secret ? secret : undefined,
       initialTab,
       startEditing,
@@ -405,6 +515,104 @@ export async function action({ request, params }: ActionFunctionArgs) {
         return json<ActionData>({ storageKeysRevoked: true });
       }
 
+      case "update_access": {
+        const access_mode = formData.get("access_mode")?.toString();
+        const userIdsJson = formData.get("user_ids_json")?.toString() || "[]";
+        const tiersJson =
+          formData.get("subscription_tiers_json")?.toString() || "[]";
+
+        const fieldErrors: Record<string, string> = {};
+
+        if (!access_mode || !ACCESS_MODES.includes(access_mode as AccessMode)) {
+          fieldErrors.access_mode = "appLibrary.access.errors.invalidMode";
+        }
+
+        let user_ids: number[] = [];
+        let subscription_tiers: string[] = [];
+
+        try {
+          const parsedUserIds = JSON.parse(userIdsJson) as unknown;
+          if (Array.isArray(parsedUserIds)) {
+            user_ids = parsedUserIds
+              .map((id) => Number(id))
+              .filter((id) => Number.isFinite(id) && id > 0);
+          }
+        } catch {
+          fieldErrors.user_ids = "appLibrary.access.errors.invalidUserSelection";
+        }
+
+        try {
+          const parsedTiers = JSON.parse(tiersJson) as unknown;
+          if (Array.isArray(parsedTiers)) {
+            subscription_tiers = parsedTiers.map((tier) => String(tier));
+          }
+        } catch {
+          fieldErrors.subscription_tiers =
+            "appLibrary.access.errors.invalidTierSelection";
+        }
+
+        if (
+          (access_mode === "only_specified" || access_mode === "all_except") &&
+          user_ids.length === 0
+        ) {
+          fieldErrors.user_ids = "appLibrary.access.errors.userIdsRequired";
+        }
+
+        if (
+          access_mode === "subscription_based" &&
+          subscription_tiers.length === 0
+        ) {
+          fieldErrors.subscription_tiers =
+            "appLibrary.access.errors.tiersRequired";
+        }
+
+        if (Object.keys(fieldErrors).length > 0) {
+          return json<ActionData>({ fieldErrors });
+        }
+
+        const requiresUserIds =
+          access_mode === "only_specified" || access_mode === "all_except";
+        const requiresTiers = access_mode === "subscription_based";
+
+        const response = await fetch(
+          `${apiUrl}/api/admin/app-library/${appId}/access`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...auth,
+            },
+            body: JSON.stringify({
+              mode: access_mode,
+              user_ids: requiresUserIds ? user_ids : [],
+              subscription_tiers: requiresTiers ? subscription_tiers : [],
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          let detail = `Failed to update access rules: ${response.status}`;
+          try {
+            const errorData = (await response.json()) as {
+              detail?: string | { msg?: string }[];
+            };
+            if (typeof errorData.detail === "string") {
+              detail = errorData.detail;
+            } else if (Array.isArray(errorData.detail)) {
+              detail = errorData.detail
+                .map((item) => item.msg)
+                .filter(Boolean)
+                .join("; ");
+            }
+          } catch {
+            /* ignore */
+          }
+          return json<ActionData>({ error: detail });
+        }
+
+        return json<ActionData>({ accessSaved: true });
+      }
+
       default:
         return json<ActionData>(
           { error: "Invalid action" },
@@ -433,6 +641,9 @@ export default function AppLibraryDetail() {
     app,
     newSecret,
     accessRule,
+    accessUsers,
+    accessUsersTotal,
+    accessUsersError,
     initialTab,
     startEditing,
     publicOAuthOrigin,
@@ -454,11 +665,13 @@ export default function AppLibraryDetail() {
   }, [app.id, initialTab, startEditing]);
 
   useEffect(() => {
-    if (actionData?.success) {
-      setIsEditing(false);
+    if (actionData?.success || actionData?.accessSaved) {
+      if (actionData?.success) {
+        setIsEditing(false);
+      }
       revalidator.revalidate();
     }
-  }, [actionData?.success, revalidator]);
+  }, [actionData?.success, actionData?.accessSaved, revalidator]);
 
   const redirectUris = app.redirect_uris ?? [];
   const allowedScopes = app.allowed_scopes ?? [];
@@ -507,6 +720,30 @@ export default function AppLibraryDetail() {
   const regenSubmitPendingRef = useRef(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const selectTab = (tab: AppLibraryTab, options?: { edit?: boolean }) => {
+    setActiveTab(tab);
+    if (tab === "registration" && options?.edit) {
+      setIsEditing(true);
+    } else if (tab !== "registration") {
+      setIsEditing(false);
+    }
+    const params = new URLSearchParams(location.search);
+    if (tab === "overview") {
+      params.delete("tab");
+    } else {
+      params.set("tab", tab);
+    }
+    if (options?.edit) {
+      params.set("edit", "1");
+    } else {
+      params.delete("edit");
+    }
+    const q = params.toString();
+    navigate(`${location.pathname}${q ? `?${q}` : ""}`, { replace: true });
+  };
+
+  const accessFormAction = appLibrarySearch("access");
   const displayedNewSecret = newSecret ?? revealFromRegen;
   const displayedMintedIntegrationKey =
     actionData?.newStorageIntegrationKey ?? sessionMintedIntegrationKey;
@@ -688,20 +925,14 @@ export default function AppLibraryDetail() {
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
               <Link
                 to={`/admin/features/app-library/${app.id}${appLibrarySearch("overview")}`}
-                onClick={() => {
-                  setActiveTab("overview");
-                  setIsEditing(false);
-                }}
+                onClick={() => selectTab("overview")}
                 className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
               >
                 Overview
               </Link>
               <Link
                 to={`/admin/features/app-library/${app.id}${appLibrarySearch("registration", { edit: true })}`}
-                onClick={() => {
-                  setActiveTab("registration");
-                  setIsEditing(true);
-                }}
+                onClick={() => selectTab("registration", { edit: true })}
                 className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
               >
                 Edit registration
@@ -858,10 +1089,7 @@ export default function AppLibraryDetail() {
             <button
               key={tab.id}
               type="button"
-              onClick={() => {
-                setActiveTab(tab.id);
-                if (tab.id !== "registration") setIsEditing(false);
-              }}
+              onClick={() => selectTab(tab.id)}
               className={`shrink-0 whitespace-nowrap rounded-t-lg border-b-2 px-3 py-3 text-sm font-medium transition sm:px-4 ${
                 activeTab === tab.id
                   ? "border-indigo-600 text-indigo-600"
@@ -981,20 +1209,14 @@ export default function AppLibraryDetail() {
               <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Link
                   to={`/admin/features/app-library/${app.id}${appLibrarySearch("registration", { edit: true })}`}
-                  onClick={() => {
-                    setActiveTab("registration");
-                    setIsEditing(true);
-                  }}
+                  onClick={() => selectTab("registration", { edit: true })}
                   className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
                 >
                   Open registration editor
                 </Link>
                 <Link
                   to={`/admin/features/app-library/${app.id}${appLibrarySearch("registration")}`}
-                  onClick={() => {
-                    setActiveTab("registration");
-                    setIsEditing(false);
-                  }}
+                  onClick={() => selectTab("registration")}
                   className="inline-flex items-center justify-center text-sm font-medium text-indigo-700 hover:text-indigo-900"
                 >
                   View read-only
@@ -1010,10 +1232,7 @@ export default function AppLibraryDetail() {
               </p>
               <Link
                 to={`/admin/features/app-library/${app.id}${appLibrarySearch("storage")}`}
-                onClick={() => {
-                  setActiveTab("storage");
-                  setIsEditing(false);
-                }}
+                onClick={() => selectTab("storage")}
                 className="mt-4 inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50"
               >
                 Open Storage tab
@@ -1329,10 +1548,7 @@ export default function AppLibraryDetail() {
               Redirect URIs and scopes are part of the client registration. To change them, use{" "}
               <button
                 type="button"
-                onClick={() => {
-                  setActiveTab("registration");
-                  setIsEditing(true);
-                }}
+                onClick={() => selectTab("registration", { edit: true })}
                 className="font-semibold text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900"
               >
                 Edit registration
@@ -1342,10 +1558,7 @@ export default function AppLibraryDetail() {
             <div className="mb-6">
               <Link
                 to={`/admin/features/app-library/${app.id}${appLibrarySearch("registration", { edit: true })}`}
-                onClick={() => {
-                  setActiveTab("registration");
-                  setIsEditing(true);
-                }}
+                onClick={() => selectTab("registration", { edit: true })}
                 className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
               >
                 Edit redirect URIs &amp; scopes
@@ -1435,50 +1648,16 @@ export default function AppLibraryDetail() {
 
         {/* Access Control Tab */}
         {activeTab === "access" && (
-          <div className={cardSurface}>
-            <h3 className="mb-2 text-lg font-semibold text-slate-900">Access control</h3>
-            <p className="mb-6 text-sm text-slate-600">
-              Who may launch or authorize this app (in addition to global OAuth client settings) is
-              defined here. Advanced editing may use the admin API; the Registration tab holds URL
-              and client metadata.
-            </p>
-            {accessRule ? (
-              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <dt className="text-sm font-medium text-slate-500">Mode</dt>
-                  <dd className="mt-1 text-sm text-slate-900">
-                    {String(accessRule.mode ?? "—")}
-                  </dd>
-                </div>
-                <div className="sm:col-span-2">
-                  <dt className="text-sm font-medium text-slate-500">User IDs (if applicable)</dt>
-                  <dd className="mt-1 break-all font-mono text-sm text-slate-800">
-                    {Array.isArray(accessRule.user_ids) && accessRule.user_ids.length > 0
-                      ? (accessRule.user_ids as unknown[]).join(", ")
-                      : "—"}
-                  </dd>
-                </div>
-                <div className="sm:col-span-2">
-                  <dt className="text-sm font-medium text-slate-500">Subscription tiers (if applicable)</dt>
-                  <dd className="mt-1 text-sm text-slate-900">
-                    {Array.isArray(accessRule.subscription_tiers) && accessRule.subscription_tiers.length > 0
-                      ? (accessRule.subscription_tiers as string[]).join(", ")
-                      : "—"}
-                  </dd>
-                </div>
-              </dl>
-            ) : (
-              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-6 text-center">
-                <p className="text-sm text-slate-600">
-                  No custom access rule is stored for this app yet. Default product behavior may
-                  still allow eligible users to connect.
-                </p>
-                <p className="mt-2 text-xs text-slate-500">
-                  To manage OAuth client fields (redirect URIs, URLs, scopes), use the Registration tab.
-                </p>
-              </div>
-            )}
-          </div>
+          <AccessControlPanel
+            accessRule={accessRule}
+            users={accessUsers}
+            usersTotal={accessUsersTotal}
+            usersLoadError={accessUsersError}
+            formAction={accessFormAction}
+            fieldErrors={actionData?.fieldErrors}
+            actionError={actionData?.error}
+            saved={actionData?.accessSaved}
+          />
         )}
 
         {/* SeaweedFS / object storage (deployment-wide) */}

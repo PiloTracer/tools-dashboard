@@ -1,6 +1,6 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-07-25
+**Updated:** 2026-07-28
 
 ---
 
@@ -8,6 +8,7 @@
 
 | Item | Artifact |
 |------|----------|
+| Admin app-library Access tab UI | Access tab editor (`only_specified`, `all_except`, tiers, user picker, server search); real `user_subscriptions` tier lookup; tab URL persistence; smoke 4/4 — **2026-07-28** |
 | i18n verification + fixes (last-12h changes) | `a5b8332` + copy commit — getFixedT raw-key fix (both apps), 0-based Trans tags, TLS-safe redirects, plain `i18next` cookie persistence landing↔apps, landing switcher guard, nginx `/health`; smoke 4/4 — **2026-07-25** |
 | Portal home copy rewrite | Template marketing text → product-accurate copy (en/es); feature tile 3 repointed to app library — **2026-07-25** |
 | Thin-client context optimization | Slim `.cursorrules`/`AGENTS.md`; conditional reads; HANDOFF archive; `opencode.json` UI source — **2026-07-25** |
@@ -42,10 +43,9 @@
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| **🔴 1** | **Finish VPS go-live (datawork.top)** | Follow operator runbook: DNS → sync `/opt/tools-dashboard` → `sudo bash scripts/vps-deploy-datawork.sh` → verify HTTPS/admin/WS/S3 |
-| 2 | Admin app-user access UI | Build UI to assign `only_specified` mode with user IDs; type bug is fixed, user-creation endpoint exists |
-| 3 | Priority 1B & 1D | Public cookie audit + nginx API routing documentation table |
-| 4 | Extend test suite | Add tests for remaining services (websockets, feature-registry), add frontend tests |
+| **🔴 1** | **Finish VPS go-live (datawork.top)** | Deploy latest `main` (includes Access tab) → DNS → sync `/opt/tools-dashboard` → `sudo bash scripts/vps-deploy-datawork.sh` → verify HTTPS/admin/WS/S3 + Access tab |
+| 2 | Priority 1B & 1D | Public cookie audit + nginx API routing documentation table |
+| 3 | Extend test suite | Add tests for remaining services (websockets, feature-registry), add frontend tests |
 
 
 ---
@@ -53,6 +53,37 @@
 ## Current iteration
 
 *(No active iteration - run `@code-implementation plan - M1` after master plan is **Approved** and `implementation-ready: yes`.)*
+
+### Concept / NFR registry (2026-07-28 — Access-tab deployment-prep fix, no formal iteration)
+
+| Concept id | Applies | Status | Evidence / trigger |
+|------------|---------|--------|-------------------|
+| MOD-06 | yes | done | AI-assisted session (second-pass) — risk summary below |
+
+**AI change risk summary (MOD-06 — 2026-07-28 deployment-prep):**
+- AI-assisted: yes
+- Boundaries crossed: 0 hard module boundaries — UI warning only (`AccessControlPanel.tsx` + en/es locale keys); backend untouched this turn
+- New cross-boundary deps: none
+- Test isolation: weak — UI unit tests not configured; gates: tsc 0 non-baseline errors in touched files, smoke 4/4, backend tests 4/4 (from prior session)
+- Human architectural review: optional — single area (front-admin), 3 lines UI + 2 locale keys
+- Blast radius: if wrong, the amber warning shows the wrong copy on admin Access tab under `subscription_based`; no behavioral impact on actual access checks (backend logic unchanged)
+- Recommendation: merge_ok. Pairs with prior session's backend subscription lookup record above
+
+### Concept / NFR registry (2026-07-28 — Access-tab reliability fixes, no formal iteration)
+
+| Concept id | Applies | Status | Evidence / trigger |
+|------------|---------|--------|-------------------|
+| MOD-06 | yes | done | AI-assisted session — risk summary below |
+
+**AI change risk summary (MOD-06):**
+- AI-assisted: yes
+- Boundaries crossed: 0 hard module boundaries — `front-admin` app-library feature only; backend untouched, no new RPC/endpoints/shared models
+- New cross-boundary deps: none (`useNavigation` already used in app; `Promise.allSettled` is platform)
+- Test isolation: weak — `bash bin/test.sh` smoke 4/4 (does not isolate Access tab UI; UI unit tests not configured); fallback: static contract check vs `back-api` app-library `api.py:733` + `AccessRuleCreate` `models.py:211`; `tsc` 0 non-baseline errors in touched files; en/es locale parity
+- Human architectural review: optional — 3 code files, ~370 lines, single feature area
+- Blast radius: if wrong, admin Access tab degrades (save failures, error banners, loader errors on per-user fetch — now hardened via allSettled); no backend/data/public impact; admins only; recovery = revert single-area diff
+- Recommendation: merge_ok. Residual: real-browser submit/hydration unverified (no headless browser); `page_size` capped at 100 in backend so users beyond first page reachable only via manual IDs (by design, surfaced via hint)
+- Blast-radius gate: risk medium (2 areas: front-admin + .work bookkeeping) — owner-approved via explicit "fix any issues… ready for production" request (2026-07-28)
 
 ### Concept / NFR registry (2026-07-25 — i18n verification + fixes, no formal iteration)
 

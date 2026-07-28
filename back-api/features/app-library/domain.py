@@ -75,6 +75,64 @@ def generate_client_secret(length: int = 32) -> str:
     return "".join(secrets.choice(chars) for _ in range(length))
 
 
+# Maps subscription package slugs (DB) to app-library access tier values.
+PACKAGE_SLUG_TO_ACCESS_TIER: dict[str, str] = {
+    "free": "free",
+    "standard": "pro",
+    "premium": "pro",
+    "pro": "pro",
+    "enterprise": "enterprise",
+    "custom": "custom",
+}
+
+
+def package_slug_to_access_tier(package_slug: str) -> str:
+    """Normalize a subscription package slug to an access-rule tier value."""
+    normalized = package_slug.strip().lower()
+    return PACKAGE_SLUG_TO_ACCESS_TIER.get(normalized, "custom")
+
+
+def user_access_tier_set(user_subscription: dict[str, Any] | None) -> set[str]:
+    """Return all tier tokens that may match subscription_based access rules."""
+    if not user_subscription:
+        return set()
+    tiers: set[str] = set()
+    tier = user_subscription.get("tier")
+    if isinstance(tier, str) and tier:
+        tiers.add(tier.strip().lower())
+    slug = user_subscription.get("package_slug")
+    if isinstance(slug, str) and slug:
+        normalized_slug = slug.strip().lower()
+        tiers.add(normalized_slug)
+        tiers.add(package_slug_to_access_tier(normalized_slug))
+    return tiers
+
+
+async def fetch_user_subscription_for_access(
+    pool: Any,
+    user_id: int,
+) -> dict[str, Any]:
+    """Load the user's active subscription tier from PostgreSQL."""
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            SELECT package_slug
+            FROM user_subscriptions
+            WHERE user_id = $1 AND status = 'active'
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            user_id,
+        )
+    if not row:
+        return {"tier": "free", "package_slug": "free"}
+    package_slug = str(row["package_slug"])
+    return {
+        "tier": package_slug_to_access_tier(package_slug),
+        "package_slug": package_slug,
+    }
+
+
 async def check_user_access(
     user_id: int,
     app_id: str,
@@ -124,14 +182,12 @@ async def check_user_access(
         return user_id in access_rule["user_ids"]
 
     elif mode == "subscription_based":
-        # Allow based on subscription tier
-        if not user_subscription:
+        allowed_tiers = {
+            str(t).strip().lower() for t in (access_rule["subscription_tiers"] or [])
+        }
+        if not allowed_tiers:
             return False
-
-        user_tier = user_subscription.get("tier")
-        allowed_tiers = access_rule["subscription_tiers"]
-
-        return user_tier in allowed_tiers
+        return bool(user_access_tier_set(user_subscription) & allowed_tiers)
 
     # Unknown mode, deny access
     return False

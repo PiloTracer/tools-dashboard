@@ -145,6 +145,50 @@
     "empty": {
       "title": "Aún no hay aplicaciones",
       "description": "Crea un cliente OAuth para conectar aplicaciones propias o de socios al panel."
+    },
+    "access": {
+      "title": "Control de acceso",
+      "description": "Elige quién puede iniciar o autorizar esta aplicación en la biblioteca pública. Los cambios aplican de inmediato para usuarios con sesión iniciada.",
+      "saved": "Reglas de acceso guardadas.",
+      "saving": "Guardando…",
+      "modeLabel": "Modo de acceso",
+      "modes": {
+        "all_users": "Todos los usuarios",
+        "all_except": "Todos excepto los seleccionados",
+        "only_specified": "Solo usuarios seleccionados",
+        "subscription_based": "Nivel de suscripción"
+      },
+      "modeHelp": {
+        "all_users": "Cualquier usuario con sesión iniciada puede ver e iniciar esta app.",
+        "all_except": "Todos excepto los usuarios que selecciones abajo.",
+        "only_specified": "Solo los usuarios que selecciones abajo pueden ver e iniciar esta app.",
+        "subscription_based": "Usuarios cuyo nivel de suscripción coincida con tu selección abajo."
+      },
+      "userSearchLabel": "Buscar usuarios",
+      "userSearchPlaceholder": "Buscar por correo, nombre o ID…",
+      "userListHint": "Mostrando {{shown}} de {{total}} usuarios · {{selected}} seleccionados",
+      "noUsersMatch": "Ningún usuario coincide con la búsqueda.",
+      "manualIdsLabel": "IDs de usuario adicionales (opcional)",
+      "manualIdsPlaceholder": "p. ej. 42, 57",
+      "manualIdsHelp": "IDs numéricos separados por comas, combinados con las casillas de arriba. Útil si un usuario no está en la lista cargada.",
+      "tiersLabel": "Niveles de suscripción permitidos",
+      "tiers": {
+        "free": "Gratis",
+        "pro": "Pro",
+        "enterprise": "Empresa",
+        "custom": "Personalizado"
+      },
+      "save": "Guardar reglas de acceso",
+      "searching": "Buscando…",
+      "tiersHelp": "Los niveles corresponden a slugs de paquetes de suscripción (p. ej. free, standard → pro, enterprise).",
+      "tiersWarning": "El acceso por suscripción depende de registros de suscripción activos. Los usuarios sin suscripción activa serán denegados aunque tengan sesión iniciada. Confirma que tu pipeline de suscripciones puebla user_subscriptions antes de habilitar este modo.",
+      "errors": {
+        "invalidMode": "Selecciona un modo de acceso válido.",
+        "invalidUserSelection": "Selección de usuarios no válida.",
+        "invalidTierSelection": "Selección de niveles no válida.",
+        "userIdsRequired": "Selecciona al menos un usuario para este modo.",
+        "tiersRequired": "Selecciona al menos un nivel de suscripción."
+      }
     }
   },
   "taskScheduler": {
