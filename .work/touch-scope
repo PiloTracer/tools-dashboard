@@ -1,11 +1,15 @@
 {
   "ref": "tools-dashboard",
   "updated": "2026-07-28",
-  "goal": "Admin app-library Access tab fixes + subscription_based backend lookup",
+  "goal": "Fix admin asset publicPath (/admin/build/) and broken lazy-route reload loop",
   "allowed_paths": [
-    ".work/touch-scope"
+    ".work/touch-scope",
+    "front-admin/remix.config.js"
   ],
   "allowed_patterns": [
+    "front-admin/remix.config.*",
+    "front-admin/vite.config.ts",
+    "front-admin/react-router.config.ts",
     "front-admin/app/features/app-library/**",
     "front-admin/app/routes/admin.features.app-library.$appId.tsx",
     "front-admin/app/routes/admin.api.users.search.tsx",

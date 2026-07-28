@@ -1,6 +1,5 @@
 ﻿import { defineConfig } from "vite";
 import { vitePlugin as remix } from "@remix-run/dev";
-import routes from "./react-router.config";
 
 export default defineConfig({
   build: {
@@ -9,7 +8,6 @@ export default defineConfig({
   plugins: [
     remix({
       publicPath: "/admin/build/",
-      routes,
       future: {
         v3_fetcherPersist: true,
         v3_relativeSplatPath: true,
