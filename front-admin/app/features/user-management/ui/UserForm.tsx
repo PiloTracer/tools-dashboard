@@ -32,6 +32,7 @@ export type UserFormData = {
   timezone?: string;
   role?: string;
   status?: string;
+  is_email_verified?: boolean;
 };
 
 type Props = {
@@ -270,6 +271,7 @@ export const UserForm: FC<Props> = ({ user, errors, isSubmitting, mode = "edit" 
             </p>
           )}
         </div>
+
       </div>
 
       {/* Personal Information */}

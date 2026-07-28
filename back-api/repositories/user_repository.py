@@ -319,12 +319,14 @@ class UserRepository:
         self,
         user_id: int,
         email: str | None = None,
+        is_email_verified: bool | None = None,
     ) -> dict[str, Any] | None:
         """Update user information.
 
         Args:
             user_id: User's unique identifier
             email: New email address (if provided)
+            is_email_verified: Email verification flag (if provided)
 
         Returns:
             Updated user dict or None if not found
@@ -338,6 +340,11 @@ class UserRepository:
             if email is not None:
                 updates.append(f"email = ${param_index}")
                 params.append(email)
+                param_index += 1
+
+            if is_email_verified is not None:
+                updates.append(f"is_email_verified = ${param_index}")
+                params.append(is_email_verified)
                 param_index += 1
 
             if not updates:

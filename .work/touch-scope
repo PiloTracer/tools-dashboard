@@ -1,7 +1,7 @@
 {
   "ref": "tools-dashboard",
   "updated": "2026-07-28",
-  "goal": "Fix admin asset publicPath + Access tab + refresh-prd.sh deploy helper",
+  "goal": "Admin user edit: email verified toggle",
   "allowed_paths": [
     ".work/touch-scope",
     "front-admin/remix.config.js"
@@ -10,11 +10,13 @@
     "front-admin/remix.config.*",
     "front-admin/vite.config.ts",
     "front-admin/react-router.config.ts",
-    "front-admin/app/features/app-library/**",
-    "front-admin/app/routes/admin.features.app-library.$appId.tsx",
-    "front-admin/app/routes/admin.api.users.search.tsx",
+    "front-admin/app/features/user-management/**",
+    "front-admin/app/routes/admin.api.users.$userId.email-verification.tsx",
+    "front-admin/app/routes/admin.features.user-management.$userId.tsx",
     "front-admin/public/locales/**",
-    "back-api/features/app-library/**",
+    "back-api/features/user-management/**",
+    "back-api/tests/test_user_management_verification.py",
+    "back-api/repositories/user_repository.py",
     "back-api/tests/**",
     "bin/refresh-prd.sh",
     ".work/**"

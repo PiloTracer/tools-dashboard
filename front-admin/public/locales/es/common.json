@@ -124,6 +124,18 @@
       "verified": "Verificado",
       "unverified": "Sin verificar",
       "view": "Ver"
+    },
+    "edit": {
+      "verifiedLabel": "Correo verificado",
+      "verifiedHelp": "Los usuarios verificados pueden iniciar sesión y acceder a funciones que requieren un correo confirmado.",
+      "verifiedCardTitle": "Verificación de correo",
+      "verifiedCardBody": "Este usuario está actualmente {{status}}. El inicio de sesión en el portal público requiere un correo verificado.",
+      "verifiedCardNote": "El estado «Activo» de arriba no controla el inicio de sesión; solo la verificación de correo.",
+      "verifiedToggleOn": "Marcar como verificado",
+      "verifiedToggleOff": "Marcar como no verificado",
+      "verifiedToggleProcessing": "Guardando…",
+      "verifiedToggleFailed": "No se pudo actualizar la verificación de correo. Inténtalo de nuevo.",
+      "verifiedToggleNetworkError": "Error de red al actualizar la verificación de correo."
     }
   },
   "appLibrary": {

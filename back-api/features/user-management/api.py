@@ -20,6 +20,7 @@ from .domain import (
     UserListRequest,
     UserUpdateRequest,
     UserStatusUpdateRequest,
+    UserEmailVerificationUpdateRequest,
     UserRoleUpdateRequest,
     BulkOperationRequest,
 )
@@ -137,12 +138,19 @@ class UserUpdateRequestModel(BaseModel):
     # Preferences
     language: str | None = Field(None, max_length=10)
     timezone: str | None = Field(None, max_length=50)
+    is_email_verified: bool | None = Field(None, description="Email verification status")
 
 
 class UserStatusUpdateRequestModel(BaseModel):
     """Request model for updating user status."""
     status: str = Field(..., description="New status (active, inactive, suspended)")
     reason: str | None = Field(None, description="Reason for status change")
+
+
+class UserEmailVerificationUpdateRequestModel(BaseModel):
+    """Request model for updating email verification status."""
+    is_email_verified: bool = Field(..., description="Whether the user may sign in to the public portal")
+    reason: str | None = Field(None, description="Reason for verification change")
 
 
 class UserPasswordUpdateRequestModel(BaseModel):
@@ -438,6 +446,7 @@ async def update_user(
         other_details=request_body.other_details,
         language=request_body.language,
         timezone=request_body.timezone,
+        is_email_verified=request_body.is_email_verified,
     )
 
     try:
@@ -560,6 +569,43 @@ async def update_user_status(
         print(f"❌ Unexpected error: {type(e).__name__}: {e}")
         import traceback
         traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+
+@router.patch(
+    "/{user_id}/email-verification",
+    summary="Update user email verification status",
+    response_model=UserDetailResponse,
+)
+async def update_user_email_verification(
+    user_id: int,
+    request_body: UserEmailVerificationUpdateRequestModel,
+    request: Request,
+    service: UserManagementService = Depends(get_service),
+    admin: dict = Depends(get_current_admin),
+) -> UserDetailResponse:
+    """Mark a user's email verified or unverified.
+
+    Public portal login (``/user-registration/login``) requires ``is_email_verified=true``.
+    The admin UI "Active" status is separate and does not gate login today.
+    """
+    verification_request = UserEmailVerificationUpdateRequest(
+        is_email_verified=request_body.is_email_verified,
+        reason=request_body.reason,
+    )
+
+    try:
+        detail = await service.update_user_email_verification(
+            user_id,
+            verification_request,
+            admin,
+            ip_address=get_client_ip(request),
+        )
+        return UserDetailResponse(**detail)
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),

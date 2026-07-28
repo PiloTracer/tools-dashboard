@@ -124,6 +124,18 @@
       "verified": "Verified",
       "unverified": "Unverified",
       "view": "View"
+    },
+    "edit": {
+      "verifiedLabel": "Email verified",
+      "verifiedHelp": "Verified users can sign in and access features that require a confirmed email address.",
+      "verifiedCardTitle": "Email verification",
+      "verifiedCardBody": "This user is currently {{status}}. Public portal sign-in requires a verified email.",
+      "verifiedCardNote": "“Active” status above does not control login — only email verification does.",
+      "verifiedToggleOn": "Mark as verified",
+      "verifiedToggleOff": "Mark as unverified",
+      "verifiedToggleProcessing": "Saving…",
+      "verifiedToggleFailed": "Failed to update email verification. Please try again.",
+      "verifiedToggleNetworkError": "Network error while updating email verification."
     }
   },
   "appLibrary": {

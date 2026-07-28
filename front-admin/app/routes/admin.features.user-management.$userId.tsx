@@ -1,6 +1,7 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { useLoaderData, useActionData, useNavigation, Link } from "@remix-run/react";
+import { useTranslation } from "react-i18next";
 import React from "react";
 import { UserForm, type UserFormData } from "../features/user-management/ui/UserForm";
 
@@ -181,8 +182,11 @@ export default function UserManagementEdit() {
   const { user } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const [isTogglingStatus, setIsTogglingStatus] = React.useState(false);
+  const [isTogglingVerified, setIsTogglingVerified] = React.useState(false);
   const [currentStatus, setCurrentStatus] = React.useState((user as any).status || "active");
+  const [isEmailVerified, setIsEmailVerified] = React.useState(Boolean(user.is_email_verified));
   const [newPassword, setNewPassword] = React.useState("");
   const [confirmPassword, setConfirmPassword] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(false);
@@ -224,6 +228,41 @@ export default function UserManagementEdit() {
       alert("Network error. Please try again.");
     } finally {
       setIsTogglingStatus(false);
+    }
+  };
+
+  const handleVerifiedToggle = async () => {
+    const newVerified = !isEmailVerified;
+    const reason = newVerified
+      ? "Marked verified by administrator"
+      : "Marked unverified by administrator";
+
+    setIsTogglingVerified(true);
+
+    try {
+      const response = await fetch(`/admin/api/users/${user.id}/email-verification`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          is_email_verified: newVerified,
+          reason,
+        }),
+      });
+
+      if (response.ok) {
+        setIsEmailVerified(newVerified);
+      } else {
+        const error = await response.json().catch(() => ({}));
+        console.error("Failed to update verification:", error);
+        alert(error.detail || t("userManagement.edit.verifiedToggleFailed"));
+      }
+    } catch (error) {
+      console.error("Error updating verification:", error);
+      alert(t("userManagement.edit.verifiedToggleNetworkError"));
+    } finally {
+      setIsTogglingVerified(false);
     }
   };
 
@@ -313,6 +352,69 @@ export default function UserManagementEdit() {
                 }}
               >
                 {isTogglingStatus ? "Processing..." : (isActive ? "Disable User" : "Enable User")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email verification — gates public portal login */}
+      {!isEditingOwnAccount && (
+        <div style={{
+          marginBottom: "24px",
+          backgroundColor: "#ffffff",
+          boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1)",
+          borderRadius: "8px",
+          borderLeft: `4px solid ${isEmailVerified ? "#10b981" : "#f59e0b"}`
+        }}>
+          <div style={{ padding: "20px 24px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
+              <div>
+                <h3 style={{
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  lineHeight: "24px",
+                  color: "#111827"
+                }}>
+                  {t("userManagement.edit.verifiedCardTitle")}
+                </h3>
+                <div style={{ marginTop: "8px", maxWidth: "42rem" }}>
+                  <p style={{ fontSize: "14px", color: "#6b7280", margin: 0 }}>
+                    {t("userManagement.edit.verifiedCardBody", {
+                      status: isEmailVerified
+                        ? t("userManagement.table.verified")
+                        : t("userManagement.table.unverified"),
+                    })}
+                  </p>
+                  <p style={{ fontSize: "13px", color: "#9ca3af", margin: "8px 0 0" }}>
+                    {t("userManagement.edit.verifiedCardNote")}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleVerifiedToggle}
+                disabled={isTogglingVerified}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  borderRadius: "6px",
+                  padding: "10px 14px",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "#ffffff",
+                  boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+                  border: "none",
+                  backgroundColor: isTogglingVerified ? "#9ca3af" : (isEmailVerified ? "#f59e0b" : "#10b981"),
+                  cursor: isTogglingVerified ? "not-allowed" : "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {isTogglingVerified
+                  ? t("userManagement.edit.verifiedToggleProcessing")
+                  : (isEmailVerified
+                    ? t("userManagement.edit.verifiedToggleOff")
+                    : t("userManagement.edit.verifiedToggleOn"))}
               </button>
             </div>
           </div>
@@ -582,10 +684,10 @@ export default function UserManagementEdit() {
               fontSize: "14px",
               margin: 0
             }}>
-              {user.is_email_verified ? (
-                <span style={{ color: "#059669", fontWeight: 500 }}>Verified</span>
+              {isEmailVerified ? (
+                <span style={{ color: "#059669", fontWeight: 500 }}>{t("userManagement.table.verified")}</span>
               ) : (
-                <span style={{ color: "#9ca3af" }}>Unverified</span>
+                <span style={{ color: "#9ca3af" }}>{t("userManagement.table.unverified")}</span>
               )}
             </dd>
           </div>
@@ -647,7 +749,7 @@ export default function UserManagementEdit() {
 
       {/* Edit Form */}
       <UserForm
-        user={user}
+        user={{ ...user, is_email_verified: isEmailVerified }}
         errors={actionData?.errors}
         isSubmitting={isSubmitting}
         mode="edit"

@@ -52,12 +52,20 @@ class UserUpdateRequest:
     # Preferences
     language: str | None = None
     timezone: str | None = None
+    is_email_verified: bool | None = None
 
 
 @dataclass(slots=True)
 class UserStatusUpdateRequest:
     """Request for updating user status."""
     status: str  # active, inactive, suspended
+    reason: str | None = None
+
+
+@dataclass(slots=True)
+class UserEmailVerificationUpdateRequest:
+    """Request for updating email verification status."""
+    is_email_verified: bool
     reason: str | None = None
 
 
@@ -380,35 +388,47 @@ class UserManagementService:
         # Track changes for audit
         changes = {}
 
-        # 1. Update core fields in PostgreSQL (if email provided)
-        if request.email is not None:
+        # 1. Update core fields in PostgreSQL
+        pg_email = request.email
+        pg_verified = request.is_email_verified
+        if pg_email is not None or pg_verified is not None:
             old_user = await self.user_repo.get_user_by_id(user_id)
-            if old_user:
-                changes["email"] = {"old": old_user["email"], "new": request.email}
+            if not old_user:
+                raise ValueError(f"User {user_id} not found")
 
-            user = await self.user_repo.update_user(user_id, email=request.email)
+            if pg_email is not None and old_user["email"] != pg_email:
+                changes["email"] = {"old": old_user["email"], "new": pg_email}
+            if pg_verified is not None and old_user["is_email_verified"] != pg_verified:
+                changes["is_email_verified"] = {
+                    "old": old_user["is_email_verified"],
+                    "new": pg_verified,
+                }
+
+            user = await self.user_repo.update_user(
+                user_id,
+                email=pg_email,
+                is_email_verified=pg_verified,
+            )
             if not user:
                 raise ValueError(f"User {user_id} not found")
 
-            # 2. Sync canonical data to Cassandra (only if extended profile exists)
-            # Note: PostgreSQL uses integer IDs, Cassandra expects UUIDs
-            # Generate deterministic UUID from integer user_id
-            try:
-                import uuid
-                USER_ID_NAMESPACE = uuid.UUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')
-                user_uuid = str(uuid.uuid5(USER_ID_NAMESPACE, str(user_id)))
+            if pg_email is not None:
+                # Sync canonical data to Cassandra (only if extended profile exists)
+                try:
+                    import uuid
+                    USER_ID_NAMESPACE = uuid.UUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')
+                    user_uuid = str(uuid.uuid5(USER_ID_NAMESPACE, str(user_id)))
 
-                self.user_ext_repo.sync_canonical_data(
-                    user_id=user_uuid,
-                    email=user["email"],
-                    role=user["role"],
-                    status="active",  # TODO: Use actual status when column exists
-                )
-            except (ValueError, Exception):
-                # Extended profile doesn't exist yet
-                pass
+                    self.user_ext_repo.sync_canonical_data(
+                        user_id=user_uuid,
+                        email=user["email"],
+                        role=user["role"],
+                        status="active",  # TODO: Use actual status when column exists
+                    )
+                except (ValueError, Exception):
+                    pass
 
-        # 3. Update extended fields in Cassandra (if provided)
+        # 2. Update extended fields in Cassandra (if provided)
         extended_fields = {}
         for field in ["first_name", "last_name",
                       "mobile_phone", "home_phone", "work_phone",
@@ -556,6 +576,53 @@ class UserManagementService:
         except Exception as e:
             # Don't fail status update if audit logging fails
             print(f"Warning: Failed to create audit log: {e}")
+
+        return await self.get_user_detail(user_id, admin_user)
+
+    async def update_user_email_verification(
+        self,
+        user_id: int,
+        request: UserEmailVerificationUpdateRequest,
+        admin_user: dict,
+        ip_address: str | None = None,
+    ) -> dict[str, Any]:
+        """Set whether the user's email is verified (gates public portal login)."""
+        if user_id == admin_user["id"]:
+            raise ValueError("Cannot change your own verification status")
+
+        old_user = await self.user_repo.get_user_by_id(user_id)
+        if not old_user:
+            raise ValueError(f"User {user_id} not found")
+
+        user = await self.user_repo.update_user(
+            user_id,
+            is_email_verified=request.is_email_verified,
+        )
+        if not user:
+            raise ValueError(f"User {user_id} not found")
+
+        try:
+            import uuid
+            USER_ID_NAMESPACE = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+            admin_uuid = str(uuid.uuid5(USER_ID_NAMESPACE, str(admin_user["id"])))
+            user_uuid = str(uuid.uuid5(USER_ID_NAMESPACE, str(user_id)))
+
+            self.audit_repo.create_audit_log(
+                admin_id=admin_uuid,
+                admin_email=admin_user["email"],
+                user_id=user_uuid,
+                action="change_email_verification",
+                changes={
+                    "is_email_verified": {
+                        "old": old_user["is_email_verified"],
+                        "new": request.is_email_verified,
+                    },
+                    "reason": request.reason,
+                },
+                ip_address=ip_address,
+            )
+        except (ValueError, Exception) as e:
+            print(f"Warning: Failed to create audit log for user {user_id}: {e}")
 
         return await self.get_user_detail(user_id, admin_user)
 
