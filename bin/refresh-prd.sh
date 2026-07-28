@@ -52,7 +52,7 @@ Options:
   --no-cache      docker compose build --no-cache
   --dry-run       Print the plan without building or recreating
   --since <ref>   Git ref to diff against (default: ORIG_HEAD after pull, else deploy marker)
-  --allow-dirty   Include uncommitted working-tree changes in detection
+  --allow-dirty   Allow untracked non-tmp files; still blocks tracked local edits
   -h, --help      Show this help
 
 Examples:
@@ -221,14 +221,71 @@ services_to_array() {
 }
 
 # ----- git -----
+# Paths that may exist on the VPS untracked without blocking deploy.
+DIRTY_IGNORE_UNTRACKED_PREFIXES=(
+  "tmp/"
+  "build.log"
+)
+
+git_tracked_dirty() {
+  ! git diff --quiet HEAD 2>/dev/null || ! git diff --cached --quiet 2>/dev/null
+}
+
+git_untracked_blocking() {
+  local line path
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    path="${line#?? }"
+    local prefix
+    for prefix in "${DIRTY_IGNORE_UNTRACKED_PREFIXES[@]}"; do
+      if [[ "$path" == "$prefix" || "$path" == "$prefix"* ]]; then
+        continue 2
+      fi
+    done
+    echo "$path"
+  done < <(git status --porcelain --untracked-files=all | grep '^??' || true)
+}
+
+git_show_worktree_state() {
+  echo "Tracked changes (block deploy):"
+  git status --short --untracked-files=no || true
+  echo ""
+  echo "Untracked files:"
+  git status --short --untracked-files=all | grep '^??' || echo "  (none)"
+}
+
+assert_clean_enough_for_pull() {
+  local -a untracked_blocking=()
+  local u
+  while IFS= read -r u; do
+    [ -n "$u" ] && untracked_blocking+=("$u")
+  done < <(git_untracked_blocking)
+
+  if git_tracked_dirty; then
+    echo "ERROR: tracked files differ from HEAD — stash or commit before deploy." >&2
+    git_show_worktree_state >&2
+    echo "" >&2
+    echo "Fix: git stash -u   or   git checkout -- <file>   or   ./bin/refresh-prd.sh --no-pull" >&2
+    exit 1
+  fi
+
+  if [ "${#untracked_blocking[@]}" -gt 0 ] && [ "$ALLOW_DIRTY" -eq 0 ]; then
+    echo "ERROR: unexpected untracked files (not in tmp/). Pass --allow-dirty to override." >&2
+    printf '  %s\n' "${untracked_blocking[@]}" >&2
+    exit 1
+  fi
+
+  if [ "${#untracked_blocking[@]}" -gt 0 ]; then
+    log "note: ignoring untracked files (--allow-dirty): ${untracked_blocking[*]}"
+  fi
+}
+
 git_pull_if_needed() {
   [ "$DO_PULL" -eq 1 ] || return 0
   command -v git >/dev/null 2>&1 || die "git not found"
   [ -d "$TD_PROJECT_ROOT/.git" ] || die "not a git repository: $TD_PROJECT_ROOT"
   cd "$TD_PROJECT_ROOT"
-  if [ "$ALLOW_DIRTY" -eq 0 ] && [ -n "$(git status --porcelain)" ]; then
-    die "working tree is dirty; commit/stash or pass --allow-dirty"
-  fi
+  assert_clean_enough_for_pull
   log "git pull --ff-only"
   if [ "$DRY_RUN" -eq 1 ]; then
     echo "  (dry-run: would run git pull --ff-only)"
