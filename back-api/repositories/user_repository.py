@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Any
+import json
 import math
 
 
@@ -94,7 +95,7 @@ class UserRepository:
                 email,
                 password_hash,
                 role,
-                permissions,
+                json.dumps(permissions),
                 is_email_verified,
             )
             return dict(row)
@@ -150,7 +151,7 @@ class UserRepository:
                 WHERE id = $4
                 """,
                 role,
-                permissions,
+                json.dumps(permissions),
                 datetime.utcnow(),
                 user_id,
             )
@@ -419,7 +420,7 @@ class UserRepository:
                           created_at, updated_at
                 """,
                 role,
-                permissions,
+                json.dumps(permissions),
                 datetime.utcnow(),
                 user_id,
             )
@@ -474,7 +475,7 @@ class UserRepository:
                 WHERE id = ANY($4::int[])
                 """,
                 role,
-                permissions,
+                json.dumps(permissions),
                 datetime.utcnow(),
                 user_ids,
             )

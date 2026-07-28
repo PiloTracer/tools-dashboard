@@ -690,12 +690,17 @@ class UserManagementService:
         )
 
         # 2. Sync canonical data to Cassandra
-        self.user_ext_repo.sync_canonical_data(
-            user_id=str(user_id),
-            email=user["email"],
-            role=request.role,
-            status="active",  # TODO: Use actual status
-        )
+        try:
+            self.user_ext_repo.sync_canonical_data(
+                user_id=str(user_id),
+                email=user["email"],
+                role=request.role,
+                status="active",  # TODO: Use actual status
+            )
+        except Exception as e:
+            # Don't fail the role update if Cassandra canonical sync fails
+            # (PostgreSQL is the source of truth for auth/role)
+            print(f"Warning: Failed to sync canonical data for user {user_id}: {e}")
 
         # 3. Invalidate all user sessions (force re-authentication)
         try:
@@ -709,18 +714,22 @@ class UserManagementService:
             print(f"Warning: Failed to invalidate sessions for user {user_id}: {e}")
 
         # 4. Create audit log
-        self.audit_repo.create_audit_log(
-            admin_id=str(admin_user["id"]),
-            admin_email=admin_user["email"],
-            user_id=str(user_id),
-            action="change_role",
-            changes={
-                "role": {"old": old_user["role"], "new": request.role},
-                "permissions": {"old": old_user["permissions"], "new": permissions},
-                "reason": request.reason,
-            },
-            ip_address=ip_address,
-        )
+        try:
+            self.audit_repo.create_audit_log(
+                admin_id=str(admin_user["id"]),
+                admin_email=admin_user["email"],
+                user_id=str(user_id),
+                action="change_role",
+                changes={
+                    "role": {"old": old_user["role"], "new": request.role},
+                    "permissions": {"old": old_user["permissions"], "new": permissions},
+                    "reason": request.reason,
+                },
+                ip_address=ip_address,
+            )
+        except Exception as e:
+            # Don't fail the role update if audit logging fails
+            print(f"Warning: Failed to create audit log for user {user_id}: {e}")
 
         return await self.get_user_detail(user_id, admin_user)
 

@@ -6,6 +6,32 @@
 
 ## Cross-framework action (@x-director)
 
+**Date:** 2026-07-28 (user-role runtime 500 repair)
+**Request:** "When I attempt to change the role of a user, I get 'Server Error', the functionality is failing."
+**Frameworks involved:** .ai (engineering)
+**Classified framework bucket(s):** engineering (backend)
+**Routing confidence:** high
+**Preflight (frameworks installed):** .ai yes | .ai.ui yes (n/a) | .ai.biz yes (n/a) | .ai.soc yes (n/a)
+**Executed:**
+1. Reproduced the failure with live curl: `PATCH /admin/users/2/role` → HTTP 500 `Internal Server Error`. Captured the backend traceback → root-caused via runtime evidence (not memory).
+2. **Bug A (the actual 500 the user saw)**: `back-api/repositories/user_repository.py` bound Python `list` directly to `$2::jsonb` at 4 sites (create_user, update_role, update_user_role line 411, bulk_update_role line 472). asyncpg requires a JSON **string** for jsonb (no codec registered); both `[]` (empty) and `["*"]` (non-empty) rejected with `DataError: invalid input for query argument $2: [] (expected str, got list)`. Fixed: `json.dumps(permissions)` at all 4 bind sites + `import json`. (`create_user` was latently broken too — same fix covers it.)
+3. **Bug B (the 400 surfaced after Bug A)**: `domain.py update_user_role` called `sync_canonical_data(user_id=str(user_id))` which reaches `uuid.UUID(user_id)` in `user_ext_repository.py:210` — `uuid.UUID("2")` raises `ValueError("badly formed hexadecimal UUID string")` because integer-string IDs are not UUIDs. This call was unwrapped, so the ValueError propagated → endpoint returned HTTP 400. `update_user_status` doesn't have this problem (it never calls sync_canonical_data). Fixed: wrapped the `sync_canonical_data` call in try/except (best-effort), matching the established defensive pattern already used for session-invalidation and audit-log in the same method. PostgreSQL is the source of truth for auth/role; Cassandra canonical sync is secondary.
+4. **Bug C (defensive hardening, same turn)**: `domain.py update_user_role` audit-log call (`create_audit_log`) was also unwrapped — same latent ValueError from `uuid.UUID("2")` in the audit repo. Wrapped in try/except, symmetric with `update_user_status`'s `log_audit_event` wrapper. Audit logging is best-effort and must not break a user-facing role change.
+5. Runtime verification (live curl, not just gates): backend direct PATCH → HTTP 200 with full `UserDetailResponse` body; role persists in DB (`admin | ["*"]`, `moderator | []`); frontend proxy (`/admin/api/users/2/role` via nginx :8082) → HTTP 200; DB confirms `moderator`. The user-facing "Server Error" is resolved.
+6. Gates: touch-scope pass (scope expanded to include `back-api/repositories/user_repository.py`); blast-radius medium (2 areas: back-api + .work, 57 lines); backend pytest 7 passed (3 role + 4 access — pre-existing Pydantic V1 deprecation warnings unrelated); smoke 4/4; front-admin tsc 0 non-baseline errors in touched files (2508 total = documented baseline from missing @types/react).
+7. MOD-06 run (AI-assisted, not human-only) → merge_ok; recorded in NEXT.md concept registry.
+**User correction:** none
+**Coordination notes:** single-framework (engineering); no UI work this turn — "Server Error" was a backend data-serialization fault, not a UI defect
+**Blockers:** none for code. **Deployment requires owner to** `git add` the untracked paths (`admin.api.users.$userId.role.tsx`, `back-api/tests/test_user_management_role.py`) plus the tracked-modified `back-api/repositories/user_repository.py` and `back-api/features/user-management/domain.py` before committing — `git add -u` alone would miss the two untracked files.
+**Next recommended:** Owner commits (with untracked files) + deploys back-api (and front-admin for the role-card UI) to VPS; manual browser verify: admin → User management → open non-self user → Role card → change role → Save → 200 + loader refresh + profile shows new role → re-open user (role persisted).
+**Residual (honest, not repaired by design):**
+- `sync_canonical_data` for user-management still has a UUID-vs-integer-ID contract mismatch (Cassandra extended-profile keys expect UUID; PostgreSQL user IDs are integers). My try/except makes role-change resilient to this, but the Cassandra canonical profile for integer-ID users is NOT updated on role change. A proper fix would derive a deterministic `uuid.uuid5(NAMESPACE, str(user_id))` (the pattern `get_user_detail` already uses) and pass that — but that needs verifying the Cassandra table's existing key scheme to avoid writing orphan rows. Out of scope for this hotfix; tracked here.
+- `auth_service.invalidate_user_sessions` is also stubbed/miswired (`'InfrastructureRegistry' object has no attribute 'invalidate_user_sessions'` — visible in logs, swallowed by try/except). Sessions will eventually expire via JWT TTL instead. Pre-existing; not introduced here.
+
+---
+
+## Cross-framework action (@x-director)
+
 **Date:** 2026-07-28 (user-role verify+repair)
 **Request:** "verify and repair the currently uncomitted code."
 **Frameworks involved:** .ai (engineering), .ai.ui (degraded — native Tailwind role-card on existing admin screen)

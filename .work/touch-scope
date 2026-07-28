@@ -1,7 +1,7 @@
 {
   "ref": "tools-dashboard",
   "updated": "2026-07-28",
-  "goal": "Admin user edit: role assignment",
+  "goal": "Admin user edit: role assignment + fix permissions jsonb serialization in user_repository",
   "allowed_paths": [
     ".work/touch-scope"
   ],
@@ -12,6 +12,7 @@
     "front-admin/public/locales/**",
     "back-api/features/user-management/**",
     "back-api/tests/test_user_management_role.py",
+    "back-api/repositories/user_repository.py",
     ".work/**"
   ]
 }

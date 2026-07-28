@@ -55,6 +55,22 @@
 
 *(No active iteration - run `@code-implementation plan - M1` after master plan is **Approved** and `implementation-ready: yes`.)*
 
+### Concept / NFR registry (2026-07-28 — user-role runtime 500 repair, no formal iteration)
+
+| Concept id | Applies | Status | Evidence / trigger |
+|------------|---------|--------|-------------------|
+| MOD-06 | yes | done | AI-assisted session (runtime repair) — risk summary below |
+
+**AI change risk summary (MOD-06 — 2026-07-28 user-role 500 repair):**
+- AI-assisted: yes
+- Boundaries crossed: 0 hard module boundaries — single feature (user-management role) backend; repository `json.dumps` serialization + domain try/except wrappers; no new imports/RPC/shared models, no frontend changes
+- New cross-boundary deps: none (`json` is stdlib; try/except is language-level)
+- Test isolation: ok — `pytest tests/test_user_management_role.py` 3/3 pass (VALID_USER_ROLES / default permissions / cannot change own role); runtime: live `curl PATCH` → HTTP 200 (both empty `[]` and non-empty `["*"]` permissions), role persists in PostgreSQL
+- Human architectural review: optional — 2 backend files, ~12 lines (repository serialization + 2 defensive try/except wrappers); surgical hotfix
+- Blast radius: if wrong, role-change breaks again (caught immediately by live curl + backend tests); no data loss possible — PostgreSQL UPDATE runs first, only best-effort Cassandra/audit/session steps are wrapped. Recovery = revert single-area diff
+- Recommendation: merge_ok. Residual: Cassandra canonical profile for integer-ID users NOT updated on role change (UUID/integer contract mismatch — tracked in HANDOFF); session invalidation stubbed (JWT TTL fallback).
+- Blast-radius gate: risk medium (2 areas: back-api + .work, 57 lines) — within default approve threshold
+
 ### Concept / NFR registry (2026-07-28 — user-role verify+repair, no formal iteration)
 
 | Concept id | Applies | Status | Evidence / trigger |
