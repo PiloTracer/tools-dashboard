@@ -135,7 +135,15 @@
       "verifiedToggleOff": "Mark as unverified",
       "verifiedToggleProcessing": "Saving…",
       "verifiedToggleFailed": "Failed to update email verification. Please try again.",
-      "verifiedToggleNetworkError": "Network error while updating email verification."
+      "verifiedToggleNetworkError": "Network error while updating email verification.",
+      "roleCardTitle": "Role",
+      "roleCardBody": "Current role: {{role}}. Changing a role invalidates the user's sessions and requires them to sign in again.",
+      "roleSelectLabel": "Assign role",
+      "roleSave": "Save role",
+      "roleSaving": "Saving…",
+      "roleUnchanged": "No changes to save",
+      "roleUpdateFailed": "Failed to update user role. Please try again.",
+      "roleUpdateNetworkError": "Network error while updating user role."
     }
   },
   "appLibrary": {

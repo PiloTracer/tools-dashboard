@@ -1,6 +1,6 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
-import { useLoaderData, useActionData, useNavigation, Link } from "@remix-run/react";
+import { useLoaderData, useActionData, useNavigation, useRevalidator, Link } from "@remix-run/react";
 import { useTranslation } from "react-i18next";
 import React from "react";
 import { UserForm, type UserFormData } from "../features/user-management/ui/UserForm";
@@ -182,9 +182,14 @@ export default function UserManagementEdit() {
   const { user } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
+  const revalidator = useRevalidator();
   const { t } = useTranslation();
   const [isTogglingStatus, setIsTogglingStatus] = React.useState(false);
   const [isTogglingVerified, setIsTogglingVerified] = React.useState(false);
+  const [currentRole, setCurrentRole] = React.useState(user.role);
+  const [selectedRole, setSelectedRole] = React.useState(user.role);
+  const [isSavingRole, setIsSavingRole] = React.useState(false);
+  const [roleError, setRoleError] = React.useState<string | null>(null);
   const [currentStatus, setCurrentStatus] = React.useState((user as any).status || "active");
   const [isEmailVerified, setIsEmailVerified] = React.useState(Boolean(user.is_email_verified));
   const [newPassword, setNewPassword] = React.useState("");
@@ -194,6 +199,14 @@ export default function UserManagementEdit() {
 
   const isSubmitting = navigation.state === "submitting";
   const isActive = currentStatus === "active";
+
+  const assignableRoles = ["customer", "moderator", "support", "admin"] as const;
+  const roleLabelKey: Record<string, string> = {
+    customer: "userManagement.filters.customer",
+    moderator: "userManagement.filters.moderator",
+    support: "userManagement.filters.support",
+    admin: "userManagement.filters.admin",
+  };
 
   // Check if editing own account (user.id === 1 is admin@example.com from mock auth)
   const isEditingOwnAccount = user.id === 1;
@@ -263,6 +276,46 @@ export default function UserManagementEdit() {
       alert(t("userManagement.edit.verifiedToggleNetworkError"));
     } finally {
       setIsTogglingVerified(false);
+    }
+  };
+
+  const handleRoleSave = async () => {
+    if (selectedRole === currentRole) {
+      setRoleError(t("userManagement.edit.roleUnchanged"));
+      return;
+    }
+
+    setIsSavingRole(true);
+    setRoleError(null);
+
+    try {
+      const response = await fetch(`/admin/api/users/${user.id}/role`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          role: selectedRole,
+          reason: `Role changed to ${selectedRole} by administrator`,
+        }),
+      });
+
+      if (response.ok) {
+        setCurrentRole(selectedRole);
+        revalidator.revalidate();
+      } else {
+        const error = await response.json().catch(() => ({}));
+        setRoleError(
+          typeof error.detail === "string"
+            ? error.detail
+            : t("userManagement.edit.roleUpdateFailed")
+        );
+      }
+    } catch (error) {
+      console.error("Error updating role:", error);
+      setRoleError(t("userManagement.edit.roleUpdateNetworkError"));
+    } finally {
+      setIsSavingRole(false);
     }
   };
 
@@ -417,6 +470,105 @@ export default function UserManagementEdit() {
                     : t("userManagement.edit.verifiedToggleOn"))}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Role assignment — admin only; hidden when editing own account */}
+      {!isEditingOwnAccount && (
+        <div style={{
+          marginBottom: "24px",
+          backgroundColor: "#ffffff",
+          boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1)",
+          borderRadius: "8px",
+          borderLeft: "4px solid #6366f1"
+        }}>
+          <div style={{ padding: "20px 24px" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
+              <div style={{ flex: "1 1 16rem" }}>
+                <h3 style={{
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  lineHeight: "24px",
+                  color: "#111827"
+                }}>
+                  {t("userManagement.edit.roleCardTitle")}
+                </h3>
+                <p style={{ fontSize: "14px", color: "#6b7280", margin: "8px 0 0" }}>
+                  {t("userManagement.edit.roleCardBody", {
+                    role: t(roleLabelKey[currentRole] || "userManagement.filters.customer"),
+                  })}
+                </p>
+              </div>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: "12px", flexWrap: "wrap" }}>
+                <div>
+                  <label
+                    htmlFor="user-role-select"
+                    style={{
+                      display: "block",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "#374151",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    {t("userManagement.edit.roleSelectLabel")}
+                  </label>
+                  <select
+                    id="user-role-select"
+                    value={selectedRole}
+                    onChange={(event) => {
+                      setSelectedRole(event.target.value);
+                      setRoleError(null);
+                    }}
+                    disabled={isSavingRole}
+                    style={{
+                      minWidth: "180px",
+                      padding: "8px 12px",
+                      fontSize: "14px",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "6px",
+                      backgroundColor: "#ffffff",
+                    }}
+                  >
+                    {assignableRoles.map((role) => (
+                      <option key={role} value={role}>
+                        {t(roleLabelKey[role])}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRoleSave}
+                  disabled={isSavingRole || selectedRole === currentRole}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    borderRadius: "6px",
+                    padding: "10px 14px",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    color: "#ffffff",
+                    boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+                    border: "none",
+                    backgroundColor: isSavingRole || selectedRole === currentRole ? "#9ca3af" : "#4f46e5",
+                    cursor: isSavingRole || selectedRole === currentRole ? "not-allowed" : "pointer",
+                    whiteSpace: "nowrap",
+                    marginTop: "22px",
+                  }}
+                >
+                  {isSavingRole
+                    ? t("userManagement.edit.roleSaving")
+                    : t("userManagement.edit.roleSave")}
+                </button>
+              </div>
+            </div>
+            {roleError ? (
+              <p style={{ fontSize: "13px", color: "#dc2626", margin: "12px 0 0" }} role="alert">
+                {roleError}
+              </p>
+            ) : null}
           </div>
         </div>
       )}
@@ -668,7 +820,7 @@ export default function UserManagementEdit() {
               margin: 0,
               textTransform: "capitalize"
             }}>
-              {user.role}
+              {t(roleLabelKey[currentRole] || "userManagement.filters.customer")}
             </dd>
           </div>
           <div>

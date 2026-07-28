@@ -10,6 +10,22 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
+VALID_USER_ROLES = frozenset({"admin", "customer", "moderator", "support"})
+
+DEFAULT_ROLE_PERMISSIONS: dict[str, list[str]] = {
+    "admin": ["*"],
+    "customer": [],
+    "moderator": [],
+    "support": [],
+}
+
+
+def resolve_role_permissions(role: str, permissions: list[str] | None) -> list[str]:
+    """Return explicit permissions or role defaults when none were provided."""
+    if permissions:
+        return permissions
+    return list(DEFAULT_ROLE_PERMISSIONS.get(role, []))
+
 
 @dataclass(slots=True)
 class UserListRequest:
@@ -653,6 +669,14 @@ class UserManagementService:
         if user_id == admin_user["id"]:
             raise ValueError("Cannot change your own role")
 
+        if request.role not in VALID_USER_ROLES:
+            raise ValueError(
+                f"Invalid role: {request.role}. "
+                f"Must be one of: {', '.join(sorted(VALID_USER_ROLES))}"
+            )
+
+        permissions = resolve_role_permissions(request.role, request.permissions)
+
         # Get old role for audit
         old_user = await self.user_repo.get_user_by_id(user_id)
         if not old_user:
@@ -662,7 +686,7 @@ class UserManagementService:
         user = await self.user_repo.update_user_role(
             user_id,
             request.role,
-            request.permissions,
+            permissions,
         )
 
         # 2. Sync canonical data to Cassandra
@@ -692,7 +716,7 @@ class UserManagementService:
             action="change_role",
             changes={
                 "role": {"old": old_user["role"], "new": request.role},
-                "permissions": {"old": old_user["permissions"], "new": request.permissions},
+                "permissions": {"old": old_user["permissions"], "new": permissions},
                 "reason": request.reason,
             },
             ip_address=ip_address,

@@ -9,6 +9,7 @@
 | Item | Artifact |
 |------|----------|
 | Admin app-library Access tab UI | Access tab editor (`only_specified`, `all_except`, tiers, user picker, server search); real `user_subscriptions` tier lookup; tab URL persistence; smoke 4/4 — **2026-07-28** |
+| Admin user-role assignment | `back-api/features/user-management/domain.py` role validation + `DEFAULT_ROLE_PERMISSIONS` + `resolve_role_permissions`; `front-admin` role card UI + `admin.api.users.$userId.role.tsx` PATCH proxy; backend tests 3/3; en/es locales; **2026-07-28** |
 | i18n verification + fixes (last-12h changes) | `a5b8332` + copy commit — getFixedT raw-key fix (both apps), 0-based Trans tags, TLS-safe redirects, plain `i18next` cookie persistence landing↔apps, landing switcher guard, nginx `/health`; smoke 4/4 — **2026-07-25** |
 | Portal home copy rewrite | Template marketing text → product-accurate copy (en/es); feature tile 3 repointed to app library — **2026-07-25** |
 | Thin-client context optimization | Slim `.cursorrules`/`AGENTS.md`; conditional reads; HANDOFF archive; `opencode.json` UI source — **2026-07-25** |
@@ -53,6 +54,22 @@
 ## Current iteration
 
 *(No active iteration - run `@code-implementation plan - M1` after master plan is **Approved** and `implementation-ready: yes`.)*
+
+### Concept / NFR registry (2026-07-28 — user-role verify+repair, no formal iteration)
+
+| Concept id | Applies | Status | Evidence / trigger |
+|------------|---------|--------|-------------------|
+| MOD-06 | yes | done | AI-assisted session (verify+repair) — risk summary below |
+
+**AI change risk summary (MOD-06 — 2026-07-28 user-role repair):**
+- AI-assisted: yes
+- Boundaries crossed: 0 hard module boundaries — single feature (user-management role); backend `domain.py` validators tightened, route mount path unchanged; frontend route adds `useRevalidator` hook (`@remix-run/react` already a dep); no new cross-module imports
+- New cross-boundary deps: none — `useRevalidator` already exported by existing dep
+- Test isolation: ok — `pytest tests/test_user_management_role.py` 3/3 pass (VALID_USER_ROLES validation, role default permissions, "cannot change own role"); UI tests not configured (residual)
+- Human architectural review: optional — 3 files edited, ~6 lines net; surgical repair (loader refresh + dead locale keys removed)
+- Blast radius: if wrong, role-save button fails to refresh loader data (UI still shows new role via local `currentRole`) OR revalidator typo crashes route on render (caught by tsc + smoke). Recovery = revert single-area diff
+- Recommendation: merge_ok
+- Blast-radius gate: risk high (3 areas: back-api + front-admin + .work, 219 lines) — owner-approved via explicit verify+repair request (2026-07-28)
 
 ### Concept / NFR registry (2026-07-28 — Access-tab deployment-prep fix, no formal iteration)
 

@@ -5,6 +5,29 @@
 **Updated:** 2026-07-25 · **Mode:** thin-client
 
 ## Cross-framework action (@x-director)
+
+**Date:** 2026-07-28 (user-role verify+repair)
+**Request:** "verify and repair the currently uncomitted code."
+**Frameworks involved:** .ai (engineering), .ai.ui (degraded — native Tailwind role-card on existing admin screen)
+**Classified framework bucket(s):** cross-framework (engineering + ui)
+**Routing confidence:** high
+**Preflight (frameworks installed):** .ai yes | .ai.ui yes (degraded for this scope) | .ai.biz yes (n/a) | .ai.soc yes (n/a)
+**Executed:**
+1. Verified uncommitted admin user-role-assignment feature (prior session had implemented: `back-api/features/user-management/domain.py` role validation + `DEFAULT_ROLE_PERMISSIONS` + `resolve_role_permissions`; `front-admin/app/routes/admin.features.user-management.$userId.tsx` role card UI; `front-admin/app/routes/admin.api.users.$userId.role.tsx` PATCH proxy; `back-api/tests/test_user_management_role.py` 3 tests; en/es locales). Backend contract confirmed: `@router.patch("/{user_id}/role")` with `Depends(get_current_admin)` → admin enforced at backend; proxy path forwards cookie correctly.
+2. Defects found and repaired this turn:
+   - **HIGH reliability**: role-save used raw `fetch()` with no `useRevalidator()` on the route → loader `user.role` stayed stale after a successful PATCH (UI masked it via local `currentRole` but loader-data drift is a Remix anti-pattern). Added `useRevalidator` import + `revalidator.revalidate()` call on success.
+   - **LOW dead code**: removed unused `roleCardNote` locale keys from en/es (the card hides entirely via `!isEditingOwnAccount`, so the "you cannot change your own role" note was never rendered).
+3. Residual (not repaired, by design): hardcoded English audit-reason string `"Role changed to ${selectedRole} by administrator"` sent to backend regardless of UI locale — audit logs are conventionally English-only; user never sees this string on the page.
+4. Gates re-run on post-repair state: touch-scope pass; blast-radius high (3 areas: back-api + front-admin + .work, 219 lines) — owner-approved via explicit verify+repair request; front-admin tsc 0 non-baseline errors in touched files (2508 total = documented baseline from missing `@types/react`, owner blocker #3); smoke 4/4; backend pytest 7 passed (3 role + 4 app-library access; pytest+pytest-asyncio now installed in back-api container); en/es locale JSON valid.
+5. MOD-06 run (AI-assisted, not `human-only`) → `merge_ok`; recorded in `NEXT.md` concept registry.
+**User correction:** none
+**Coordination notes:** .ai.ui portion handled natively (Tailwind role-card in existing admin screen) — no `ui-*` skill chain needed; MOD-06 output recorded in `NEXT.md`
+**Blockers:** none for code. **Deployment requires owner to** `git add` the two untracked paths (`admin.api.users.$userId.role.tsx`, `back-api/tests/test_user_management_role.py`) before committing — `git add -u` alone would deploy a broken admin role-card.
+**Next recommended:** Owner commits (with untracked files) + deploys front-admin + back-api to VPS; manual browser verify: admin sign-in → User management → open a non-self user → Role card → change role → Save (loader refreshes, profile dd shows new role) → re-open the user (role persisted) → try to change own role (card hidden).
+
+---
+
+## Cross-framework action (@x-director)
 **Date:** 2026-07-25
 **Request:** "Add bilingual informational mini-website at https://tools.datawork.top/ root; keep public/admin entry cards always visible; EN/ES like current i18n."
 **Frameworks involved:** .ai (engineering), .ai.ui (degraded — design applied natively)

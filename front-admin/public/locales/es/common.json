@@ -135,7 +135,15 @@
       "verifiedToggleOff": "Marcar como no verificado",
       "verifiedToggleProcessing": "Guardando…",
       "verifiedToggleFailed": "No se pudo actualizar la verificación de correo. Inténtalo de nuevo.",
-      "verifiedToggleNetworkError": "Error de red al actualizar la verificación de correo."
+      "verifiedToggleNetworkError": "Error de red al actualizar la verificación de correo.",
+      "roleCardTitle": "Rol",
+      "roleCardBody": "Rol actual: {{role}}. Al cambiar el rol se invalidan las sesiones del usuario y deberá iniciar sesión de nuevo.",
+      "roleSelectLabel": "Asignar rol",
+      "roleSave": "Guardar rol",
+      "roleSaving": "Guardando…",
+      "roleUnchanged": "Sin cambios que guardar",
+      "roleUpdateFailed": "No se pudo actualizar el rol del usuario. Inténtalo de nuevo.",
+      "roleUpdateNetworkError": "Error de red al actualizar el rol del usuario."
     }
   },
   "appLibrary": {
