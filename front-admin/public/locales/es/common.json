@@ -143,7 +143,27 @@
       "roleSaving": "Guardando…",
       "roleUnchanged": "Sin cambios que guardar",
       "roleUpdateFailed": "No se pudo actualizar el rol del usuario. Inténtalo de nuevo.",
-      "roleUpdateNetworkError": "Error de red al actualizar el rol del usuario."
+      "roleUpdateNetworkError": "Error de red al actualizar el rol del usuario.",
+      "appRolesCardTitle": "Roles de aplicaciones cliente",
+      "appRolesCardBody": "Roles que este usuario tiene en aplicaciones cliente: appsuper (por aplicación) y appglobal (todas las aplicaciones). Tools Dashboard solo almacena e informa estas asignaciones: cada aplicación define lo que habilitan, y sus titulares no obtienen privilegios adicionales aquí.",
+      "appRolesEmpty": "Este usuario no tiene roles de aplicaciones cliente.",
+      "appRolesGlobalBadge": "appglobal — todas las apps, presentes y futuras",
+      "appRolesRevoke": "Revocar",
+      "appRolesRevoking": "Revocando…",
+      "appRolesGrantSuperTitle": "Conceder appsuper — esta app…",
+      "appRolesGrantSuperHelp": "Elige una aplicación; el rol aplica solo a esa app.",
+      "appRolesAppPickerLabel": "Aplicación",
+      "appRolesAppPickerPlaceholder": "Selecciona una aplicación…",
+      "appRolesGrantSuper": "Conceder appsuper",
+      "appRolesGrantGlobalTitle": "Conceder appglobal — todas las apps, presentes y futuras",
+      "appRolesGrantGlobalHelp": "Una única concesión permanente que cubre todas las aplicaciones, incluidas las registradas más adelante. Revocarla es una sola acción que elimina el rol en todas partes.",
+      "appRolesGrantGlobal": "Conceder appglobal",
+      "appRolesGrantGlobalConfirm": "¿Conceder appglobal a este usuario? Aplica a todas las apps, presentes y futuras, y se revoca con una sola acción.",
+      "appRolesGranting": "Concediendo…",
+      "appRolesFailed": "No se pudo cambiar el rol. Inténtalo de nuevo.",
+      "appRolesNetworkError": "Error de red. Inténtalo de nuevo.",
+      "appRolesAppsLoadError": "No se pudo cargar la lista de aplicaciones.",
+      "appRolesSince": "desde el {{date}}"
     }
   },
   "appLibrary": {
@@ -209,6 +229,28 @@
         "userIdsRequired": "Selecciona al menos un usuario para este modo.",
         "tiersRequired": "Selecciona al menos un nivel de suscripción."
       }
+    },
+    "roles": {
+      "title": "appsuper",
+      "description": "Titulares efectivos de esta aplicación: asignados appsuper más titulares appglobal (sus tokens informan un rol en todas las apps). Tools Dashboard solo almacena e informa estos roles: la aplicación define lo que habilitan.",
+      "holdersTitle": "Titulares efectivos",
+      "empty": "Nadie tiene aún un rol de aplicación cliente para esta aplicación.",
+      "grantTitle": "Conceder appsuper — esta app",
+      "grantHelp": "Busca un usuario y concede el rol appsuper, limitado solo a esta aplicación.",
+      "userSearchLabel": "Buscar usuarios",
+      "userSearchPlaceholder": "Buscar por correo, nombre o ID…",
+      "searching": "Buscando…",
+      "noUsersMatch": "Ningún usuario coincide con la búsqueda.",
+      "grant": "Conceder",
+      "granting": "Concediendo…",
+      "revoke": "Revocar",
+      "revoking": "Revocando…",
+      "alreadyHolder": "Ya es appsuper",
+      "appglobalBadge": "appglobal — todas las apps",
+      "appglobalManaged": "Se gestiona desde la página del usuario.",
+      "grantedAt": "desde el {{date}}",
+      "actionFailed": "No se pudo cambiar el rol. Inténtalo de nuevo.",
+      "networkError": "Error de red. Inténtalo de nuevo."
     }
   },
   "taskScheduler": {

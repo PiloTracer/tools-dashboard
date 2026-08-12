@@ -8,6 +8,7 @@
 
 | Item | Artifact |
 |------|----------|
+| Client-app roles (appsuper/appglobal) | Approved SPEC `.work/features/app-roles/20260811-SPEC.md`; migration `014_app_user_roles.sql`; 6 platform-admin endpoints; back-auth `app_roles` claim + `validate-token` field + refresh fix; front-admin appsuper + Client-app roles cards; 14 new tests (19+4 green); smoke 4/4 — **2026-08-11** |
 | Admin app-library Access tab UI | Access tab editor (`only_specified`, `all_except`, tiers, user picker, server search); real `user_subscriptions` tier lookup; tab URL persistence; smoke 4/4 — **2026-07-28** |
 | Admin user-role assignment | `back-api/features/user-management/domain.py` role validation + `DEFAULT_ROLE_PERMISSIONS` + `resolve_role_permissions`; `front-admin` role card UI + `admin.api.users.$userId.role.tsx` PATCH proxy; backend tests 3/3; en/es locales; **2026-07-28** |
 | i18n verification + fixes (last-12h changes) | `a5b8332` + copy commit — getFixedT raw-key fix (both apps), 0-based Trans tags, TLS-safe redirects, plain `i18next` cookie persistence landing↔apps, landing switcher guard, nginx `/health`; smoke 4/4 — **2026-07-25** |
@@ -44,16 +45,100 @@
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| **🔴 1** | **Finish VPS go-live (datawork.top)** | Deploy latest `main` (includes Access tab) → DNS → sync `/opt/tools-dashboard` → `sudo bash scripts/vps-deploy-datawork.sh` → verify HTTPS/admin/WS/S3 + Access tab |
-| 2 | Priority 1B & 1D | Public cookie audit + nginx API routing documentation table |
-| 3 | Extend test suite | Add tests for remaining services (websockets, feature-registry), add frontend tests |
+| **🔴 1** | **Finish VPS go-live (datawork.top)** | Deploy latest `main` (Access tab + role-500 fix + **client-app roles** + **JWKS route fix**) → DNS → sync `/opt/tools-dashboard` → `sudo bash scripts/vps-deploy-datawork.sh` → verify HTTPS/admin/WS/S3 + Access tab + app-roles cards + `/.well-known/jwks.json` |
+| 2 | Client apps adopt `app_roles` | E-Cards/Rizervox integrate per `.work/docs/guides/client-app-roles/README.md` (claim fast path + validate-token authoritative) |
+| 3 | Priority 1B & 1D | Public cookie audit + nginx API routing documentation table |
+| 4 | Extend test suite | Add tests for remaining services (websockets, feature-registry), add frontend tests |
 
 
 ---
 
-## Current iteration
+## Current iteration - AR: Client-app roles (appsuper/appglobal)
 
-*(No active iteration - run `@code-implementation plan - M1` after master plan is **Approved** and `implementation-ready: yes`.)*
+**Milestone ref:** AR · owner-directed Approved SPEC `.work/features/app-roles/20260811-SPEC.md` (no approved master plan — owner waiver via `@x-director` approval message 2026-08-11)
+**Status:** complete
+**Started:** 2026-08-11
+
+### In scope
+- Migration `014_app_user_roles.sql` (idempotent, runner-verified)
+- back-api: `app_user_role_repository`, `APP_ROLES` registry + scope pairing, 6 platform-admin endpoints, audit events
+- back-api tests per SPEC §11
+- back-auth: `app_user_roles` metadata mirror, `app_roles` claim (issue/refresh), `validate-token` field, refresh placeholder fix
+- back-auth token tests per SPEC §11
+- front-admin: appsuper card (app detail), Client-app roles card (user detail), proxy routes, en/es locales
+
+### Out of scope (explicit)
+- Any privilege change for role holders (R7); existing endpoint guards untouched
+- Bulk operations; additional roles beyond appsuper/appglobal
+- Protected files (package.json, tsconfig, Dockerfiles, compose) — untouched
+
+### Tasks
+| ID | Description | Files | Status | Notes |
+|----|-------------|-------|--------|-------|
+| AR-T1 | Idempotent migration + runner verify | `back-postgres/schema/014_app_user_roles.sql` | done | Runner ×4 clean, re-runs no-op; `\d` matches SPEC §5; incl. catalog-guarded FK convergence block |
+| AR-T2 | back-api grant APIs + domain + repository | `back-api/repositories/app_user_role_repository.py`, `back-api/features/app-library/{api.py,domain.py,models.py}` | done | 6 endpoints behind untouched `get_current_admin`; one shared write path (R14); audit on actual change only |
+| AR-T3 | back-api tests (10 cases, SPEC §11) | `back-api/tests/test_app_user_roles.py`, `back-api/tests/conftest.py` | done | 19 passed (10 new + 9 pre-existing); conftest sys.path bootstrap (collection was broken) |
+| AR-T4 | back-auth query channel (claim + validate-token + mirror + refresh fix) | `back-auth/core/database.py`, `back-auth/features/auto-auth/{api.py,domain.py}` | done | `app_roles` claim + response field; fail-closed R20 verified live; refresh placeholder user lookup fixed; `token_service.py` correctly untouched (admin-session JWT, not OAuth) |
+| AR-T5 | back-auth token tests (4 cases, SPEC §11) | `back-auth/tests/` | done | 4 passed; pytest+pytest-asyncio installed in containers |
+| AR-T6 | front-admin app-page appsuper card + proxies + locales | `front-admin/app/features/app-library/ui/AppRolesPanel.tsx`, `admin.api.app-library*`, page + locales | done | Effective holders incl. appglobal marked; debounced user picker reused; proxy forwards Bearer from `getAdminSession` (cookie-only would 401) |
+| AR-T7 | front-admin user-page client-app roles card + proxies + locales | `front-admin/app/features/user-management/ui/UserAppRolesCard.tsx`, `admin.api.users.$userId.app-roles.tsx`, page + locales | done | appglobal grant isolated, confirm copy; per-row revoke; revalidate on success |
+| AR-T8 | Full gates + MOD-01/MOD-06 registry + bookkeeping | `.work/` | done | Gates below; blast-radius high owner-approved via explicit full-implementation request |
+
+### Acceptance criteria
+- [x] All SPEC §11 test cases pass in containers (back-api 19/19, back-auth 4/4)
+- [x] Migration runner twice → second run no-op (ran ×4, all clean; drop→self-heal verified live)
+- [x] ruff: 0 **new** violations in touched files (per-file diff vs HEAD; large pre-existing baseline B008/EXE002/I001 unchanged); front-admin tsc 0 non-baseline errors in touched files
+- [x] Smoke `bash bin/test.sh` 4/4
+- [x] touch-scope pass; blast-radius high (5 areas, ~794 lines) — owner-approved
+
+### Validation steps
+- [x] Tests: back-api + back-auth pytest green (exit 0)
+- [x] Lint: ruff per-file baseline diff — no new violations
+- [x] Type: front-admin tsc — 0 non-baseline errors in touched files
+- [x] Smoke: `bash bin/test.sh` → 4 passed
+- [x] Live curl: grant appsuper+appglobal → `issue-tokens` claim + `validate-token` `app_roles:["appglobal","appsuper"]`; revoke → same token returns `[]` immediately; audit rows verified; duplicate grant produced no second row/event
+
+### Owner blockers
+- none
+
+### Concept / NFR registry (this iteration)
+| Concept id | Applies | Status | Evidence / trigger |
+|------------|---------|--------|-------------------|
+| MOD-01 | yes | done | AI-assisted session — coupling audit below |
+| MOD-06 | yes | done | AI-assisted session — risk summary below |
+
+**MOD-01 coupling audit (2026-08-11, iteration AR):**
+- Boundaries crossed: back-auth ↔ client-app (contract addition only: `app_roles` claim/field, additive, backward-compatible); front-admin ↔ back-api (6 new endpoints, existing guard reused); new repository module in back-api.
+- New cross-boundary deps: none at the code level. Deliberate **data-level coupling**: back-auth reads `app_user_roles` from the shared Postgres (same pattern as its `users` ownership) — chosen explicitly (SPEC Q1) to avoid a synchronous back-auth→back-api hop on the token path. Mirror DDL drift risk mitigated by R19 byte-identical rule + live drop/self-heal test.
+- Rollback isolation: each service reverts independently; table is inert if unused.
+
+**AI change risk summary (MOD-06 — 2026-08-11, iteration AR):**
+- AI-assisted: yes (two coder subagents, orchestrated; gates re-run first-hand by orchestrator)
+- Boundaries crossed: see MOD-01 above; no new imports/RPC/shared models beyond the contract addition
+- Test isolation: ok — 14 new tests (10 back-api HTTP-level with in-memory fakes, 4 back-auth) cover grant/revoke/idempotency/scope-pairing/cross-app-leak/fail-closed; live curl end-to-end evidence incl. immediate revocation on same token
+- Human architectural review: recommended for the back-auth metadata mirror + FK convergence guard (deviation 1, SPEC §5 channel split) — the one place design judgment exceeded the verbatim SPEC
+- Blast radius: if wrong, `app_roles` claim/field misreports (clients see `[]` fail-closed) or grant 4xxs; existing auth/admin paths provably untouched (regression tests + untouched guards); recovery = revert; table is inert
+- Recommendation: merge_ok. Residuals: no UI unit tests (not configured); authenticated browser click-through not performed (no headless browser); ruff/tsc baselines remain pre-existing owner blockers.
+- Blast-radius gate: risk high (5 areas, ~794 lines) — owner-approved via explicit "full implementation" request (2026-08-11)
+
+### Cross-LLM verification
+- Triggered: no
+
+### Done this iteration
+| Task | Completed | Notes |
+|------|-----------|-------|
+| AR-T1 | 2026-08-11 | Migration 014; runner ×4 clean; drop→self-heal verified |
+| AR-T2 | 2026-08-11 | 6 endpoints + registry + repository + audit |
+| AR-T3 | 2026-08-11 | back-api 19 passed |
+| AR-T4 | 2026-08-11 | claim + validate-token + mirror + refresh fix |
+| AR-T5 | 2026-08-11 | back-auth 4 passed |
+| AR-T6 | 2026-08-11 | appsuper card + proxies + locales |
+| AR-T7 | 2026-08-11 | Client-app roles card + appglobal control |
+| AR-T8 | 2026-08-11 | Gates green; registry filled |
+| AR-fix | 2026-08-12 | Post-release UI bug: both page loaders expected a bare array but back-api returns envelopes (`{assignments,…}` / `{holders,…}`) → cards rendered empty despite successful grants; fixed envelope parsing + `app_client_id` field name; tsc 0 new errors, smoke 4/4, live backend envelope verified |
+| AR-fix2 | 2026-08-12 | Guide verification surfaced: JWKS public route was 404 since inception — dotfile route name ignored by Remix flat routes; renamed to `[.well-known].jwks[.json].tsx` + fixed env fallback (`BACK_AUTH_URL` unset in container → `AUTH_API_URL` chain, `http://back-auth:8001` default). Live: `/.well-known/jwks.json` returns RS256 key. Integration guide written: `.work/docs/guides/client-app-roles/README.md` |
+
+*(Template for future iterations preserved below under concept registry history.)*
 
 ### Concept / NFR registry (2026-07-28 — user-role runtime 500 repair, no formal iteration)
 

@@ -18,6 +18,10 @@ import {
   type AccessRuleState,
   type AccessUserOption,
 } from "../features/app-library/ui/AccessControlPanel";
+import {
+  AppRolesPanel,
+  type AppRoleHolder,
+} from "../features/app-library/ui/AppRolesPanel";
 import { getAdminSession } from "../utils/admin-session.server";
 import { bearerHeaders } from "../utils/admin-api-auth.server";
 
@@ -70,6 +74,8 @@ type LoaderData = {
     s3DomainName: string | null;
   };
   storageIntegrationKeys: StorageIntegrationKeyRow[];
+  appRoleHolders: AppRoleHolder[];
+  appRolesError?: string;
 };
 
 type ActionData = {
@@ -217,7 +223,15 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
       `${apiUrl}/api/admin/app-library/${appId}/storage-keys`,
       { headers: { ...auth } }
     );
-    const [response, keysResponse] = await Promise.all([appPromise, keysPromise]);
+    const rolesPromise = fetch(
+      `${apiUrl}/api/admin/app-library/${appId}/roles`,
+      { headers: { ...auth } }
+    );
+    const [response, keysResponse, rolesResponse] = await Promise.all([
+      appPromise,
+      keysPromise,
+      rolesPromise,
+    ]);
 
     if (response.status === 404) {
       throw new Response("Application not found", { status: 404 });
@@ -242,6 +256,18 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
       storageIntegrationKeys = (await keysResponse.json()) as StorageIntegrationKeyRow[];
     }
 
+    let appRoleHolders: AppRoleHolder[] = [];
+    let appRolesError: string | undefined;
+    if (rolesResponse.ok) {
+      const rolesData = (await rolesResponse.json()) as unknown;
+      // back-api returns AppRoleHolderListResponse: {app_id, holders, total}
+      appRoleHolders = Array.isArray(rolesData)
+        ? (rolesData as AppRoleHolder[])
+        : ((rolesData as { holders?: AppRoleHolder[] })?.holders ?? []);
+    } else {
+      appRolesError = `Could not load role holders (HTTP ${rolesResponse.status})`;
+    }
+
     return json<LoaderData>({
       app: data.app,
       accessRule,
@@ -257,6 +283,8 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
         s3DomainName: process.env.SEAWEEDFS_S3_DOMAIN_NAME || null,
       },
       storageIntegrationKeys,
+      appRoleHolders,
+      appRolesError,
     });
   } catch (error) {
     console.error("Error fetching application:", error);
@@ -649,6 +677,8 @@ export default function AppLibraryDetail() {
     publicOAuthOrigin,
     storageHints,
     storageIntegrationKeys,
+    appRoleHolders,
+    appRolesError,
   } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const revalidator = useRevalidator();
@@ -1648,16 +1678,23 @@ export default function AppLibraryDetail() {
 
         {/* Access Control Tab */}
         {activeTab === "access" && (
-          <AccessControlPanel
-            accessRule={accessRule}
-            users={accessUsers}
-            usersTotal={accessUsersTotal}
-            usersLoadError={accessUsersError}
-            formAction={accessFormAction}
-            fieldErrors={actionData?.fieldErrors}
-            actionError={actionData?.error}
-            saved={actionData?.accessSaved}
-          />
+          <div className="space-y-6">
+            <AccessControlPanel
+              accessRule={accessRule}
+              users={accessUsers}
+              usersTotal={accessUsersTotal}
+              usersLoadError={accessUsersError}
+              formAction={accessFormAction}
+              fieldErrors={actionData?.fieldErrors}
+              actionError={actionData?.error}
+              saved={actionData?.accessSaved}
+            />
+            <AppRolesPanel
+              appId={app.id}
+              holders={appRoleHolders}
+              loadError={appRolesError}
+            />
+          </div>
         )}
 
         {/* SeaweedFS / object storage (deployment-wide) */}

@@ -2,7 +2,28 @@
 
 **Purpose:** Fast resume for the next chat or engineer.
 
-**Updated:** 2026-07-25 · **Mode:** thin-client
+**Updated:** 2026-08-12 · **Mode:** thin-client
+
+## Cross-framework action (@x-director)
+
+**Date:** 2026-08-11 (client-app roles: appsuper/appglobal — SPEC + full implementation)
+**Request:** "approve and proceed with full implementation of the new feature, make sure the implementation is completed and reliable."
+**Frameworks involved:** .ai (engineering), .ai.ui (degraded — native cards on existing admin screens)
+**Classified framework bucket(s):** cross-framework (engineering + ui)
+**Routing confidence:** high
+**Preflight (frameworks installed):** .ai yes | .ai.ui yes (degraded for this scope) | .ai.biz yes (n/a) | .ai.soc yes (n/a)
+**Executed:**
+1. Authored and iterated Approved SPEC `.work/features/app-roles/20260811-SPEC.md` through 5 owner refinements: per-app role (not platform admin) → client-app verification channel → idempotent self-applying schema → zero tools-dashboard privileges, semantics owned by client app → role-generic model → two scopes instead of bulk → final names **`appsuper`** (per-app) and **`appglobal`** (all-apps, enforced scope pairing R6.1).
+2. Implemented iteration AR (8 tasks, 2 parallel coder subagents + first-hand orchestrator re-verification): migration `014_app_user_roles.sql`; back-api `app_user_role_repository` + `APP_ROLES` registry + 6 platform-admin endpoints + audit events; back-auth metadata mirror + `app_roles` JWT claim (issue/refresh) + `validate-token` field + real user lookup in refresh-tokens (old TODO); front-admin appsuper card (app page) + Client-app roles card with isolated appglobal grant (user page) + 3 proxy routes + en/es locales.
+3. Gates (all first-hand verified): migration runner ×4 clean + live drop→self-heal (back-auth `create_all` mirror recreated table; runner restored FK); back-api pytest 19/19, back-auth pytest 4/4; ruff 0 new violations in touched files (pre-existing baseline unchanged); front-admin tsc 0 non-baseline errors in touched files; smoke 4/4; live curl grant→claim/validate-token→revoke→immediate `[]` on same token; audit rows verified; duplicate grant idempotent live. touch-scope pass; blast-radius high (5 areas, ~794 lines) owner-approved via the request itself.
+4. MOD-01 + MOD-06 run → merge_ok; recorded in NEXT.md iteration registry.
+**User correction:** none
+**Coordination notes:** .ai.ui portion handled natively (cards on existing admin screens) — no ui-* skill chain needed; proxies forward Bearer from `getAdminSession` (legacy cookie-only proxy pattern would 401)
+**Blockers:** none — committed and pushed 2026-08-12 (`@session-control close commit push`); remaining step is deploy.
+**Next recommended:** Owner commits + deploys back-auth + back-api + front-admin to VPS; manual browser verify: admin → app detail → appsuper card grant/revoke; user detail → appsuper (app picker) + appglobal grant/revoke; client app (E-Cards) adopts `app_roles` from `validate-token`/JWT claim on its own schedule.
+**Residual (honest):** no UI unit tests (not configured); authenticated browser click-through not performed (no headless browser); ruff/tsc baselines remain pre-existing owner blockers #3/#4.
+
+---
 
 ## Cross-framework action (@x-director)
 
@@ -70,11 +91,28 @@
 
 ## Session status
 
-**Closed:** 2026-07-28 — admin app-library Access tab UI + subscription tier lookup; verification fixes; smoke 4/4
+**Closed:** 2026-08-12 — client-app roles (appsuper/appglobal) SPEC'd, implemented, verified end-to-end; JWKS public route repaired; integration guide written
 
-**Updated:** 2026-07-28
+**Updated:** 2026-08-12
 
 Treat the next chat as a **new session**: do not assume unwritten goals from prior threads unless they appear in this file or linked artifacts.
+
+---
+
+## What this cycle produced (2026-08-12)
+
+| Area | Artifact |
+|------|----------|
+| Approved SPEC | `.work/features/app-roles/20260811-SPEC.md` (R1–R20; roles `appsuper` per-app + `appglobal` all-apps; zero console privilege; semantics owned by client app) |
+| Schema | `back-postgres/schema/014_app_user_roles.sql` — idempotent, runner-verified ×4, drop→self-heal via back-auth `create_all` mirror |
+| back-api | `app_user_role_repository.py` + `APP_ROLES` registry + 6 platform-admin endpoints + audit events; tests 19/19 |
+| back-auth | `app_roles` JWT claim (issue/refresh) + `validate-token` field (real-time) + refresh placeholder user fix; tests 4/4 |
+| front-admin | appsuper card (app page) + Client-app roles card (user page) + 3 proxy routes + en/es locales; envelope-parsing fix |
+| front-public | JWKS route repaired: `[.well-known].jwks[.json].tsx` (dotfile was never routed) + env fallback fix; live RS256 key served |
+| Guide | `.work/docs/guides/client-app-roles/README.md` — client-app integration (claim vs validate-token, code samples) |
+| Gates | touch-scope pass; blast-radius high (5 areas, owner-approved); smoke 4/4; MOD-01/MOD-06 → merge_ok |
+
+**Deploy:** sync repo + restart stack on VPS (back-auth, back-api, front-admin, front-public all changed) — schema self-applies on start. Client apps adopt `app_roles` per the guide on their own schedule.
 
 ---
 

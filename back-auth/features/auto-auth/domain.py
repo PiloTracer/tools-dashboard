@@ -250,6 +250,7 @@ class OAuthDomain:
         user_email: str,
         user_name: str,
         expires_in: int = 3600,
+        app_roles: list[str] | None = None,
     ) -> str:
         """Issue JWT access token.
 
@@ -260,6 +261,7 @@ class OAuthDomain:
             user_email: User email
             user_name: User full name
             expires_in: Expiry time in seconds (default 1 hour)
+            app_roles: Client-app roles held by the user for this client (R10)
 
         Returns:
             JWT access token
@@ -278,6 +280,7 @@ class OAuthDomain:
             "iat": int(now.timestamp()),
             "exp": int((now + timedelta(seconds=expires_in)).timestamp()),
             "scope": " ".join(scope),
+            "app_roles": app_roles or [],
         }
 
         # Sign with RS256

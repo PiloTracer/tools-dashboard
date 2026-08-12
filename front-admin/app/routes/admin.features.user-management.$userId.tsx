@@ -4,6 +4,12 @@ import { useLoaderData, useActionData, useNavigation, useRevalidator, Link } fro
 import { useTranslation } from "react-i18next";
 import React from "react";
 import { UserForm, type UserFormData } from "../features/user-management/ui/UserForm";
+import {
+  UserAppRolesCard,
+  type UserAppRoleAssignment,
+} from "../features/user-management/ui/UserAppRolesCard";
+import { getAdminSession } from "../utils/admin-session.server";
+import { bearerHeaders } from "../utils/admin-api-auth.server";
 
 type LoaderData = {
   user: UserFormData & {
@@ -17,6 +23,8 @@ type LoaderData = {
     login_count: number;
     last_login: string | null;
   };
+  appRoles: UserAppRoleAssignment[];
+  appRolesError?: string;
 };
 
 type ActionData = {
@@ -27,7 +35,7 @@ type ActionData = {
 /**
  * Loader: Fetch user detail from back-api
  */
-export async function loader({ params }: LoaderFunctionArgs) {
+export async function loader({ params, request }: LoaderFunctionArgs) {
   const userId = params.userId;
 
   if (!userId) {
@@ -54,7 +62,31 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
     const user = await response.json();
 
-    return json<LoaderData>({ user });
+    // Client-app role assignments (appsuper rows + appglobal). Non-fatal:
+    // the page still renders if this endpoint is unavailable.
+    let appRoles: UserAppRoleAssignment[] = [];
+    let appRolesError: string | undefined;
+    try {
+      const { accessToken } = await getAdminSession(request);
+      const rolesResponse = await fetch(
+        `${apiUrl}/api/admin/users/${userId}/app-roles`,
+        { headers: { ...bearerHeaders(accessToken) } }
+      );
+      if (rolesResponse.ok) {
+        const rolesData = (await rolesResponse.json()) as unknown;
+        // back-api returns UserAppRoleListResponse: {user_id, assignments, total}
+        appRoles = Array.isArray(rolesData)
+          ? (rolesData as UserAppRoleAssignment[])
+          : ((rolesData as { assignments?: UserAppRoleAssignment[] })
+              ?.assignments ?? []);
+      } else {
+        appRolesError = `Could not load client-app roles (HTTP ${rolesResponse.status})`;
+      }
+    } catch {
+      appRolesError = "Network error while loading client-app roles";
+    }
+
+    return json<LoaderData>({ user, appRoles, appRolesError });
   } catch (error) {
     console.error("Error fetching user:", error);
     throw error;
@@ -179,7 +211,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 }
 
 export default function UserManagementEdit() {
-  const { user } = useLoaderData<typeof loader>();
+  const { user, appRoles, appRolesError } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const revalidator = useRevalidator();
@@ -572,6 +604,13 @@ export default function UserManagementEdit() {
           </div>
         </div>
       )}
+
+      {/* Client-app roles (appsuper / appglobal) — no tools-dashboard privilege */}
+      <UserAppRolesCard
+        userId={user.id}
+        assignments={appRoles}
+        loadError={appRolesError}
+      />
 
       {/* Change Password Section */}
       <div style={{

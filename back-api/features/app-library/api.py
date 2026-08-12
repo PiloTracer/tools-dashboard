@@ -27,6 +27,13 @@ from shared.contracts.app_library import (
 )
 
 from . import domain
+from .models import (
+    AppRoleHolder,
+    AppRoleHolderListResponse,
+    UserAppRoleAssignment,
+    UserAppRoleListResponse,
+)
+from repositories.app_user_role_repository import AppUserRoleRepository
 
 # Routers
 public_router = APIRouter(prefix="/api/app-library", tags=["app-library-public"])
@@ -64,6 +71,11 @@ async def get_audit_log_repo(request: Request) -> Any:
 async def get_storage_key_repo(request: Request) -> Any:
     """Get AppStorageIntegrationKeyRepository from app state."""
     return request.app.state.storage_key_repo
+
+
+async def get_app_user_role_repo(request: Request) -> Any:
+    """Get AppUserRoleRepository (shares the app-library PostgreSQL pool)."""
+    return AppUserRoleRepository(request.app.state.app_repo.pool)
 
 
 async def get_current_user(request: Request) -> dict[str, Any]:
@@ -962,6 +974,224 @@ async def storage_integration_context(
             "note": "Keys are issued in the admin app library Storage tab; they are not Seaweed S3 access keys.",
         },
     }
+
+
+# ========== CLIENT-APP ROLE ENDPOINTS (platform-admin only) ==========
+
+def _row_to_holder(row: dict[str, Any]) -> AppRoleHolder:
+    return AppRoleHolder(
+        id=str(row["id"]),
+        user_id=int(row["user_id"]),
+        email=str(row.get("email") or ""),
+        role=str(row["role"]),
+        scope=str(row["scope"]),
+        app_id=str(row["app_id"]) if row.get("app_id") else None,
+        granted_by=row.get("granted_by"),
+        created_at=row.get("created_at"),
+    )
+
+
+def _row_to_assignment(row: dict[str, Any]) -> UserAppRoleAssignment:
+    return UserAppRoleAssignment(
+        id=str(row["id"]),
+        user_id=int(row["user_id"]),
+        role=str(row["role"]),
+        scope=str(row["scope"]),
+        app_id=str(row["app_id"]) if row.get("app_id") else None,
+        app_client_id=row.get("app_client_id"),
+        app_name=row.get("app_name"),
+        granted_by=row.get("granted_by"),
+        created_at=row.get("created_at"),
+    )
+
+
+@admin_router.get("/app-library/{app_id}/roles", response_model=AppRoleHolderListResponse)
+async def list_app_role_holders(
+    app_id: str,
+    app_repo: Any = Depends(get_app_repo),
+    role_repo: Any = Depends(get_app_user_role_repo),
+    _admin: dict = Depends(get_current_admin),
+):
+    """List effective role holders for an app: appsuper assignees + appglobal holders (R16)."""
+    rows = await domain.list_effective_app_role_holders(
+        app_id=app_id,
+        app_repo=app_repo,
+        role_repo=role_repo,
+    )
+    if rows is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found",
+        )
+    return AppRoleHolderListResponse(
+        app_id=app_id,
+        holders=[_row_to_holder(row) for row in rows],
+        total=len(rows),
+    )
+
+
+@admin_router.put("/app-library/{app_id}/roles/{user_id}/{role}")
+async def grant_app_scoped_role(
+    app_id: str,
+    user_id: int,
+    role: str,
+    request: Request,
+    app_repo: Any = Depends(get_app_repo),
+    role_repo: Any = Depends(get_app_user_role_repo),
+    audit_log_repo: Any = Depends(get_audit_log_repo),
+    current_user: dict = Depends(get_current_admin),
+):
+    """Grant a per-app client-app role (appsuper), idempotently."""
+    try:
+        row = await domain.grant_app_role(
+            role=role,
+            user_id=user_id,
+            app_id=app_id,
+            performed_by=current_user["id"],
+            role_repo=role_repo,
+            app_repo=app_repo,
+            audit_repo=audit_log_repo,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User or application not found",
+        )
+
+    return {
+        "message": f"Role {role} granted",
+        "assignment": row,
+    }
+
+
+@admin_router.delete("/app-library/{app_id}/roles/{user_id}/{role}", response_model=MessageResponse)
+async def revoke_app_scoped_role(
+    app_id: str,
+    user_id: int,
+    role: str,
+    request: Request,
+    role_repo: Any = Depends(get_app_user_role_repo),
+    audit_log_repo: Any = Depends(get_audit_log_repo),
+    current_user: dict = Depends(get_current_admin),
+):
+    """Revoke a per-app client-app role (appsuper), idempotently."""
+    try:
+        await domain.revoke_app_role(
+            role=role,
+            user_id=user_id,
+            app_id=app_id,
+            performed_by=current_user["id"],
+            role_repo=role_repo,
+            audit_repo=audit_log_repo,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
+    return MessageResponse(message=f"Role {role} revoked")
+
+
+@admin_router.get("/users/{user_id}/app-roles", response_model=UserAppRoleListResponse)
+async def list_user_app_roles(
+    user_id: int,
+    role_repo: Any = Depends(get_app_user_role_repo),
+    _admin: dict = Depends(get_current_admin),
+):
+    """List a user's client-app role assignments, both roles (R13)."""
+    rows = await domain.list_user_app_roles(user_id=user_id, role_repo=role_repo)
+    if rows is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    return UserAppRoleListResponse(
+        user_id=user_id,
+        assignments=[_row_to_assignment(row) for row in rows],
+        total=len(rows),
+    )
+
+
+@admin_router.put("/users/{user_id}/app-roles/{role}")
+async def grant_user_scoped_role(
+    user_id: int,
+    role: str,
+    request: Request,
+    app_repo: Any = Depends(get_app_repo),
+    role_repo: Any = Depends(get_app_user_role_repo),
+    audit_log_repo: Any = Depends(get_audit_log_repo),
+    current_user: dict = Depends(get_current_admin),
+):
+    """Grant an all-apps client-app role (appglobal), idempotently."""
+    try:
+        row = await domain.grant_app_role(
+            role=role,
+            user_id=user_id,
+            app_id=None,
+            performed_by=current_user["id"],
+            role_repo=role_repo,
+            app_repo=app_repo,
+            audit_repo=audit_log_repo,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    return {
+        "message": f"Role {role} granted",
+        "assignment": row,
+    }
+
+
+@admin_router.delete("/users/{user_id}/app-roles/{role}", response_model=MessageResponse)
+async def revoke_user_scoped_role(
+    user_id: int,
+    role: str,
+    request: Request,
+    role_repo: Any = Depends(get_app_user_role_repo),
+    audit_log_repo: Any = Depends(get_audit_log_repo),
+    current_user: dict = Depends(get_current_admin),
+):
+    """Revoke an all-apps client-app role (appglobal), idempotently (R15.1)."""
+    try:
+        await domain.revoke_app_role(
+            role=role,
+            user_id=user_id,
+            app_id=None,
+            performed_by=current_user["id"],
+            role_repo=role_repo,
+            audit_repo=audit_log_repo,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
+    return MessageResponse(message=f"Role {role} revoked")
 
 
 # Export routers

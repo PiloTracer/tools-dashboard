@@ -5,9 +5,12 @@ user preferences, and usage tracking.
 """
 
 from typing import Any
+import logging
 import secrets
 import string
 from urllib.parse import urlparse
+
+logger = logging.getLogger(__name__)
 
 # OAuth callbacks bound to all-interfaces addresses are unusable from a normal browser
 # and often get saved first in ``redirect_uris``; strip them from public payloads.
@@ -655,3 +658,171 @@ async def revoke_storage_integration_key(
     if not await app_repo.find_by_id(app_id):
         return False
     return await storage_key_repo.revoke(app_id, key_id)
+
+
+# ============================================================================
+# Client-app roles (appsuper / appglobal)
+# ============================================================================
+
+# Role registry: role -> scope pairing. Mirrors the DB CHECK constraints on
+# app_user_roles (migration 014); both must be extended together (R6/R6.2).
+APP_ROLES: dict[str, str] = {
+    "appsuper": "per_app",
+    "appglobal": "all_apps",
+}
+
+
+def validate_app_role_scope(role: str, has_app: bool) -> None:
+    """Validate a role against the registry and its scope pairing (R6.1).
+
+    Args:
+        role: Client-app role string
+        has_app: Whether the write path carries an app context
+
+    Raises:
+        ValueError: Unknown role, or role used with the wrong scope
+    """
+    if role not in APP_ROLES:
+        valid = ", ".join(sorted(APP_ROLES))
+        raise ValueError(f"Invalid role: {role}. Must be one of: {valid}")
+    scope = APP_ROLES[role]
+    if (scope == "per_app") != has_app:
+        raise ValueError(f"Role {role} requires scope {scope}")
+
+
+async def grant_app_role(
+    role: str,
+    user_id: int,
+    app_id: str | None,
+    performed_by: int | None,
+    role_repo: Any,
+    app_repo: Any,
+    audit_repo: Any,
+    ip_address: str | None = None,
+    user_agent: str | None = None,
+) -> dict[str, Any] | None:
+    """Grant a client-app role to a user (idempotent; audits real grants only).
+
+    Args:
+        role: Client-app role string (must be registered and scope-paired)
+        user_id: Target user ID
+        app_id: Application UUID for per-app roles, None for all-apps roles
+        performed_by: Platform admin user ID
+        role_repo: AppUserRoleRepository instance
+        app_repo: AppRepository instance
+        audit_repo: AuditLogRepository instance
+        ip_address: IP address (for audit)
+        user_agent: User agent (for audit)
+
+    Returns:
+        Assignment row, or None when the target user/app does not exist
+        (soft-deleted apps count as not found)
+
+    Raises:
+        ValueError: Unknown role or scope-pairing violation
+    """
+    validate_app_role_scope(role, app_id is not None)
+
+    if app_id is not None:
+        app = await app_repo.find_by_id(app_id)
+        if not app or app.get("deleted_at"):
+            return None
+
+    if not await role_repo.user_exists(user_id):
+        return None
+
+    row, created = await role_repo.grant(app_id, user_id, role, performed_by)
+
+    if created:
+        changes: dict[str, Any] = {"role": role, "user_id": user_id}
+        if app_id is not None:
+            changes["app_id"] = app_id
+        await audit_repo.create(
+            app_id=app_id,
+            event_type="app_role_granted",
+            performed_by=performed_by,
+            changes=changes,
+            ip_address=ip_address,
+            user_agent=user_agent,
+        )
+        logger.info(
+            "app_role.grant role=%s user_id=%s app_id=%s performed_by=%s",
+            role, user_id, app_id, performed_by,
+        )
+
+    return row
+
+
+async def revoke_app_role(
+    role: str,
+    user_id: int,
+    app_id: str | None,
+    performed_by: int | None,
+    role_repo: Any,
+    audit_repo: Any,
+    ip_address: str | None = None,
+    user_agent: str | None = None,
+) -> None:
+    """Revoke a client-app role from a user (idempotent; audits real revokes).
+
+    Raises:
+        ValueError: Unknown role or scope-pairing violation
+    """
+    validate_app_role_scope(role, app_id is not None)
+
+    deleted = await role_repo.revoke(app_id, user_id, role)
+
+    if deleted:
+        changes: dict[str, Any] = {"role": role, "user_id": user_id}
+        if app_id is not None:
+            changes["app_id"] = app_id
+        await audit_repo.create(
+            app_id=app_id,
+            event_type="app_role_revoked",
+            performed_by=performed_by,
+            changes=changes,
+            ip_address=ip_address,
+            user_agent=user_agent,
+        )
+        logger.info(
+            "app_role.revoke role=%s user_id=%s app_id=%s performed_by=%s",
+            role, user_id, app_id, performed_by,
+        )
+
+
+def _with_role_scope(row: dict[str, Any]) -> dict[str, Any]:
+    return {**row, "scope": APP_ROLES.get(row.get("role"), "unknown")}
+
+
+async def list_effective_app_role_holders(
+    app_id: str,
+    app_repo: Any,
+    role_repo: Any,
+) -> list[dict[str, Any]] | None:
+    """List effective holders for an app: appsuper assignees + appglobal holders (R16).
+
+    Returns:
+        Holder rows with a ``scope`` marker, or None when the app does not
+        exist (soft-deleted apps count as not found)
+    """
+    app = await app_repo.find_by_id(app_id)
+    if not app or app.get("deleted_at"):
+        return None
+    rows = await role_repo.list_effective_for_app(app_id)
+    return [_with_role_scope(row) for row in rows]
+
+
+async def list_user_app_roles(
+    user_id: int,
+    role_repo: Any,
+) -> list[dict[str, Any]] | None:
+    """List a user's client-app role assignments, both roles (R13).
+
+    Returns:
+        Assignment rows with app names and a ``scope`` marker, or None when
+        the user does not exist
+    """
+    if not await role_repo.user_exists(user_id):
+        return None
+    rows = await role_repo.list_for_user(user_id)
+    return [_with_role_scope(row) for row in rows]

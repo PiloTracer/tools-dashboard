@@ -7,7 +7,11 @@ import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const BACK_AUTH_URL = process.env.BACK_AUTH_URL || "http://localhost:8101";
+  const BACK_AUTH_URL =
+    process.env.BACK_AUTH_URL ||
+    process.env.AUTH_API_URL ||
+    process.env.BACK_AUTH_BASE_URL ||
+    "http://back-auth:8001";
 
   try {
     // Fetch JWKS from back-auth

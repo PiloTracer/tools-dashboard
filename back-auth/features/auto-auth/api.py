@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.cassandra import get_cassandra_session
-from core.database import get_session
+from core.database import get_app_roles_for_user_client, get_session
 from repositories.user_repository import get_user_by_id
 from cassandra.cluster import Session as CassandraSession
 
@@ -92,6 +92,7 @@ class ValidateTokenResponse(BaseModel):
     user_id: int | None = None  # Integer user ID from users table
     client_id: str | None = None
     scope: list[str] | None = None
+    app_roles: list[str] = []  # Client-app roles of sub applying to aud (R9)
     error: str | None = None
 
 
@@ -218,6 +219,7 @@ async def validate_authorization_code(
 async def issue_tokens(
     request: IssueTokensRequest,
     domain: OAuthDomain = Depends(get_oauth_domain),
+    session: AsyncSession = Depends(get_session),
 ) -> TokenResponse:
     """Issue access and refresh tokens.
 
@@ -228,6 +230,10 @@ async def issue_tokens(
     Returns:
         Access and refresh tokens
     """
+    app_roles = await get_app_roles_for_user_client(
+        session, request.user_id, request.client_id
+    )
+
     # Issue access token (1 hour)
     access_token = await domain.issue_access_token(
         user_id=request.user_id,
@@ -236,6 +242,7 @@ async def issue_tokens(
         user_email=request.user_email,
         user_name=request.user_name,
         expires_in=3600,
+        app_roles=app_roles,
     )
 
     # Issue refresh token (30 days)
@@ -264,6 +271,7 @@ async def issue_tokens(
 async def refresh_tokens(
     request: RefreshTokenRequest,
     domain: OAuthDomain = Depends(get_oauth_domain),
+    session: AsyncSession = Depends(get_session),
 ) -> TokenResponse:
     """Refresh access token.
 
@@ -307,10 +315,17 @@ async def refresh_tokens(
     user_id = int(payload["sub"])  # Convert string to integer
     scope = payload.get("scope", "").split()
 
-    # TODO: Fetch user email and name from database
-    # For now, use placeholder values
-    user_email = "user@example.com"
-    user_name = "User"
+    # Fetch user email and name from database (same lookup as validate-code)
+    user_row = await get_user_by_id(session, user_id)
+    if not user_row:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User not found for refresh token",
+        )
+    user_email = str(user_row["email"])
+    user_name = user_email.split("@", 1)[0] if "@" in user_email else user_email
+
+    app_roles = await get_app_roles_for_user_client(session, user_id, request.client_id)
 
     # Issue new tokens
     access_token = await domain.issue_access_token(
@@ -320,6 +335,7 @@ async def refresh_tokens(
         user_email=user_email,
         user_name=user_name,
         expires_in=3600,
+        app_roles=app_roles,
     )
 
     new_refresh_token = await domain.issue_refresh_token(
@@ -347,6 +363,7 @@ async def refresh_tokens(
 async def validate_token(
     request: ValidateTokenRequest,
     domain: OAuthDomain = Depends(get_oauth_domain),
+    session: AsyncSession = Depends(get_session),
 ) -> ValidateTokenResponse:
     """Validate access token.
 
@@ -365,11 +382,16 @@ async def validate_token(
             error="Invalid or expired token",
         )
 
+    user_id = int(payload["sub"])  # Convert string to integer
+    client_id = payload.get("aud")
+    app_roles = await get_app_roles_for_user_client(session, user_id, client_id)
+
     return ValidateTokenResponse(
         valid=True,
-        user_id=int(payload["sub"]),  # Convert string to integer
-        client_id=payload.get("aud"),
+        user_id=user_id,
+        client_id=client_id,
         scope=payload.get("scope", "").split(),
+        app_roles=app_roles,
     )
 
 

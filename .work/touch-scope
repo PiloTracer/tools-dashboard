@@ -1,18 +1,28 @@
 {
-  "ref": "tools-dashboard",
-  "updated": "2026-07-28",
-  "goal": "Admin user edit: role assignment + fix permissions jsonb serialization in user_repository",
-  "allowed_paths": [
-    ".work/touch-scope"
-  ],
+  "ref": "AR",
+  "updated": "2026-08-11",
+  "goal": "Client-app roles (appsuper/appglobal) — Approved SPEC .work/features/app-roles/20260811-SPEC.md",
+  "allowed_paths": [],
   "allowed_patterns": [
-    "front-admin/app/features/user-management/**",
-    "front-admin/app/routes/admin.api.users.$userId.role.tsx",
-    "front-admin/app/routes/admin.features.user-management.$userId.tsx",
-    "front-admin/public/locales/**",
-    "back-api/features/user-management/**",
-    "back-api/tests/test_user_management_role.py",
-    "back-api/repositories/user_repository.py",
-    ".work/**"
+    "back-postgres/schema/014_app_user_roles.sql",
+    "back-api/repositories/app_user_role_repository.py",
+    "back-api/features/app-library/*",
+    "back-api/tests/*",
+    "back-auth/core/database.py",
+    "back-auth/features/auto-auth/*",
+    "back-auth/services/*",
+    "back-auth/tests/*",
+    "front-admin/app/routes/*",
+    "front-admin/app/features/*",
+    "front-admin/app/features/*/*",
+    "front-admin/app/features/*/*/*",
+    "front-admin/public/locales/*/*",
+    "front-public/app/routes/*",
+    "front-public/app/features/*",
+    "front-public/app/features/*/*",
+    "front-public/app/features/*/*/*",
+    ".work/*",
+    ".work/*/*",
+    ".work/*/*/*"
   ]
 }

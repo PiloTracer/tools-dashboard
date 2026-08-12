@@ -143,7 +143,27 @@
       "roleSaving": "Saving…",
       "roleUnchanged": "No changes to save",
       "roleUpdateFailed": "Failed to update user role. Please try again.",
-      "roleUpdateNetworkError": "Network error while updating user role."
+      "roleUpdateNetworkError": "Network error while updating user role.",
+      "appRolesCardTitle": "Client-app roles",
+      "appRolesCardBody": "Roles this user holds in client applications: appsuper (per app) and appglobal (all apps). Tools Dashboard only stores and reports these assignments — each application defines what they unlock, and holders get no extra privileges here.",
+      "appRolesEmpty": "This user holds no client-app roles.",
+      "appRolesGlobalBadge": "appglobal — all apps, present and future",
+      "appRolesRevoke": "Revoke",
+      "appRolesRevoking": "Revoking…",
+      "appRolesGrantSuperTitle": "Grant appsuper — this app…",
+      "appRolesGrantSuperHelp": "Pick one application; the role applies to that app only.",
+      "appRolesAppPickerLabel": "Application",
+      "appRolesAppPickerPlaceholder": "Select an application…",
+      "appRolesGrantSuper": "Grant appsuper",
+      "appRolesGrantGlobalTitle": "Grant appglobal — all apps, present and future",
+      "appRolesGrantGlobalHelp": "A single standing grant covering every application, including apps registered later. Revoking it is one action that removes the role everywhere.",
+      "appRolesGrantGlobal": "Grant appglobal",
+      "appRolesGrantGlobalConfirm": "Grant appglobal to this user? It applies to every app, present and future, and is revoked with a single action.",
+      "appRolesGranting": "Granting…",
+      "appRolesFailed": "The role change failed. Please try again.",
+      "appRolesNetworkError": "Network error. Please try again.",
+      "appRolesAppsLoadError": "Could not load the application list.",
+      "appRolesSince": "since {{date}}"
     }
   },
   "appLibrary": {
@@ -209,6 +229,28 @@
         "userIdsRequired": "Select at least one user for this mode.",
         "tiersRequired": "Select at least one subscription tier."
       }
+    },
+    "roles": {
+      "title": "appsuper",
+      "description": "Effective holders for this application: appsuper assignees plus appglobal holders (their tokens report a role on every app). Tools Dashboard only stores and reports these roles — the application defines what they unlock.",
+      "holdersTitle": "Effective holders",
+      "empty": "No one holds a client-app role for this application yet.",
+      "grantTitle": "Grant appsuper — this app",
+      "grantHelp": "Search for a user and grant the appsuper role, scoped to this application only.",
+      "userSearchLabel": "Find users",
+      "userSearchPlaceholder": "Search by email, name, or ID…",
+      "searching": "Searching…",
+      "noUsersMatch": "No users match your search.",
+      "grant": "Grant",
+      "granting": "Granting…",
+      "revoke": "Revoke",
+      "revoking": "Revoking…",
+      "alreadyHolder": "Already appsuper",
+      "appglobalBadge": "appglobal — all apps",
+      "appglobalManaged": "Managed from the user's page.",
+      "grantedAt": "since {{date}}",
+      "actionFailed": "The role change failed. Please try again.",
+      "networkError": "Network error. Please try again."
     }
   },
   "taskScheduler": {
