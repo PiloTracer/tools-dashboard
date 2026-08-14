@@ -130,11 +130,7 @@
       "title": "What to expect next",
       "step1": "Check your inbox for a verification email. We only activate accounts once the address is confirmed.",
       "step2": "Jump straight into progressive profiling so we can tailor product access to your role and goals.",
-      "step3": "Session cookies keep you signed in securely across devices with automatic rotation.",
-      "support": {
-        "title": "Need help?",
-        "description": "Email <1>support@tools-dashboard.io</1> and a specialist will get you unstuck."
-      }
+      "step3": "Session cookies keep you signed in securely across devices with automatic rotation."
     },
     "alerts": {
       "serviceUnavailable": "Authentication service is currently unavailable. Please try again later.",
@@ -160,8 +156,7 @@
     "help": {
       "title": "Need a hand?",
       "spam": "Check your spam folder if the message does not arrive within a minute.",
-      "expiry": "Verification links expire after 15 minutes for your security.",
-      "contactSupport": "Still waiting? <1>Contact support</1> for a fresh link."
+      "expiry": "Verification links expire after 15 minutes for your security."
     },
     "continueOnboarding": "Continue onboarding",
     "messages": {
@@ -216,7 +211,7 @@
       "onlineLabel": "Available",
       "offlineLabel": "Offline",
       "unavailableLabel": "—",
-      "titleWithUrl": "{{label}} (checked from your browser: {{url}})"
+      "titleWithUrl": "{{label}} (checked: {{url}})"
     }
   },
   "subscription": {

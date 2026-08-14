@@ -91,11 +91,26 @@
 
 ## Session status
 
-**Closed:** 2026-08-12 — client-app roles (appsuper/appglobal) SPEC'd, implemented, verified end-to-end; JWKS public route repaired; integration guide written
+**Closed:** 2026-08-14 — front-public cleanup shipped: reliable reachability badge (3-retry probe + server-side fallback), support email removed from all public pages, user-subscription placeholder hidden + 404 catch-all → app library
 
-**Updated:** 2026-08-12
+**Updated:** 2026-08-14
 
 Treat the next chat as a **new session**: do not assume unwritten goals from prior threads unless they appear in this file or linked artifacts.
+
+---
+
+## What this cycle produced (2026-08-14)
+
+| Area | Artifact |
+|------|----------|
+| Reachability | `useAppReachability.ts` — 3-attempt client probe + server fallback `/app/api/reachability` (new `app.api.reachability.tsx`, loopback→host-gateway rewrite, `REACHABILITY_HOST_IP`); badge re-checks every 15s; neutral "Unchecked" state removed; en/es tooltip "checked: …" |
+| Email removal | `support@tools-dashboard.io` gone from auth aside, verify page, app-library ErrorState, oauth-error (components + en/es locale keys) |
+| Placeholder hide | user-subscription `_index`/`$slug` route wrappers + new `app.$.tsx` splat → 302 to `/app/features/app-library`; "Pricing" removed from header/footer nav; feature code preserved untouched |
+| Bookkeeping | `.gitignore` (+`.reasonix/tasks/`); touch-scope refs REACH/CLEAN; MOD-06 registry entries in NEXT.md |
+| Gates | tsc 0 non-baseline errors; smoke 4/4; JSON valid + en/es parity; touch-scope pass; live curl: reachability E-Card `{"ok":true}` / Rizervox `{"ok":false}`, redirects 302 → app-library, 0 email refs on auth/home HTML |
+
+**Deploy:** sync repo to dev.aiepic.app host + restart/rebuild front-public (and nginx unchanged). Production (`tools.datawork.top`) unaffected until `main` is deployed there.
+
 
 ---
 

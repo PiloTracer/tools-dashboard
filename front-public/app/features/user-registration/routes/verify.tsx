@@ -40,12 +40,9 @@ const apiErrorSchema = z
 type LoaderData = {
   status: "pending" | "verified" | "error";
   message: string;
-  supportUrl?: string;
   email?: string;
   flow?: "email" | "google";
 };
-
-const SUPPORT_MAILTO = "mailto:support@tools-dashboard.io";
 
 function defaultPendingMessage(t: TFunction, email?: string) {
   return email ? t("verify.messages.pendingWithEmail", { email }) : t("verify.messages.pendingGeneric");
@@ -74,7 +71,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   let email = queryEmail;
-  const supportUrl: string | undefined = SUPPORT_MAILTO;
 
   const isGoogleOAuthReturn = !token && (provider === "google" || (Boolean(code) && Boolean(state)));
 
@@ -85,7 +81,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
           status: "error",
           flow: "google",
           message: t("verify.messages.googleMissingParams"),
-          supportUrl: SUPPORT_MAILTO,
           email,
         },
         { status: 400 },
@@ -111,7 +106,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
           status: "error",
           flow: "google",
           message: t("verify.messages.googleServiceUnreachable"),
-          supportUrl: SUPPORT_MAILTO,
           email,
         },
         { status: 502 },
@@ -130,7 +124,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
             status: "error",
             flow: "google",
             message: t("verify.messages.googleUnexpectedPayload"),
-            supportUrl: SUPPORT_MAILTO,
             email,
           },
           { status: 502 },
@@ -156,7 +149,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
           (parsed.data.status === "verified"
             ? t("verify.messages.googleVerified")
             : t("verify.messages.googlePending")),
-        supportUrl,
         email,
       });
 
@@ -175,7 +167,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
           parsedError.success && parsedError.data.message
             ? parsedError.data.message
             : t("verify.messages.googleFailed"),
-        supportUrl: SUPPORT_MAILTO,
         email,
       },
       { status: response.status === 400 ? 400 : 502 },
@@ -201,7 +192,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
         {
           status: "error",
           message: t("verify.messages.emailServiceUnreachable"),
-          supportUrl: SUPPORT_MAILTO,
           email,
         },
         { status: 502 },
@@ -218,7 +208,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
           {
             status: "error",
             message: t("verify.messages.emailInvalidLink"),
-            supportUrl: SUPPORT_MAILTO,
             email,
           },
           { status: 400 },
@@ -243,7 +232,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
           (parsed.data.status === "verified"
             ? t("verify.messages.emailVerified")
             : t("verify.messages.emailPending")),
-        supportUrl,
         email,
       });
 
@@ -261,7 +249,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
           parsedError.success && parsedError.data.message
             ? parsedError.data.message
             : t("verify.messages.emailInvalidLink"),
-        supportUrl: SUPPORT_MAILTO,
         email,
       },
       { status: response.status === 400 ? 400 : 502 },
@@ -281,7 +268,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
       {
         status: "pending",
         message: defaultPendingMessage(t, email),
-        supportUrl: SUPPORT_MAILTO,
         email,
       },
       { status: 200 },
@@ -312,7 +298,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
           (parsed.data.status === "verified"
             ? t("verify.messages.accountVerified")
             : defaultPendingMessage(t, email)),
-        supportUrl,
         email,
       });
 
@@ -331,7 +316,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
       parsedError.success && parsedError.data.message
         ? parsedError.data.message
         : defaultPendingMessage(t, email),
-    supportUrl: SUPPORT_MAILTO,
     email,
   };
 
@@ -380,7 +364,7 @@ export default function VerifyRoute() {
         )}
       </header>
 
-      <VerificationBanner status={data.status} message={data.message} supportUrl={data.supportUrl} />
+      <VerificationBanner status={data.status} message={data.message} />
 
       {!isGoogleFlow ? (
         <div className="rounded-2xl border border-slate-200 bg-white/80 p-8 text-left text-sm text-slate-600 shadow-sm">
@@ -388,18 +372,6 @@ export default function VerifyRoute() {
           <ul className="list-disc space-y-2 pl-5">
             <li>{t("verify.help.spam")}</li>
             <li>{t("verify.help.expiry")}</li>
-            <li>
-              <Trans
-                i18nKey="verify.help.contactSupport"
-                components={{
-                  1: (
-                    <a href={SUPPORT_MAILTO} className="font-semibold text-blue-600 underline">
-                      {t("common.contactSupport")}
-                    </a>
-                  ),
-                }}
-              />
-            </li>
           </ul>
         </div>
       ) : null}

@@ -11,7 +11,6 @@ const PRIMARY_NAV = [
   { path: "/features/app-library", labelKey: "header.nav.appLibrary" as const },
   { path: "/features/user-registration", labelKey: "header.nav.register" as const },
   { path: "/features/progressive-profiling", labelKey: "header.nav.completeProfile" as const },
-  { path: "/features/user-subscription", labelKey: "header.nav.pricing" as const },
 ] as const;
 
 type PublicLayoutProps = {

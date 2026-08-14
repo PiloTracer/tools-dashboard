@@ -25,13 +25,16 @@ export function ReachabilityBadge({ state, titleUrl }: Props) {
   const { t } = useTranslation();
   const label = t(`appLibrary.reachability.${state}`);
   const shortLabel = t(`appLibrary.reachability.${state}Label`);
+  const title = titleUrl
+    ? t("appLibrary.reachability.titleWithUrl", { label, url: titleUrl })
+    : label;
 
   return (
     <div
       className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/90 bg-slate-50/90 px-2.5 py-1"
       role="status"
       aria-live="polite"
-      title={titleUrl ? t("appLibrary.reachability.titleWithUrl", { label, url: titleUrl }) : label}
+      title={title}
     >
       <span className={`h-2 w-2 shrink-0 rounded-full ${DOT_STYLES[state]}`} aria-hidden />
       <span className={`text-xs font-medium ${TEXT_STYLES[state]}`}>{shortLabel}</span>

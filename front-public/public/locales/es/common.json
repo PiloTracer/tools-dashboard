@@ -130,11 +130,7 @@
       "title": "Qué esperar a continuación",
       "step1": "Verifica tu bandeja de entrada para un correo electrónico de verificación. Solo activamos cuentas una vez que la dirección esté confirmada.",
       "step2": "Dirígete directamente al perfilado progresivo para que podamos adaptar el acceso al producto a tu rol y objetivos.",
-      "step3": "Las cookies de sesión te mantienen conectado de forma segura en todos los dispositivos con rotación automática.",
-      "support": {
-        "title": "¿Necesitas ayuda?",
-        "description": "Envía un correo electrónico a <1>support@tools-dashboard.io</1> y un especialista te ayudará."
-      }
+      "step3": "Las cookies de sesión te mantienen conectado de forma segura en todos los dispositivos con rotación automática."
     },
     "alerts": {
       "serviceUnavailable": "El servicio de autenticación no está disponible actualmente. Por favor, inténtalo de nuevo más tarde.",
@@ -160,8 +156,7 @@
     "help": {
       "title": "¿Necesitas ayuda?",
       "spam": "Revisa tu carpeta de spam si el mensaje no llega en un minuto.",
-      "expiry": "Los enlaces de verificación caducan a los 15 minutos por tu seguridad.",
-      "contactSupport": "¿Sigues esperando? <1>Contacta con soporte</1> para obtener un enlace nuevo."
+      "expiry": "Los enlaces de verificación caducan a los 15 minutos por tu seguridad."
     },
     "continueOnboarding": "Continuar incorporación",
     "messages": {
@@ -216,7 +211,7 @@
       "onlineLabel": "Disponible",
       "offlineLabel": "Sin conexión",
       "unavailableLabel": "—",
-      "titleWithUrl": "{{label}} (comprobado desde tu navegador: {{url}})"
+      "titleWithUrl": "{{label}} (comprobado: {{url}})"
     }
   },
   "subscription": {

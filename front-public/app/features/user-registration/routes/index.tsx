@@ -2,7 +2,7 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { useActionData, useLoaderData, useNavigation, useSearchParams } from "@remix-run/react";
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
-import { Trans, useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { z } from "zod";
 
@@ -424,21 +424,6 @@ export default function RegistrationRoute() {
             <li>{t("auth.aside.step2")}</li>
             <li>{t("auth.aside.step3")}</li>
           </ul>
-          <div className="auth-support">
-            <strong>{t("auth.aside.support.title")}</strong>
-            <p>
-              <Trans
-                i18nKey="auth.aside.support.description"
-                components={{
-                  1: (
-                    <a href="mailto:support@tools-dashboard.io" className="auth-support-link">
-                      support@tools-dashboard.io
-                    </a>
-                  ),
-                }}
-              />
-            </p>
-          </div>
         </aside>
       </div>
     </section>

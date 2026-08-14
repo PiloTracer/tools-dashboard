@@ -8,6 +8,7 @@
 
 | Item | Artifact |
 |------|----------|
+| Reachability + email/placeholder cleanup (front-public) | Reliable availability badge: 3-retry probe + server-side `/app/api/reachability` fallback (loopback→host gateway), 15s re-check; `support@tools-dashboard.io` removed from all public pages; user-subscription placeholder hidden (302 → app library) + `/app/*` 404 catch-all; pricing nav removed — **2026-08-14** |
 | Client-app roles (appsuper/appglobal) | Approved SPEC `.work/features/app-roles/20260811-SPEC.md`; migration `014_app_user_roles.sql`; 6 platform-admin endpoints; back-auth `app_roles` claim + `validate-token` field + refresh fix; front-admin appsuper + Client-app roles cards; 14 new tests (19+4 green); smoke 4/4 — **2026-08-11** |
 | Admin app-library Access tab UI | Access tab editor (`only_specified`, `all_except`, tiers, user picker, server search); real `user_subscriptions` tier lookup; tab URL persistence; smoke 4/4 — **2026-07-28** |
 | Admin user-role assignment | `back-api/features/user-management/domain.py` role validation + `DEFAULT_ROLE_PERMISSIONS` + `resolve_role_permissions`; `front-admin` role card UI + `admin.api.users.$userId.role.tsx` PATCH proxy; backend tests 3/3; en/es locales; **2026-07-28** |
@@ -219,6 +220,39 @@
 - Recommendation: merge_ok. Residual: real-browser hydration unverified; baseline `tsc` broken pre-existing (missing `@types/react`, TS2307 remix-i18next subpaths — tsconfig protected)
 - Blast-radius gate: risk high (4 areas) — owner-approved via explicit cross-area request "verify all changes… implement any fixes" (2026-07-25)
 - Follow-up (same day): plain-value `i18nCookie` in both apps fixes landing→portal language persistence (Remix base64 cookie encoding was ignoring the landing's plain cookie); live-verified, smoke 4/4
+
+### Concept / NFR registry (2026-08-14 — app-library reachability fix, no formal iteration)
+
+| Concept id | Applies | Status | Evidence / trigger |
+|------------|---------|--------|-------------------|
+| MOD-06 | yes | done | AI-assisted session (small UI fix) — risk summary below |
+
+**AI change risk summary (MOD-06 — 2026-08-14 reachability fix):**
+- AI-assisted: yes
+- Boundaries crossed: 0 hard module boundaries — single feature area (`front-public` app-library UI): hook + badge + locales only; no backend, no shared models, no RPC
+- New cross-boundary deps: none (React hooks/`fetch` already in use; `AbortController` is platform)
+- Test isolation: weak — UI unit tests not configured (documented repo gap); verification: tsc 0 non-baseline errors in touched files (baseline 959 = missing `@types/react`, owner blocker #3), en/es JSON valid, smoke 4/4, touch-scope pass
+- Human architectural review: optional — 3 front-public files; client-side display-only badge
+- Blast radius: if wrong, the reachability chip on the public app-library page mislabels app status (loopback targets on remote pages show neutral "Unchecked"; remote targets get 3 retries before Offline). No data, no backend, no launch-path impact (badge is display-only; Launch button unchanged). Recovery = revert single-area diff
+- Recommendation: merge_ok. Residual: real-browser badge behavior unverified (no headless browser); baseline tsc remains broken pre-existing
+- Blast-radius gate: measured high (5 areas incl. session bookends `.work`/`.work.ui` + pre-existing untracked `reasonix.toml`) — fix footprint is 1 area (front-public, 4 files); owner-approved via explicit "apply your recommended fix" request (2026-08-14)
+
+### Concept / NFR registry (2026-08-14 — email removal + user-subscription placeholder hide, no formal iteration)
+
+| Concept id | Applies | Status | Evidence / trigger |
+|------------|---------|--------|-------------------|
+| MOD-06 | yes | done | AI-assisted session (small UI cleanup) — risk summary below |
+
+**AI change risk summary (MOD-06 — 2026-08-14 email/placeholder cleanup):**
+- AI-assisted: yes
+- Boundaries crossed: 0 hard module boundaries — single area (`front-public`): auth aside, verify banner/route, app-library error + oauth-error states, PublicLayout nav, user-subscription route wrappers, en/es locales
+- New cross-boundary deps: none
+- Test isolation: weak — UI unit tests not configured; verification: tsc 0 non-baseline errors in touched files (baseline 932 = missing `@types/react`, owner blocker #3), en/es JSON valid, smoke 4/4, live curl: both `/app/features/user-subscription*` → 302 `/app/`; `support@tools-dashboard.io` count 0 on auth + home HTML
+- Human architectural review: optional — display-only removals + route redirects; feature code preserved intact under `features/user-subscription/`
+- Blast radius: if wrong, users lose a `mailto:` support shortcut on 4 screens (no functional loss) and the placeholder subscription pages 302 to `/app/` instead of rendering (they were hardcoded mock data; checkout POST was a stub). No data, no backend, no auth impact. Recovery = revert single-area diff
+- Recommendation: merge_ok. Residual: `feature.yaml:196 contact: support@tools-dashboard.io` remains (spec metadata, not user-visible); unused locale keys `common.contactSupport`/`oauthError.contactSupport`/`header.nav.pricing` left in place
+
+**Follow-up (same day, owner feedback):** (1) Reachability now probes **every target with 3 retries, plus a server-side fallback** — new same-origin endpoint `/app/api/reachability?url=` (`app.api.reachability.tsx`) whose loader probes the target from the server's network, rewriting loopback hostnames to the Docker-host gateway (`172.17.0.1`, env `REACHABILITY_HOST_IP`) since dev apps (E-Card `localhost:7300`) run on the host, not in the container. The browser tries the direct probe first; if blocked (Chrome Private Network Access / mixed content) or the target is down, the server verdict decides. The badge **re-checks every 15s** so status stays live without reloading. Live-verified through nginx: `localhost:7300` → `{"ok":true}` (E-Card Available), `localhost:17513` → `{"ok":false}` (Rizervox Offline), `file://` → 400. (2) All non-existent `/app/*` URLs (new `app.$.tsx` splat) and the hidden `user-subscription` routes redirect to `/app/features/app-library` (was `/app`). tsc non-baseline clean; smoke 4/4; touch-scope pass.
 
 ```markdown
 ## Current iteration - M{N}: <milestone name>

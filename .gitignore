@@ -171,6 +171,9 @@ bin/td-backup-cron-wrap-*.sh
 
 .env.backup
 
+# Reasonix tool runtime state (background jobs) — transient, never commit
+.reasonix/tasks/
+
 # SeaweedFS configs with real secrets — generated from .env by scripts/init-seaweedfs-config.sh
 seaweedfs-config/s3-config.json
 seaweedfs-config/security.toml

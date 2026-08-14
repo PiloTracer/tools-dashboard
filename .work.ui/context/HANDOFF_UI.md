@@ -4,9 +4,9 @@
 
 ## Session status
 
-**Open:** -
+**Open:** 2026-08-14 - goal: UI foundation greenfield (01–04) for front-admin per NEXT_UI priority 0
 
-**Updated:** 2026-07-25
+**Updated:** 2026-08-14
 
 **Closed:** -
 
