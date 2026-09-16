@@ -67,12 +67,12 @@ Default to **minimal diffs**. Run before commit / `@code-implementation complete
 
 | Gate | Command | Fail when |
 |------|---------|-----------|
-| Touch scope | `bash /mnt/work/Projects/.ai/scripts/touch-scope-verify.sh` | File outside `.work/touch-scope` or iteration **Files** |
-| Blast radius | `bash /mnt/work/Projects/.ai/scripts/blast-radius-check.sh` | `risk: high` (cross-area or oversized diff) |
+| Touch scope | `bash /mnt/work/Projects/pilo.ai.logicbison/scripts/touch-scope-verify.sh` | File outside `.work/touch-scope` or iteration **Files** |
+| Blast radius | `bash /mnt/work/Projects/pilo.ai.logicbison/scripts/blast-radius-check.sh` | `risk: high` (cross-area or oversized diff) |
 | Protected surfaces | `.work/PROTECTED_SURFACES.json` + §Protected Files | High-blast path without owner approval |
 | Tests | `bash bin/test.sh` (smoke; stack up) or per-service `docker compose exec back-api bash -c "cd /app && pytest tests/ -q"` | Non-zero exit |
 
-**Declare scope first:** copy `/mnt/work/Projects/.ai/templates/work/touch-scope.template` → `.work/touch-scope`, or `@code-implementation plan` with **Files** per task. **MOD-06** required for agent-authored code (`/mnt/work/Projects/.ai/concepts/README.md` § Trigger table); `human-only` opt-out only when the human declares it in the same message. **No collateral edits** — no drive-by refactors, dependency bumps, or "while I'm here" changes.
+**Declare scope first:** copy `/mnt/work/Projects/pilo.ai.logicbison/templates/work/touch-scope.template` → `.work/touch-scope`, or `@code-implementation plan` with **Files** per task. **MOD-06** required for agent-authored code (`/mnt/work/Projects/pilo.ai.logicbison/concepts/README.md` § Trigger table); `human-only` opt-out only when the human declares it in the same message. **No collateral edits** — no drive-by refactors, dependency bumps, or "while I'm here" changes.
 
 ---
 
@@ -89,20 +89,20 @@ Sister frameworks are siblings on disk; `.ai/` is the Agent OS source. Paths res
 | Framework | Director | Path | Bootstrap artifact |
 |-----------|----------|------|--------------------|
 | `.ai` (Agent OS) | `@ai-director` | *source via AGENT_OS_SOURCE* | `skills/README.md` |
-| `.ai.ui` (UI Design OS) | `@ui-director` | `/mnt/work/Projects/.ai.ui` | `.ai.ui/skills/README.md` |
-| `.ai.biz` (Business OS) | `@biz-director` | `/mnt/work/Projects/.ai.biz` | `.ai.biz/skills/README.md` |
-| `.ai.soc` (Social OS) | `@soc-director` | `/mnt/work/Projects/.ai.soc` | `.ai.soc/skills/README.md` |
+| `.ai.ui` (UI Design OS) | `@ui-director` | `/mnt/work/Projects/pilo.ai.ui.logicbison` | `.ai.ui/skills/README.md` |
+| `.ai.biz` (Business OS) | `@biz-director` | `/mnt/work/Projects/pilo.ai.biz.logicbison` | `.ai.biz/skills/README.md` |
+| `.ai.soc` (Social OS) | `@soc-director` | `/mnt/work/Projects/pilo.ai.soc.logicbison` | `.ai.soc/skills/README.md` |
 
-**Path resolution:** (1) use a filled path cell; empty → fall through. (2) Auto-discover: thin-client parent = `$AGENT_OS_SOURCE/..`; check `${parent}/.ai.ui|.ai.biz|.ai.soc`; missing = "not installed". (3) Before routing, verify the framework dir + its `skills/README.md` exist; if absent, route to `@ai-director` prefixed `[degraded: <framework> not installed]` — never route into the void.
+**Path resolution:** (1) use a filled path cell; empty → fall through. (2) Auto-discover: the framework root is `dirname($AGENT_OS_SOURCE)`; siblings resolve via `$SOC_SOURCE/scripts/sister-discovery.sh`, which accepts **both** family naming (`pilo.ai.<fw>.logicbison`) and legacy `.ai.<fw>`; a sibling without `skills/README.md` = "not installed". (3) Before routing, verify the framework dir + its `skills/README.md` exist; if absent, route to `@ai-director` prefixed `[degraded: <framework> not installed]` — never route into the void.
 
 ### Source resolution (thin-client — mandatory before any `.ai/...` path)
 
-AGENT_OS_SOURCE=/mnt/work/Projects/.ai
+AGENT_OS_SOURCE=/mnt/work/Projects/pilo.ai.logicbison
 
 | Variable | Value |
 |----------|-------|
-| `AGENT_OS_SOURCE` | `/mnt/work/Projects/.ai` |
-| `AI_UI_SOURCE` | `/mnt/work/Projects/.ai.ui` |
+| `AGENT_OS_SOURCE` | `/mnt/work/Projects/pilo.ai.logicbison` |
+| `AI_UI_SOURCE` | `/mnt/work/Projects/pilo.ai.ui.logicbison` |
 
 **Rules:**
 1. `.cursorrules` + `.work/**` + `.work.ui/**` — always local.
@@ -377,7 +377,7 @@ If the project does **not** use Docker, replace this section with the canonical 
 - NEVER execute `git commit` or `git push` unless the user explicitly requests it in the same message.
 - **`@session-control close commit` / `close commit push` / `commit` / `commit push` (mandatory):** When the user invokes session-control with **`commit`** (and optional **`push`**), you **MUST** run shell `git add` + `git commit` per `.ai/skills/session-control/skill.md` — stage all **safe** dirty paths (default scope), not HANDOFF/NEXT only. If **`push`** was requested, run `git push` after a successful commit. Show `git log -1 --oneline` and `git status -sb`; do not claim commit succeeded without a commit SHA when the tree was dirty. Standalone `commit`/`commit push` do not update HANDOFF or NEXT.
 - Otherwise provide commit commands for the user when they will commit themselves.
-- Never add `Co-authored-by:` trailers. Install hooks once: `bash /mnt/work/Projects/.ai/scripts/install-git-hooks.sh`.
+- Never add `Co-authored-by:` trailers. Install hooks once: `bash /mnt/work/Projects/pilo.ai.logicbison/scripts/install-git-hooks.sh`.
 - Never modify git history (rebase, force-push) without explicit user request.
 
 ### No Attribution / No Signatures
@@ -420,7 +420,7 @@ If the project does **not** use Docker, replace this section with the canonical 
 
 ## Source resolution — UI Design OS
 
-AI_UI_SOURCE=/mnt/work/Projects/.ai.ui
+AI_UI_SOURCE=/mnt/work/Projects/pilo.ai.ui.logicbison
 
 Same thin-client rules as Agent OS: `.work.ui/**` local; all other `.ai.ui/<path>` from `$AI_UI_SOURCE`. Unreachable → stop.
 
@@ -436,10 +436,10 @@ Same thin-client rules as Agent OS: `.work.ui/**` local; all other `.ai.ui/<path
 
 | Gate | Command | Fail when |
 |------|---------|-----------|
-| Touch scope | `bash /mnt/work/Projects/.ai.ui/scripts/touch-scope-verify.sh` | File outside `.work.ui/touch-scope` |
-| Blast radius | `bash /mnt/work/Projects/.ai.ui/scripts/blast-radius-check.sh` | Cross-area diff ≥3 areas |
+| Touch scope | `bash /mnt/work/Projects/pilo.ai.ui.logicbison/scripts/touch-scope-verify.sh` | File outside `.work.ui/touch-scope` |
+| Blast radius | `bash /mnt/work/Projects/pilo.ai.ui.logicbison/scripts/blast-radius-check.sh` | Cross-area diff ≥3 areas |
 | Tests | `docker compose exec front-admin bash -c "cd /app && npx tsc --noEmit"` | Non-zero exit |
-| Gate check | `bash /mnt/work/Projects/.ai.ui/scripts/gate-verify.sh` | Done task with empty Notes |
+| Gate check | `bash /mnt/work/Projects/pilo.ai.ui.logicbison/scripts/gate-verify.sh` | Done task with empty Notes |
 
 **Declare scope first:** copy `$AI_UI_SOURCE/templates/work.ui/touch-scope.template` → `.work.ui/touch-scope`.
 
@@ -503,3 +503,93 @@ UI milestone work is not done until: UI lint/type/tests pass; `@ui-visual-verify
 - `$AI_UI_SOURCE/inputs/brand/` (reference — do not auto-edit)
 
 <!-- UI_DESIGN_OS_END -->
+
+### Framework root (SOC siblings on this host)
+
+FW_ROOT=/mnt/work/Projects
+
+The `FW_ROOT:` line above satisfies rule (1) of § Framework paths — the installed sister frameworks live in `/mnt/work/Projects` as `pilo.ai.<fw>.logicbison`, not beside this repository.
+
+<!-- SOC_DESIGN_OS_BEGIN -->
+
+## Security OS (`.ai.soc/`)
+
+**Lost on security?** `.ai.soc/START_HERE.md` · **Router:** `@soc-director - <what you want>`
+
+### SOC source resolution (thin-client)
+
+SOC_SOURCE=/mnt/work/Projects/pilo.ai.soc.logicbison
+
+The agent MUST resolve `.ai.soc/` references from `$SOC_SOURCE` (thin-client mode). When `SOC_SOURCE` is set and readable, read `.ai.soc/skills/<id>/skill.md` from `$SOC_SOURCE/skills/<id>/skill.md`. Skills, templates, and scripts resolve from the source at runtime. When `SOC_SOURCE` is missing or unreadable, skills resolve locally from this repo's `.ai.soc/` (fat-client mode).
+
+**Verify deployment:** `bash $SOC_SOURCE/scripts/soc-deploy-basic.sh verify .` — read-only audit of this `.cursorrules` (SOC_SOURCE correctness/reachability, stale skill handles, `.work.soc/` skeleton, sister frameworks). Exit 0 = coherent. Run after any deploy/update or whenever `SOC_SOURCE` moves.
+
+### Framework paths
+
+Sister frameworks live as siblings on disk. Paths below are templated with `{FW_ROOT}` for portability — no tool-specific config needed.
+
+**`{FW_ROOT}` resolution (in priority order):**
+
+1. If a `FW_ROOT:` line exists above this section, use that absolute path verbatim (this repo: **`FW_ROOT=/mnt/work/Projects`**).
+2. Otherwise, use the parent of the SOC source: `dirname($SOC_SOURCE)` — the root that actually holds the installed siblings, matching `$SOC_SOURCE/scripts/sister-discovery.sh`.
+3. Otherwise, fall back to the **parent directory of this repository** (the repo this `.cursorrules` lives in).
+4. If none resolves an existing sibling directory (each candidate is validated by `<dir>/skills/README.md`), stop routing with a one-line `framework not installed here` message — never silently route into the void.
+
+| Framework | Path | Director |
+|-----------|------|----------|
+| Security OS (`.ai.soc`) | `$SOC_SOURCE` (thin-client source) | `@soc-director` |
+| Agent OS (`.ai`) | `{FW_ROOT}/pilo.ai.logicbison` | `@ai-director` |
+| UI Design OS (`.ai.ui`) | `{FW_ROOT}/pilo.ai.ui.logicbison` | `@ui-director` |
+| Business OS (`.ai.biz`) | `{FW_ROOT}/pilo.ai.biz.logicbison` | `@biz-director` |
+| CTO Professor OS (`.ai.cto`) | `{FW_ROOT}/pilo.ai.cto.logicbison` | `@cto-director` |
+| Flutter Agent OS (`.ai.flutter`) | `{FW_ROOT}/pilo.ai.flutter.logicbison` | `@flutter-director` |
+| MLT Agent OS (`.ai.mlt`) | `{FW_ROOT}/pilo.ai.mlt.logicbison` | `@mlt-director` |
+
+Family naming: sisters may also live as `pilo.ai.<fw>.logicbison` — the shared discovery rule (`$SOC_SOURCE/scripts/sister-discovery.sh`) resolves both forms; family-named sources derive sisters as `<source basename with <fw> inserted before its last .segment>` (`.ai`-prefixed sources resolve `.ai.<fw>` directly).
+
+### Path resolution
+
+x-director and ai-director resolve frameworks from the table above. Substitute `{FW_ROOT}` per the resolution rules at the top of this section before reading any framework path. Preflight check before routing: verify the framework's `skills/README.md` exists at the declared path. If absent, stop routing with a one-line `framework not installed here` message — never silently route into the void.
+
+### SOC context files
+
+| File | Purpose |
+|------|---------|
+| `.ai.soc/START_HERE.md` | Decision tree |
+| `.work.soc/context/HANDOFF_SOC.md` | Session handoff |
+| `.work.soc/plans/NEXT_SOC.md` | Tactical next action |
+| `.work.soc/plans/UNKNOWNS_SOC.md` | Open unknowns |
+
+### SOC placeholders
+
+| Placeholder | Resolves to |
+|-------------|-------------|
+| `{WORK_SOC_ROOT}` | `.work.soc/` |
+| `{HANDOFF_SOC}` | `.work.soc/context/HANDOFF_SOC.md` |
+| `{NEXT_SOC}` | `.work.soc/plans/NEXT_SOC.md` |
+| `{UNKNOWNS_SOC}` | `.work.soc/plans/UNKNOWNS_SOC.md` |
+| `{SKILLS_SOC_ROOT}` | `$SOC_SOURCE/skills/` (from SOC_SOURCE pointer) |
+
+### SOC skills
+
+| Skill | Purpose |
+|-------|---------|
+| soc-deploy-basic | Bootstrap `.work.soc/` + SOC source pointer (thin-client) |
+| soc-deploy-files | Copy `.ai.soc/` files into target (fat-client) |
+| soc-session | SOC session bookend (start/close/status/context + standalone `commit`/`commit push`); commits scoped to `.work.soc/` in deployed targets (full repo only in the framework source repo) |
+| soc-director | Run penetration tests against targets |
+| soc-gateway | Run .ai.soc from source without system install |
+
+**Sessions:** `@soc-session` — opens and closes SOC sessions
+
+**Reports:** every SOC skill response closes per the Operator handoff contract in `skills/SKILL_DEPENDENCIES.md` (resolved via `$SOC_SOURCE` in thin-client mode) — Form A single line when nothing is needed, otherwise Form B (`**Needs your approval:**` / `**Needs your answer:**` / `**Next step:**`).
+
+### Data Loss Prevention (SOC deploy invariant)
+
+**Permission scope:** Explicit human/operator permission authorizes **only the current request / current case**. It is never standing or permanent. Prior approval does not authorize a later destructive action.
+
+- **Git:** NEVER `git commit` or `git push` unless explicitly requested in the **same message**. NEVER amend, rebase, rewrite history, `reset --hard`, `clean -fd`/`-fdx`, or force-push unless explicitly requested in the **same message**.
+- **Files:** NEVER delete/unlink/`rm` files or directories unless explicitly requested in the **same message**. Narrow exception: agent-created ephemeral files under `tmp/` (or designated temp dir) created by this agent in the **current session**.
+- **Databases / persistent stores:** NEVER `DROP`, `TRUNCATE`, wipe, factory-reset, mass-delete, or run destructive down-migrations; NEVER remove/prune Docker/Podman volumes or data dirs holding persistent state — unless explicitly requested in the **same message**.
+
+<!-- SOC_DESIGN_OS_END -->
