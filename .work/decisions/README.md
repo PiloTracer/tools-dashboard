@@ -16,4 +16,4 @@ Project-specific ADRs. Process: `$AGENT_OS_SOURCE/skills/plan-foundation/skill.m
 
 | ADR | Topic | Status |
 |-----|-------|--------|
-| 001 | REPLACE:ADR_001_TOPIC | Proposed |
+| — | (no ADRs recorded yet) | — |

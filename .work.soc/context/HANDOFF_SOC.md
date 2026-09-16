@@ -1,0 +1,68 @@
+# HANDOFF_SOC — Security OS session boundary
+
+**Status:** Active · **Needs:** nothing (fresh bootstrap; no SOC session has run)
+
+## Session status
+
+**Open:** -
+
+**Updated:** 2026-09-15
+
+**Closed:** -
+
+**Repository state:** Greenfield — `.work.soc/` skeleton only; no assessment, threat model, or license audit has run.
+
+**Recommended pick-up file:** `.work.soc/plans/NEXT_SOC.md`
+
+**Lost or new?** Read `.ai.soc/START_HERE.md` (from repo root).
+
+---
+
+## Fresh start — what the next SOC session should do first
+
+1. Run **`@soc-session start`**.
+2. Read **`.cursorrules`** (SOC section).
+3. Read this file through § Fresh start, then § Open owner actions.
+4. Read `.work.soc/plans/NEXT_SOC.md`.
+5. Read `.work.soc/plans/UNKNOWNS_SOC.md`.
+
+End with **`@soc-session close`** (add `commit` / `commit push` only when requested). For mid-session checkpoints use **`@soc-session commit`** or **`@soc-session commit push`** (no close).
+
+### Conditional reads
+
+| If the task touches… | Read first |
+|----------------------|------------|
+| Security testing / pentesting | `skills/soc-director/skill.md`, Strix documentation |
+| License / compliance | Analysis template in `.work.soc/analysis/README.md` |
+| Threat model | Analysis template in `.work.soc/analysis/README.md` (STRIDE) |
+| New SOC plan | `.work.soc/plans/NEXT_SOC.md` |
+
+---
+
+## Open owner actions
+
+| # | Action | Blocks | Owner |
+|---|--------|--------|-------|
+| - | (none) | | |
+
+---
+
+## What this cycle produced
+
+| Date | Session | Artifacts |
+|------|---------|-----------|
+| — | (none) | — |
+
+---
+
+## Explicit unknowns
+
+| ID | Summary | Blocks |
+|----|---------|--------|
+| - | | |
+
+---
+
+## Next action
+
+`@soc-session start`

@@ -2,7 +2,7 @@
 
 **Purpose:** All **project-specific** artifacts: plans, SPECs, ADRs, prompts, and session handoff.
 
-**Process** (skills, standards, concepts, guides) resolves from **`$AGENT_OS_SOURCE`** (`/mnt/work/Projects/.ai`) — not vendored in this repo.
+**Process** (skills, standards, concepts, guides) resolves from **`$AGENT_OS_SOURCE`** (`/mnt/work/Projects/pilo.ai.logicbison`) — not vendored in this repo.
 
 ## Layout
 

@@ -1,6 +1,8 @@
 # RISK_REGISTRY - planning registry
 
-**Updated:** YYYY-MM-DD · **Maintained by:** plan-foundation / plan-master
+> **Not yet adopted:** this is an unfilled bootstrap registry from `@plan-foundation` (no foundation run in this repo). Rows below are scaffolding, not live project state.
+
+**Updated:** 2026-09-15 · **Maintained by:** plan-foundation / plan-master
 
 Status: **Open** | **Mitigated** | **Accepted** | **Closed**
 
@@ -14,4 +16,4 @@ Status: **Open** | **Mitigated** | **Accepted** | **Closed**
 
 | Date | Reviewer | Action |
 |------|----------|--------|
-| YYYY-MM-DD | bootstrap | Initial template |
+| 2026-09-15 | cleanup | Registry reviewed; still unadopted (no `@plan-foundation` run) |

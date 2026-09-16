@@ -14,7 +14,7 @@
 
 **Recommended pick-up:** `.work.ui/plans/NEXT_UI.md`
 
-**Lost or new?** Read `$AI_UI_SOURCE/START_HERE.md` (`/mnt/work/Projects/.ai.ui/START_HERE.md`)
+**Lost or new?** Read `$AI_UI_SOURCE/START_HERE.md` (`/mnt/work/Projects/pilo.ai.ui.logicbison/START_HERE.md`)
 
 ---
 

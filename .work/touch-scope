@@ -1,29 +1,17 @@
 {
-  "ref": "CLEAN",
-  "updated": "2026-08-14",
-  "goal": "Remove support email references from public UI; hide user-subscription placeholder (redirect to /app, remove nav entry)",
+  "ref": "CTX-RELIABILITY",
+  "updated": "2026-09-15",
+  "goal": "Fix framework source paths + {WORK_ROOT} collision in .cursorrules (owner decision dec-9a3f4fd40c9ad0fa); de-bloat HANDOFF/NEXT into archives and repair stale claims across .work/.work.ui/.work.soc (owner decision dec-4ae14490bb9c30ae)",
   "allowed_paths": [],
   "allowed_patterns": [
-    "front-public/app/features/app-library/hooks/useAppReachability.ts",
-    "front-public/app/features/app-library/ui/ReachabilityBadge.tsx",
-    "front-public/app/features/app-library/ui/ErrorState.tsx",
-    "front-public/app/features/app-library/routes/oauth-error.tsx",
-    "front-public/app/features/user-registration/routes/index.tsx",
-    "front-public/app/features/user-registration/routes/verify.tsx",
-    "front-public/app/features/user-registration/ui/VerificationBanner.tsx",
-    "front-public/app/routes/app.features.user-subscription._index.tsx",
-    "front-public/app/routes/app.features.user-subscription.$slug.tsx",
-    "front-public/app/routes/app.$.tsx",
-    "front-public/app/routes/app.api.reachability.tsx",
-    "front-public/app/components/layout/PublicLayout.tsx",
-    "front-public/public/locales/en/common.json",
-    "front-public/public/locales/es/common.json",
+    ".cursorrules",
     ".work/*",
     ".work/*/*",
     ".work/*/*/*",
     ".work.ui/*",
     ".work.ui/*/*",
-    "reasonix.toml",
-    ".gitignore"
+    ".work.soc/*",
+    ".work.soc/*/*",
+    "reasonix.toml"
   ]
 }
